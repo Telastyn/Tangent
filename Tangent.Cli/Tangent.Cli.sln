@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Cli", "Tangent.Cli.csproj", "{46692EC2-E8D9-409B-9D8F-EC28338C744A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Tokenization", "..\Tangent.Tokenization\Tangent.Tokenization.csproj", "{AE943962-7EB9-47D5-8436-821035AC0B74}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Parsing", "..\Tangent.Parsing\Tangent.Parsing.csproj", "{92BC2B39-A9B5-42E4-8107-BFFEF6D7928A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Intermediate", "..\Tangent.Intermediate\Tangent.Intermediate.csproj", "{91B94F1E-2F60-4392-BB46-EC5F65A44B59}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{46692EC2-E8D9-409B-9D8F-EC28338C744A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{46692EC2-E8D9-409B-9D8F-EC28338C744A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{46692EC2-E8D9-409B-9D8F-EC28338C744A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{46692EC2-E8D9-409B-9D8F-EC28338C744A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE943962-7EB9-47D5-8436-821035AC0B74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE943962-7EB9-47D5-8436-821035AC0B74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE943962-7EB9-47D5-8436-821035AC0B74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE943962-7EB9-47D5-8436-821035AC0B74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92BC2B39-A9B5-42E4-8107-BFFEF6D7928A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92BC2B39-A9B5-42E4-8107-BFFEF6D7928A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92BC2B39-A9B5-42E4-8107-BFFEF6D7928A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92BC2B39-A9B5-42E4-8107-BFFEF6D7928A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{91B94F1E-2F60-4392-BB46-EC5F65A44B59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91B94F1E-2F60-4392-BB46-EC5F65A44B59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91B94F1E-2F60-4392-BB46-EC5F65A44B59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91B94F1E-2F60-4392-BB46-EC5F65A44B59}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
