@@ -9,6 +9,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Parsing", "..\Tange
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Intermediate", "..\Tangent.Intermediate\Tangent.Intermediate.csproj", "{91B94F1E-2F60-4392-BB46-EC5F65A44B59}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Intermediate.UnitTests", "..\Tangent.Intermediate.UnitTests\Tangent.Intermediate.UnitTests.csproj", "{EE549A76-9C13-439D-9F51-A5E39DB80BDE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Parsing.UnitTests", "..\Tangent.Parsing.UnitTests\Tangent.Parsing.UnitTests.csproj", "{8F33874E-61AA-49D3-87EF-F319EC555540}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Tokenization.UnitTests", "..\Tangent.Tokenization.UnitTests\Tangent.Tokenization.UnitTests.csproj", "{233955FC-538F-4E6C-B9ED-8CCE4865A0D1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +37,18 @@ Global
 		{91B94F1E-2F60-4392-BB46-EC5F65A44B59}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{91B94F1E-2F60-4392-BB46-EC5F65A44B59}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{91B94F1E-2F60-4392-BB46-EC5F65A44B59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE549A76-9C13-439D-9F51-A5E39DB80BDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE549A76-9C13-439D-9F51-A5E39DB80BDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE549A76-9C13-439D-9F51-A5E39DB80BDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE549A76-9C13-439D-9F51-A5E39DB80BDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F33874E-61AA-49D3-87EF-F319EC555540}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F33874E-61AA-49D3-87EF-F319EC555540}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F33874E-61AA-49D3-87EF-F319EC555540}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F33874E-61AA-49D3-87EF-F319EC555540}.Release|Any CPU.Build.0 = Release|Any CPU
+		{233955FC-538F-4E6C-B9ED-8CCE4865A0D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{233955FC-538F-4E6C-B9ED-8CCE4865A0D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{233955FC-538F-4E6C-B9ED-8CCE4865A0D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{233955FC-538F-4E6C-B9ED-8CCE4865A0D1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
