@@ -4,6 +4,6 @@ using System.Linq;
 using System.Text;
 
 namespace Tangent.Intermediate {
-    public abstract class PartialStatement {
+    public abstract class Statement {
     }
 }

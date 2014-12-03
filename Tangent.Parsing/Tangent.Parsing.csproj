@@ -43,7 +43,11 @@
     <Compile Include="ExpectedTokenParseError.cs" />
     <Compile Include="Parse.cs" />
     <Compile Include="ParseError.cs" />
-    <Compile Include="PartialFunctionParse.cs" />
+    <Compile Include="Partial\PartialBlock.cs" />
+    <Compile Include="Partial\PartialFunction.cs" />
+    <Compile Include="Partial\PartialParameterDeclaration.cs" />
+    <Compile Include="Partial\PartialReductionDeclaration.cs" />
+    <Compile Include="Partial\PartialStatement.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResultOrError.cs" />
     <Compile Include="ResultOrParseError.cs" />

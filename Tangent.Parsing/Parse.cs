@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Tangent.Intermediate;
+using Tangent.Parsing.Partial;
 using Tangent.Tokenization;
 
 namespace Tangent.Parsing {
@@ -17,7 +18,7 @@ namespace Tangent.Parsing {
             }
 
             List<TypeDeclaration> types = new List<TypeDeclaration>();
-            List<Tuple<Identifier, IEnumerable<Identifier>, PartialFunctionParse>> partialFunctionParses = new List<Tuple<Identifier, IEnumerable<Identifier>, PartialFunctionParse>>();
+            List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
 
             while (tokens.Any()) {
                 var first = tokens.First();
@@ -50,7 +51,7 @@ namespace Tangent.Parsing {
                             return new ResultOrParseError<TangentProgram>(functionParts.Error);
                         }
 
-                        partialFunctionParses.Add(new Tuple<Identifier, IEnumerable<Identifier>, PartialFunctionParse>(first.Value, phraseBit, functionParts.Result));
+                        partialFunctions.Add(new PartialReductionDeclaration(new PhrasePart[] { new PhrasePart(new Identifier(first.Value)) }.Concat(phraseBit.Select(id => new PhrasePart(id))), functionParts.Result));
                         break;
                     default:
                         return new ResultOrParseError<TangentProgram>(new ExpectedTokenParseError(TokenIdentifier.ReductionDeclSeparator, separator));
@@ -106,47 +107,47 @@ namespace Tangent.Parsing {
             return new TypeDeclaration(first, last);
         }
 
-        internal static ResultOrParseError<PartialFunctionParse> PartialParseFunctionBits(List<Token> tokens) {
+        internal static ResultOrParseError<PartialFunction> PartialParseFunctionBits(List<Token> tokens) {
             if (!tokens.Any()) {
-                return new ResultOrParseError<PartialFunctionParse>(new ExpectedTokenParseError(TokenIdentifier.Identifier, null));
+                return new ResultOrParseError<PartialFunction>(new ExpectedTokenParseError(TokenIdentifier.Identifier, null));
             }
 
             var identifiers = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => new Identifier(t.Value)).ToList();
             if (!identifiers.Any()) {
-                return new ResultOrParseError<PartialFunctionParse>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.First()));
+                return new ResultOrParseError<PartialFunction>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.First()));
             }
 
             tokens.RemoveRange(0, identifiers.Count());
 
             var partialBlock = PartialBlock(tokens);
             if (!partialBlock.Success) {
-                return new ResultOrParseError<PartialFunctionParse>(partialBlock.Error);
+                return new ResultOrParseError<PartialFunction>(partialBlock.Error);
             }
 
-            return new PartialFunctionParse(identifiers, partialBlock.Result);
+            return new PartialFunction(identifiers, partialBlock.Result);
         }
 
-        internal static ResultOrParseError<IEnumerable<IEnumerable<Identifier>>> PartialBlock(List<Token> tokens) {
+        internal static ResultOrParseError<PartialBlock> PartialBlock(List<Token> tokens) {
             List<IEnumerable<Identifier>> result = new List<IEnumerable<Identifier>>();
 
             if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens)) {
-                return new ResultOrParseError<IEnumerable<IEnumerable<Identifier>>>(new ExpectedLiteralParseError("{", tokens.FirstOrDefault()));
+                return new ResultOrParseError<PartialBlock>(new ExpectedLiteralParseError("{", tokens.FirstOrDefault()));
             }
 
             while (tokens.Any() && tokens.First().Value != "}") {
                 var statement = PartialStatement(tokens);
                 if (!statement.Success) {
-                    return new ResultOrParseError<IEnumerable<IEnumerable<Identifier>>>(statement.Error);
+                    return new ResultOrParseError<PartialBlock>(statement.Error);
                 }
 
                 result.Add(statement.Result);
             }
 
             if (!MatchAndDiscard(TokenIdentifier.Symbol, "}", tokens)) {
-                return new ResultOrParseError<IEnumerable<IEnumerable<Identifier>>>(new ExpectedLiteralParseError("}", tokens.FirstOrDefault()));
+                return new ResultOrParseError<PartialBlock>(new ExpectedLiteralParseError("}", tokens.FirstOrDefault()));
             }
 
-            return result;
+            return new ResultOrParseError<PartialBlock>(new PartialBlock(result.Select(stmt=>new PartialStatement(stmt))));
         }
 
         internal static ResultOrParseError<IEnumerable<Identifier>> PartialStatement(List<Token> tokens) {

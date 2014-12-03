@@ -5,9 +5,9 @@ using System.Text;
 
 namespace Tangent.Intermediate {
     public class Block {
-        public readonly IEnumerable<PartialStatement> Statements;
+        public readonly IEnumerable<Statement> Statements;
 
-        public Block(IEnumerable<PartialStatement> statements) {
+        public Block(IEnumerable<Statement> statements) {
             Statements = statements;
         }
     }
