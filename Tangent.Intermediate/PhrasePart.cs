@@ -16,5 +16,13 @@ namespace Tangent.Intermediate {
         public PhrasePart(ParameterDeclaration decl) {
             Parameter = decl;
         }
+
+        public static implicit operator PhrasePart(Identifier id) {
+            return new PhrasePart(id);
+        }
+
+        public static implicit operator PhrasePart(ParameterDeclaration decl) {
+            return new PhrasePart(decl);
+        }
     }
 }

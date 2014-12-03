@@ -21,18 +21,12 @@ namespace Tangent.Parsing {
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
 
             while (tokens.Any()) {
-                var first = tokens.First();
-                tokens.RemoveAt(0);
-
-                if (first.Identifier != TokenIdentifier.Identifier) {
-                    return new ResultOrParseError<TangentProgram>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
+                var shouldBePhrase = Phrase(tokens);
+                if (!shouldBePhrase.Success) {
+                    return new ResultOrParseError<TangentProgram>(shouldBePhrase.Error);
                 }
 
-                var phraseBit = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => (Identifier)t.Value).ToList();
-                tokens.RemoveRange(0, phraseBit.Count());
-                if (!tokens.Any()) {
-                    return new ResultOrParseError<TangentProgram>(new ExpectedTokenParseError(TokenIdentifier.TypeDeclSeparator, null));
-                }
+                var phrase = shouldBePhrase.Result;
 
                 var separator = tokens.First();
                 tokens.RemoveAt(0);
@@ -43,7 +37,11 @@ namespace Tangent.Parsing {
                             return new ResultOrParseError<TangentProgram>(typeDecl.Error);
                         }
 
-                        types.Add(BuildTypeDeclaration(first.Value, phraseBit, typeDecl.Result));
+                        if (!phrase.All(pp => pp.IsIdentifier)) {
+                            return new ResultOrParseError<TangentProgram>(new ExpectedTokenParseError(TokenIdentifier.ReductionDeclSeparator, separator));
+                        }
+
+                        types.Add(new TypeDeclaration(phrase.Select(pp => pp.Identifier), typeDecl.Result));
                         break;
                     case TokenIdentifier.ReductionDeclSeparator:
                         var functionParts = PartialParseFunctionBits(tokens);
@@ -51,7 +49,7 @@ namespace Tangent.Parsing {
                             return new ResultOrParseError<TangentProgram>(functionParts.Error);
                         }
 
-                        partialFunctions.Add(new PartialReductionDeclaration(new PhrasePart[] { new PhrasePart(new Identifier(first.Value)) }.Concat(phraseBit.Select(id => new PhrasePart(id))), functionParts.Result));
+                        partialFunctions.Add(new PartialReductionDeclaration(phrase, functionParts.Result));
                         break;
                     default:
                         return new ResultOrParseError<TangentProgram>(new ExpectedTokenParseError(TokenIdentifier.ReductionDeclSeparator, separator));
@@ -60,6 +58,28 @@ namespace Tangent.Parsing {
 
             // Done. Move to Phase 2.
             throw new NotImplementedException();
+        }
+
+        public static ResultOrParseError<List<PhrasePart>> Phrase(List<Token> tokens) {
+            var phrase = new List<PhrasePart>();
+            var first = tokens.First();
+            tokens.RemoveAt(0);
+
+            if (first.Identifier != TokenIdentifier.Identifier) {
+                return new ResultOrParseError<List<PhrasePart>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
+            }
+
+            phrase.Add(new Identifier(first.Value));
+
+            var phraseBit = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => new PhrasePart((Identifier)t.Value)).ToList();
+            tokens.RemoveRange(0, phraseBit.Count());
+            if (!tokens.Any()) {
+                return new ResultOrParseError<List<PhrasePart>>(new ExpectedLiteralParseError("separator", null));
+            }
+
+            phrase.AddRange(phraseBit);
+
+            return phrase;
         }
 
         public static ResultOrParseError<TangentType> Type(List<Token> tokens) {
@@ -96,15 +116,6 @@ namespace Tangent.Parsing {
             }
 
             return new TangentType(result);
-        }
-
-        private static TypeDeclaration BuildTypeDeclaration(Identifier first, IEnumerable<Identifier> phraseBit, TangentType type) {
-            dynamic last = type;
-            foreach (var id in phraseBit.Reverse()) {
-                last = new TypeDeclaration(id, last);
-            }
-
-            return new TypeDeclaration(first, last);
         }
 
         internal static ResultOrParseError<PartialFunction> PartialParseFunctionBits(List<Token> tokens) {
@@ -147,7 +158,7 @@ namespace Tangent.Parsing {
                 return new ResultOrParseError<PartialBlock>(new ExpectedLiteralParseError("}", tokens.FirstOrDefault()));
             }
 
-            return new ResultOrParseError<PartialBlock>(new PartialBlock(result.Select(stmt=>new PartialStatement(stmt))));
+            return new ResultOrParseError<PartialBlock>(new PartialBlock(result.Select(stmt => new PartialStatement(stmt))));
         }
 
         internal static ResultOrParseError<IEnumerable<Identifier>> PartialStatement(List<Token> tokens) {
