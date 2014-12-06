@@ -39,6 +39,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BadTypePhrase.cs" />
     <Compile Include="ExpectedLiteralParseError.cs" />
     <Compile Include="ExpectedTokenParseError.cs" />
     <Compile Include="Parse.cs" />
@@ -52,6 +53,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResultOrError.cs" />
     <Compile Include="ResultOrParseError.cs" />
+    <Compile Include="TypeResolutionErrors.cs" />
+    <Compile Include="TypeResolve.cs" />
+    <Compile Include="TypeResolved\TypeResolvedFunction.cs" />
+    <Compile Include="TypeResolved\TypeResolvedReductionDeclaration.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.Intermediate\Tangent.Intermediate.csproj">

@@ -31,5 +31,23 @@ namespace Tangent.Intermediate {
             Takes = r.Takes;
             Returns = r.Returns;
         }
+
+        public IEnumerable<T> TakeParts() {
+            yield return Takes;
+            var rule = Returns.Rule;
+            while (rule != null) {
+                yield return rule.Takes;
+                rule = rule.Returns.Rule;
+            }
+        }
+
+        public R EndResult() {
+            var r = Returns;
+            while (!r.IsEndResult) {
+                r = r.Rule.Returns;
+            }
+
+            return r.Result;
+        }
     }
 }

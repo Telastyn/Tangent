@@ -56,7 +56,13 @@ namespace Tangent.Parsing {
                 }
             }
 
-            // Done. Move to Phase 2.
+            // Move to Phase 2 - Resolve types in parameters and function return types.
+            var resolvedFunctions = TypeResolve.AllPartialFunctionDeclarations(partialFunctions, types);
+            if (!resolvedFunctions.Success) {
+                return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error);
+            }
+
+            // And now Phase 3 - Statement parsing based on syntax.
             throw new NotImplementedException();
         }
 

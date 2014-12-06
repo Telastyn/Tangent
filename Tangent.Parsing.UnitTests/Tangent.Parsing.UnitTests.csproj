@@ -57,6 +57,7 @@
     <Compile Include="PartialStatementParseTests.cs" />
     <Compile Include="PartialBlockParseTests.cs" />
     <Compile Include="PartialPhraseTests.cs" />
+    <Compile Include="TypeResolveTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.Intermediate\Tangent.Intermediate.csproj">
