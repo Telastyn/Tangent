@@ -21,7 +21,7 @@ namespace Tangent.Parsing {
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
 
             while (tokens.Any()) {
-                var shouldBePhrase = Phrase(tokens);
+                var shouldBePhrase = PartialPhrase(tokens);
                 if (!shouldBePhrase.Success) {
                     return new ResultOrParseError<TangentProgram>(shouldBePhrase.Error);
                 }
@@ -60,26 +60,72 @@ namespace Tangent.Parsing {
             throw new NotImplementedException();
         }
 
-        public static ResultOrParseError<List<PhrasePart>> Phrase(List<Token> tokens) {
-            var phrase = new List<PhrasePart>();
-            var first = tokens.First();
-            tokens.RemoveAt(0);
+        internal static ResultOrParseError<List<PartialPhrasePart>> PartialPhrase(List<Token> tokens) {
+            var phrase = new List<PartialPhrasePart>();
 
-            if (first.Identifier != TokenIdentifier.Identifier) {
-                return new ResultOrParseError<List<PhrasePart>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
+
+            ResultOrParseError<PartialPhrasePart> part = null;
+            while (true) {
+                part = TryPartialPhrasePart(tokens);
+                if (part == null) {
+                    if (phrase.Any()) {
+                        return phrase;
+                    } else {
+                        return new ResultOrParseError<List<PartialPhrasePart>>(new ExpectedLiteralParseError("phrase part", tokens.FirstOrDefault()));
+                    }
+                } else {
+                    if (part.Success) {
+                        phrase.Add(part.Result);
+                    } else {
+                        return new ResultOrParseError<List<PartialPhrasePart>>(part.Error);
+                    }
+                }
+            }
+        }
+
+        internal static ResultOrParseError<PartialPhrasePart> TryPartialPhrasePart(List<Token> tokens) {
+            var first = tokens.FirstOrDefault();
+            if (first == null) {
+                return null;
             }
 
-            phrase.Add(new Identifier(first.Value));
-
-            var phraseBit = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => new PhrasePart((Identifier)t.Value)).ToList();
-            tokens.RemoveRange(0, phraseBit.Count());
-            if (!tokens.Any()) {
-                return new ResultOrParseError<List<PhrasePart>>(new ExpectedLiteralParseError("separator", null));
+            if (first.Identifier == TokenIdentifier.Identifier) {
+                tokens.RemoveAt(0);
+                return new PartialPhrasePart(first.Value);
             }
 
-            phrase.AddRange(phraseBit);
+            if (first.Identifier == TokenIdentifier.Symbol && first.Value == "(") {
+                tokens.RemoveAt(0);
+                var paramName = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t=>new Identifier(t.Value)).ToList();
+                tokens.RemoveRange(0, paramName.Count);
+                if (paramName.Count == 0) {
+                    return new ResultOrParseError<PartialPhrasePart>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
+                }
 
-            return phrase;
+                var colon = tokens.FirstOrDefault();
+                if (colon == null || colon.Value != ":") {
+                    return new ResultOrParseError<PartialPhrasePart>(new ExpectedLiteralParseError(":", colon));
+                }
+
+                tokens.RemoveAt(0);
+
+                var typeName = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => new Identifier(t.Value)).ToList();
+                tokens.RemoveRange(0, typeName.Count);
+                if (typeName.Count == 0) {
+                    return new ResultOrParseError<PartialPhrasePart>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
+                }
+
+                var close = tokens.FirstOrDefault();
+                if (close == null || close.Value != ")") {
+                    return new ResultOrParseError<PartialPhrasePart>(new ExpectedLiteralParseError(")", close));
+                }
+
+                tokens.RemoveAt(0);
+
+                return new PartialPhrasePart(new PartialParameterDeclaration(paramName, typeName));
+            }
+
+            return null;
         }
 
         public static ResultOrParseError<TangentType> Type(List<Token> tokens) {

@@ -46,6 +46,7 @@
     <Compile Include="Partial\PartialBlock.cs" />
     <Compile Include="Partial\PartialFunction.cs" />
     <Compile Include="Partial\PartialParameterDeclaration.cs" />
+    <Compile Include="Partial\PartialPhrasePart.cs" />
     <Compile Include="Partial\PartialReductionDeclaration.cs" />
     <Compile Include="Partial\PartialStatement.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

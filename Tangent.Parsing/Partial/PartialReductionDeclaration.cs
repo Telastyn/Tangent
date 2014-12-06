@@ -5,9 +5,9 @@ using System.Text;
 using Tangent.Intermediate;
 
 namespace Tangent.Parsing.Partial {
-    public class PartialReductionDeclaration : ReductionRule<PhrasePart, PartialFunction> {
-        public PartialReductionDeclaration(PhrasePart takes, ReductionRule<PhrasePart, PartialFunction> reduction) : base(takes, reduction) { }
-        public PartialReductionDeclaration(PhrasePart takes, PartialFunction returns) : base(takes, returns) { }
-        public PartialReductionDeclaration(IEnumerable<PhrasePart> takes, PartialFunction returns) : base(takes, returns) { }
+    public class PartialReductionDeclaration : ReductionRule<PartialPhrasePart, PartialFunction> {
+        public PartialReductionDeclaration(PartialPhrasePart takes, ReductionRule<PartialPhrasePart, PartialFunction> reduction) : base(takes, reduction) { }
+        public PartialReductionDeclaration(PartialPhrasePart takes, PartialFunction returns) : base(takes, returns) { }
+        public PartialReductionDeclaration(IEnumerable<PartialPhrasePart> takes, PartialFunction returns) : base(takes, returns) { }
     }
 }
