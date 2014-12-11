@@ -5,9 +5,9 @@ using System.Text;
 
 namespace Tangent.Intermediate {
     public class Block {
-        public readonly IEnumerable<Statement> Statements;
+        public readonly IEnumerable<Expression> Statements;
 
-        public Block(IEnumerable<Statement> statements) {
+        public Block(IEnumerable<Expression> statements) {
             Statements = statements;
         }
     }

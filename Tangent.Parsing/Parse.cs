@@ -63,6 +63,25 @@ namespace Tangent.Parsing {
             }
 
             // And now Phase 3 - Statement parsing based on syntax.
+            Dictionary<Tangent.Parsing.TypeResolved.TypeResolvedFunction, Function> resolutionMapping = new Dictionary<TypeResolved.TypeResolvedFunction, Function>();
+            List<IEnumerable<Identifier>> badStatements = new List<IEnumerable<Identifier>>();
+            foreach (var fn in resolvedFunctions.Result) {
+                List<Expression> block = new List<Expression>();
+                Scope scope = new Scope(types, fn.TakeParts().Where(tp=>!tp.IsIdentifier).Select(tp=>tp.Parameter).ToList(), resolvedFunctions.Result);
+                foreach (var partialStatement in fn.EndResult().Implementation.Statements) {
+                    var statement = InterpretExpression.ForStatement(partialStatement.FlatTokens, scope);
+                    if (statement != null) {
+                        block.Add(statement);
+                    } else {
+                        badStatements.Add(partialStatement.FlatTokens);
+                    }
+                }
+
+                resolutionMapping.Add(fn.EndResult(), new Function(fn.EndResult().EffectiveType, new Block(block)));
+            }
+
+            // remember function replacement.
+            // if any bad statements, return good errors.
             throw new NotImplementedException();
         }
 

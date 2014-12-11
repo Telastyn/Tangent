@@ -40,17 +40,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Block.cs" />
+    <Compile Include="Expression.cs" />
     <Compile Include="Function.cs" />
+    <Compile Include="FunctionBindingExpression.cs" />
+    <Compile Include="FunctionInvocationExpression.cs" />
     <Compile Include="Identifier.cs" />
+    <Compile Include="IdentifierExpression.cs" />
+    <Compile Include="ParameterAccessExpression.cs" />
     <Compile Include="ParameterDeclaration.cs" />
     <Compile Include="PhrasePart.cs" />
     <Compile Include="ReductionOr.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReductionDeclaration.cs" />
     <Compile Include="ReductionRule.cs" />
-    <Compile Include="Statement.cs" />
     <Compile Include="TangentProgram.cs" />
     <Compile Include="TangentType.cs" />
+    <Compile Include="TypeAccessExpression.cs" />
     <Compile Include="TypeDeclaration.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
