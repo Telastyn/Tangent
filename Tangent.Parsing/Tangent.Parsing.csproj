@@ -42,6 +42,7 @@
     <Compile Include="BadTypePhrase.cs" />
     <Compile Include="ExpectedLiteralParseError.cs" />
     <Compile Include="ExpectedTokenParseError.cs" />
+    <Compile Include="Input.cs" />
     <Compile Include="InterpretExpression.cs" />
     <Compile Include="Parse.cs" />
     <Compile Include="ParseError.cs" />
