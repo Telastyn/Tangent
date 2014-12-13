@@ -18,7 +18,7 @@ namespace Tangent.Parsing {
 
         public static List<Expression> ForType(TangentType target, List<Expression> tokens, Scope scope, bool mustComplete) {
             var invoke = tokens.First() as FunctionInvocationExpression;
-            if (invoke != null) {
+            if (invoke != null){
 
                 // If we've found a result, return it
                 if (invoke.EffectiveType == target) {
