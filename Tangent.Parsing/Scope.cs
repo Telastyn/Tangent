@@ -12,9 +12,9 @@ namespace Tangent.Parsing {
         public readonly IEnumerable<TypeResolvedReductionDeclaration> Functions;
 
         public Scope(IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> parameters, IEnumerable<TypeResolvedReductionDeclaration> functions) {
-            Parameters = parameters.OrderByDescending(p => p.TakeParts().Count()).ToList();
-            Types = types.OrderByDescending(t => t.TakeParts().Count()).ToList();
-            Functions = functions.OrderByDescending(f => f.TakeParts().Count()).ToList();
+            Parameters = parameters.OrderByDescending(p => p.Takes.Count()).ToList();
+            Types = types.OrderByDescending(t => t.Takes.Count()).ToList();
+            Functions = functions.OrderByDescending(f => f.Takes.Count()).ToList();
         }
     }
 }

@@ -86,8 +86,8 @@ namespace Tangent.Parsing.UnitTests {
             var result = TypeResolve.Resolve(partial, new[] { typeDecl });
 
             Assert.IsTrue(result.Success);
-            Assert.AreEqual(foo, result.Result.EndResult());
-            Assert.AreEqual(new Identifier("x"), result.Result.Takes);
+            Assert.AreEqual(foo, result.Result.Returns);
+            Assert.AreEqual(new Identifier("x"), result.Result.Takes.First());
         }
 
 
@@ -114,13 +114,13 @@ namespace Tangent.Parsing.UnitTests {
             var result = TypeResolve.PartialFunctionDeclaration(partial, new[] { typeDecl });
 
             Assert.IsTrue(result.Success);
-            Assert.IsFalse(result.Result.Takes.IsIdentifier);
+            Assert.IsFalse(result.Result.Takes.First().IsIdentifier);
 
-            var x = result.Result.Takes.Parameter;
-            Assert.AreEqual(foo, x.EndResult());
-            Assert.AreEqual(new Identifier("x"), x.Takes);
+            var x = result.Result.Takes.First().Parameter;
+            Assert.AreEqual(foo, x.Returns);
+            Assert.AreEqual(new Identifier("x"), x.Takes.First());
 
-            Assert.AreEqual(foo, result.Result.EndResult().EffectiveType);
+            Assert.AreEqual(foo, result.Result.Returns.EffectiveType);
         }
     }
 }

@@ -6,8 +6,7 @@ using Tangent.Intermediate;
 
 namespace Tangent.Parsing.Partial {
     public class PartialParameterDeclaration : ReductionRule<Identifier, List<Identifier>> {
-        public PartialParameterDeclaration(Identifier takes, ReductionRule<Identifier, List<Identifier>> reduction) : base(takes, reduction) { }
-        public PartialParameterDeclaration(Identifier takes, List<Identifier> returns) : base(takes, returns) { }
+        public PartialParameterDeclaration(Identifier takes, List<Identifier> returns) : this(new[] { takes }, returns) { }
         public PartialParameterDeclaration(IEnumerable<Identifier> takes, List<Identifier> returns) : base(takes, returns) { }
     }
 }

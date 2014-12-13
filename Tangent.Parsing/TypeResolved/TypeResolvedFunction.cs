@@ -7,8 +7,8 @@ using Tangent.Parsing.Partial;
 
 namespace Tangent.Parsing.TypeResolved {
     public class TypeResolvedFunction : Function {
-        public readonly TangentType EffectiveType;
-        public readonly PartialBlock Implementation;
+        public new readonly TangentType EffectiveType;
+        public new readonly PartialBlock Implementation;
 
         public TypeResolvedFunction(TangentType type, PartialBlock implementation)
             : base(type, null) {

@@ -25,10 +25,10 @@ namespace Tangent.Parsing.UnitTests {
             Assert.IsTrue(plus.IsIdentifier);
             Assert.IsFalse(y.IsIdentifier);
 
-            Assert.AreEqual("x", x.Parameter.Takes.Value);
-            Assert.IsTrue(x.Parameter.Returns.IsEndResult);
-            Assert.AreEqual(1, x.Parameter.Returns.Result.Count);
-            Assert.AreEqual("int", x.Parameter.Returns.Result[0]);
+            Assert.AreEqual("x", x.Parameter.Takes.First().Value);
+            Assert.AreEqual(1, x.Parameter.Takes.Count);
+            Assert.AreEqual(1, x.Parameter.Returns.Count);
+            Assert.AreEqual("int", x.Parameter.Returns[0]);
 
             Assert.AreEqual("plus", plus.Identifier.Value);
         }
@@ -82,15 +82,11 @@ namespace Tangent.Parsing.UnitTests {
             Assert.IsTrue(plus.IsIdentifier);
             Assert.IsFalse(y.IsIdentifier);
 
-            Assert.AreEqual("x", x.Parameter.Takes.Value);
-            Assert.IsTrue(x.Parameter.Returns.IsReductionRule);
-            Assert.AreEqual("y", x.Parameter.Returns.Rule.Takes);
-            Assert.IsTrue(x.Parameter.Returns.Rule.Returns.IsReductionRule);
-            Assert.AreEqual("z", x.Parameter.Returns.Rule.Returns.Rule.Takes);
-            Assert.IsTrue(x.Parameter.Returns.Rule.Returns.Rule.Returns.IsEndResult);
-            Assert.AreEqual(2, x.Parameter.Returns.Rule.Returns.Rule.Returns.Result.Count);
-            Assert.AreEqual("unsigned", x.Parameter.Returns.Rule.Returns.Rule.Returns.Result[0]);
-            Assert.AreEqual("int", x.Parameter.Returns.Rule.Returns.Rule.Returns.Result[1]);
+            Assert.AreEqual(3, x.Parameter.Takes.Count);
+            Assert.IsTrue(new[] { "x", "y", "z" }.SequenceEqual(x.Parameter.Takes.Select(id=>id.Value)));
+
+            Assert.AreEqual(2, x.Parameter.Returns.Count);
+            Assert.IsTrue(new[] { "unsigned", "int" }.SequenceEqual(x.Parameter.Returns.Select(id => id.Value)));
         }
     }
 }

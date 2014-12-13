@@ -44,7 +44,7 @@ namespace Tangent.Parsing.UnitTests {
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.NodeType);
 
             var fn = result as FunctionInvocationExpression;
-            Assert.AreEqual(scope.Functions.First().EndResult(), fn.Bindings.FunctionDefinition.EndResult());
+            Assert.AreEqual(scope.Functions.First().Returns, fn.Bindings.FunctionDefinition.Returns);
         }
     }
 }

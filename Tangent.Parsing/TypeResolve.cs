@@ -33,7 +33,7 @@ namespace Tangent.Parsing {
             var errors = new List<BadTypePhrase>();
             var phrase = new List<PhrasePart>();
 
-            foreach (var part in partialFunction.TakeParts()) {
+            foreach (var part in partialFunction.Takes) {
                 var resolved = Resolve(part, types);
                 if (resolved.Success) {
                     phrase.Add(resolved.Result);
@@ -42,7 +42,7 @@ namespace Tangent.Parsing {
                 }
             }
 
-            var fn = partialFunction.EndResult();
+            var fn = partialFunction.Returns;
             var effectiveType = ResolveType(fn.EffectiveType, types);
             if (effectiveType == null) {
                 errors.Add(new BadTypePhrase(fn.EffectiveType));
@@ -69,20 +69,20 @@ namespace Tangent.Parsing {
         }
 
         internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types) {
-            var type = ResolveType(partial.EndResult(), types);
+            var type = ResolveType(partial.Returns, types);
             if (type == null) {
-                return new ResultOrParseError<ParameterDeclaration>(new TypeResolutionErrors(new[] { new BadTypePhrase(partial.EndResult()) }));
+                return new ResultOrParseError<ParameterDeclaration>(new TypeResolutionErrors(new[] { new BadTypePhrase(partial.Returns) }));
             }
 
-            return new ResultOrParseError<ParameterDeclaration>(new ParameterDeclaration(partial.TakeParts(), type));
+            return new ResultOrParseError<ParameterDeclaration>(new ParameterDeclaration(partial.Takes, type));
         }
 
         internal static TangentType ResolveType(IEnumerable<Identifier> identifiers, IEnumerable<TypeDeclaration> types) {
             // TODO: fix perf.
             foreach (var type in types) {
-                var typeIdentifiers = type.TakeParts();
+                var typeIdentifiers = type.Takes;
                 if (identifiers.SequenceEqual(typeIdentifiers)) {
-                    return type.EndResult();
+                    return type.Returns;
                 }
             }
 

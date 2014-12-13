@@ -43,10 +43,10 @@ namespace Tangent.Parsing {
             if (id != null) {
 
                 foreach (var parameterCandidate in scope.Parameters) {
-                    var takeParts = parameterCandidate.TakeParts().Select(i => i.Value).ToList();
+                    var takeParts = parameterCandidate.Takes.Select(i => i.Value).ToList();
 
                     if (takeParts.SequenceEqual(tokens.Cast<IdentifierExpression>().Select(i => i.Identifier.Value))) {
-                        var newb = new[] { new ParameterAccessExpression(parameterCandidate) }.Concat(tokens.Skip(parameterCandidate.TakeParts().Count()).ToList()).ToList();
+                        var newb = new[] { new ParameterAccessExpression(parameterCandidate) }.Concat(tokens.Skip(parameterCandidate.Takes.Count()).ToList()).ToList();
                         var result = ForType(target, newb, scope, mustComplete);
                         if (result != null) {
                             return result;
@@ -56,9 +56,9 @@ namespace Tangent.Parsing {
                 }
 
                 foreach (var typeCandidate in scope.Types) {
-                    var takeParts = typeCandidate.TakeParts().Select(i => i.Value).ToList();
+                    var takeParts = typeCandidate.Takes.Select(i => i.Value).ToList();
                     if (takeParts.SequenceEqual(tokens.Cast<IdentifierExpression>().Select(i => i.Identifier.Value))) {
-                        var newb = new[] { new TypeAccessExpression(typeCandidate.EndResult()) }.Concat(tokens.Skip(typeCandidate.TakeParts().Count()).ToList()).ToList();
+                        var newb = new[] { new TypeAccessExpression(typeCandidate.Returns) }.Concat(tokens.Skip(typeCandidate.Takes.Count()).ToList()).ToList();
                         var result = ForType(target, newb, scope, mustComplete);
                         if (result != null) {
                             return result;
@@ -90,7 +90,7 @@ namespace Tangent.Parsing {
 
             var parameter = tokens.First() as ParameterAccessExpression;
             if (parameter != null) {
-                if (parameter.Parameter.EndResult() == target) {
+                if (parameter.Parameter.Returns == target) {
                     if (mustComplete && tokens.Skip(1).Any()) {
                     } else {
                         return tokens;
@@ -111,7 +111,7 @@ namespace Tangent.Parsing {
         private static List<Expression> TryBindFunction(TypeResolvedReductionDeclaration function, List<Expression> tokens, Scope scope) {
             List<Expression> buffer = new List<Expression>(tokens);
             List<Expression> boundParameters = new List<Expression>();
-            foreach (var phrasePart in function.TakeParts().ToList()) {
+            foreach (var phrasePart in function.Takes.ToList()) {
                 if (!buffer.Any()) { return null; }
                 if (phrasePart.IsIdentifier) {
                     var id = buffer.First() as IdentifierExpression;
@@ -125,7 +125,7 @@ namespace Tangent.Parsing {
 
                     buffer.RemoveAt(0);
                 } else {
-                    var result = ForType(phrasePart.Parameter.EndResult(), buffer, scope, false);
+                    var result = ForType(phrasePart.Parameter.Returns, buffer, scope, false);
                     if (result == null) {
                         return null;
                     }
@@ -135,7 +135,7 @@ namespace Tangent.Parsing {
                 }
             }
 
-            return new[] { new FunctionBindingExpression(new ReductionDeclaration(function.Takes, function.EndResult()), boundParameters) }.Concat(buffer).ToList();
+            return new[] { new FunctionBindingExpression(new ReductionDeclaration(function.Takes, function.Returns), boundParameters) }.Concat(buffer).ToList();
         }
     }
 }

@@ -67,8 +67,8 @@ namespace Tangent.Parsing {
             List<IEnumerable<Identifier>> badStatements = new List<IEnumerable<Identifier>>();
             foreach (var fn in resolvedFunctions.Result) {
                 List<Expression> block = new List<Expression>();
-                Scope scope = new Scope(types, fn.TakeParts().Where(tp=>!tp.IsIdentifier).Select(tp=>tp.Parameter).ToList(), resolvedFunctions.Result);
-                foreach (var partialStatement in fn.EndResult().Implementation.Statements) {
+                Scope scope = new Scope(types, fn.Takes.Where(tp=>!tp.IsIdentifier).Select(tp=>tp.Parameter).ToList(), resolvedFunctions.Result);
+                foreach (var partialStatement in fn.Returns.Implementation.Statements) {
                     var statement = InterpretExpression.ForStatement(partialStatement.FlatTokens, scope);
                     if (statement != null) {
                         block.Add(statement);
@@ -77,7 +77,7 @@ namespace Tangent.Parsing {
                     }
                 }
 
-                resolutionMapping.Add(fn.EndResult(), new Function(fn.EndResult().EffectiveType, new Block(block)));
+                resolutionMapping.Add(fn.Returns, new Function(fn.Returns.EffectiveType, new Block(block)));
             }
 
             // remember function replacement.

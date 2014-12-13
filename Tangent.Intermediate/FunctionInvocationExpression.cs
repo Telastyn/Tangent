@@ -13,7 +13,7 @@ namespace Tangent.Intermediate {
 
         public TangentType EffectiveType {
             get {
-                return Bindings.FunctionDefinition.EndResult().EffectiveType;
+                return Bindings.FunctionDefinition.Returns.EffectiveType;
             }
         }
 
