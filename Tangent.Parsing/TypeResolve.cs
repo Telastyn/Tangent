@@ -8,9 +8,9 @@ using Tangent.Parsing.TypeResolved;
 
 namespace Tangent.Parsing {
     public static class TypeResolve {
-        public static ResultOrParseError<IEnumerable<TypeResolvedReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types) {
+        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types) {
             var errors = new List<BadTypePhrase>();
-            var results = new List<TypeResolvedReductionDeclaration>();
+            var results = new List<ReductionDeclaration>();
 
             foreach (var fn in partialFunctions) {
                 var resolutionResult = PartialFunctionDeclaration(fn, types);
@@ -23,13 +23,13 @@ namespace Tangent.Parsing {
             }
 
             if (errors.Any()) {
-                return new ResultOrParseError<IEnumerable<TypeResolvedReductionDeclaration>>(new TypeResolutionErrors(errors));
+                return new ResultOrParseError<IEnumerable<ReductionDeclaration>>(new TypeResolutionErrors(errors));
             }
 
             return results;
         }
 
-        internal static ResultOrParseError<TypeResolvedReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types) {
+        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types) {
             var errors = new List<BadTypePhrase>();
             var phrase = new List<PhrasePart>();
 
@@ -49,10 +49,10 @@ namespace Tangent.Parsing {
             }
 
             if (errors.Any()) {
-                return new ResultOrParseError<TypeResolvedReductionDeclaration>(new TypeResolutionErrors(errors));
+                return new ResultOrParseError<ReductionDeclaration>(new TypeResolutionErrors(errors));
             }
 
-            return new ResultOrParseError<TypeResolvedReductionDeclaration>(new TypeResolvedReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType, fn.Implementation)));
+            return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType, fn.Implementation)));
         }
 
         internal static ResultOrParseError<PhrasePart> Resolve(PartialPhrasePart partial, IEnumerable<TypeDeclaration> types) {

@@ -7,6 +7,8 @@ namespace Tangent.Intermediate {
     public class FunctionBindingExpression : Expression {
         public readonly IEnumerable<Expression> Parameters;
         public readonly ReductionDeclaration FunctionDefinition;
+        private ReductionDeclaration reductionDeclaration;
+        private IEnumerable<bool> enumerable;
 
         public override ExpressionNodeType NodeType {
             get { return ExpressionNodeType.FunctionBinding; }

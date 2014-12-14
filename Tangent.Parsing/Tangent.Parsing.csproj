@@ -42,8 +42,8 @@
     <Compile Include="BadTypePhrase.cs" />
     <Compile Include="ExpectedLiteralParseError.cs" />
     <Compile Include="ExpectedTokenParseError.cs" />
+    <Compile Include="HalfBoundExpression.cs" />
     <Compile Include="Input.cs" />
-    <Compile Include="InterpretExpression.cs" />
     <Compile Include="Parse.cs" />
     <Compile Include="ParseError.cs" />
     <Compile Include="Partial\PartialBlock.cs" />
@@ -60,7 +60,6 @@
     <Compile Include="TypeResolutionErrors.cs" />
     <Compile Include="TypeResolve.cs" />
     <Compile Include="TypeResolved\TypeResolvedFunction.cs" />
-    <Compile Include="TypeResolved\TypeResolvedReductionDeclaration.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.Intermediate\Tangent.Intermediate.csproj">
