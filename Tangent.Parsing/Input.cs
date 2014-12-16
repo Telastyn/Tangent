@@ -51,7 +51,8 @@ namespace Tangent.Parsing {
                     if (nextToken.IsIdentifier) {
                         if (buffer[ix + 1] is IdentifierExpression && ((IdentifierExpression)buffer[ix + 1]).Identifier.Value == nextToken.Identifier.Value) {
                             // Identifier to consume.
-                            inProgressBinding.Bindings.Add(null);
+                            inProgressBinding.Bindings.Add(buffer[ix + 1]);
+                            return new Input(buffer.Take(ix + 1).Concat(buffer.Skip(ix + 2)), Scope, conversionsTaken).InterpretTowards(type);
                         } else {
                             // No match, and no reduction will create one.
                             return new List<Expression>();
