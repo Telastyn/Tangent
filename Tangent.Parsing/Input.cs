@@ -28,12 +28,18 @@ namespace Tangent.Parsing {
         }
 
         private List<Expression> InterpretTowards(TangentType type) {
+            if (buffer.Count == 1) {
+                if (type == GetEffectiveTypeIfPossible(buffer[0])) {
+                    return buffer;
+                }
+            }
+
             for (int ix = 0; ix < buffer.Count; ++ix) {
                 var inProgressBinding = buffer[ix] as HalfBoundExpression;
                 if (inProgressBinding != null) {
-                    if(inProgressBinding.IsDone){
+                    if (inProgressBinding.IsDone) {
                         // We've reached the end of some binding. Tie it off and step. We don't care what the final results are here since we have no alternatives.
-                        return new Input(buffer.Take(ix).Concat(new[]{inProgressBinding.FullyBind()}).Concat(buffer.Skip(ix+1)), Scope,conversionsTaken).InterpretTowards(type);
+                        return new Input(buffer.Take(ix).Concat(new[] { inProgressBinding.FullyBind() }).Concat(buffer.Skip(ix + 1)), Scope, conversionsTaken).InterpretTowards(type);
                     }
 
                     if (ix == buffer.Count - 1) {
@@ -83,6 +89,15 @@ namespace Tangent.Parsing {
                     }
                 }
 
+                // If we have a bound function, and nothing can use it simply bound, try invoking it.
+                var binding = buffer[ix] as FunctionBindingExpression;
+                if (binding != null) {
+                    var result = new Input(buffer.Take(ix).Concat(new[] { new FunctionInvocationExpression(binding) }).Concat(buffer.Skip(ix + 1)), Scope, conversionsTaken).InterpretTowards(type);
+                    if (result.Any()) {
+                        return result;
+                    }
+                }
+
                 // No luck. Go to next token and see if reducing there helps.
             }
 
@@ -90,29 +105,29 @@ namespace Tangent.Parsing {
             return new List<Expression>();
         }
 
-            private TangentType GetEffectiveTypeIfPossible(Expression expr){
-                switch(expr.NodeType){
-                    case ExpressionNodeType.FunctionInvocation:
-                        var invoke = (FunctionInvocationExpression)expr;
-                        return invoke.EffectiveType;
+        private TangentType GetEffectiveTypeIfPossible(Expression expr) {
+            switch (expr.NodeType) {
+                case ExpressionNodeType.FunctionInvocation:
+                    var invoke = (FunctionInvocationExpression)expr;
+                    return invoke.EffectiveType;
 
-                    case ExpressionNodeType.ParameterAccess:
-                        var param = (ParameterAccessExpression)expr;
-                        return param.Parameter.Returns;
-                    
-                    case ExpressionNodeType.FunctionBinding:
-                    case ExpressionNodeType.TypeAccess:
-                    case ExpressionNodeType.Identifier:
-                    case ExpressionNodeType.Unknown:
-                        return null;
-                    default:
-                        throw new NotImplementedException();
-                }
+                case ExpressionNodeType.ParameterAccess:
+                    var param = (ParameterAccessExpression)expr;
+                    return param.Parameter.Returns;
+
+                case ExpressionNodeType.FunctionBinding:
+                case ExpressionNodeType.TypeAccess:
+                case ExpressionNodeType.Identifier:
+                case ExpressionNodeType.Unknown:
+                    return null;
+                default:
+                    throw new NotImplementedException();
             }
+        }
 
         private IEnumerable<List<HalfBoundExpression>> CandidatesInPriorityOrder(IEnumerable<Expression> tokenStream) {
             // Parameters first.
-            var parameterCandidates = Scope.Parameters.Where(pd => HasTerminalsInOrder(pd.Takes.Select(id => new PhrasePart(id)),tokenStream)).Select(c => new HalfBoundExpression(c)).ToList();
+            var parameterCandidates = Scope.Parameters.Where(pd => HasTerminalsInOrder(pd.Takes.Select(id => new PhrasePart(id)), tokenStream)).Select(c => new HalfBoundExpression(c)).ToList();
             while (parameterCandidates.Any()) {
                 yield return PopBestCandidates(parameterCandidates);
             }
@@ -139,7 +154,7 @@ namespace Tangent.Parsing {
             bool first = true;
             while (true) {
                 if (terminalEnumerator.Current.IsIdentifier) {
-                    if (bufferEnumerator.Current is IdentifierExpression && ((IdentifierExpression)bufferEnumerator.Current).Identifier.Value != terminalEnumerator.Current.Identifier.Value) {
+                    if (!(bufferEnumerator.Current is IdentifierExpression) || ((IdentifierExpression)bufferEnumerator.Current).Identifier.Value != terminalEnumerator.Current.Identifier.Value) {
                         if (canSkip) {
                             if (!bufferEnumerator.MoveNext()) {
                                 return false;
@@ -150,6 +165,7 @@ namespace Tangent.Parsing {
                             // We need some non-terminal, but did not find it.
                             return false;
                         }
+
                     } else {
                         if (!terminalEnumerator.MoveNext()) {
                             // No more reductions? Cool.
@@ -166,9 +182,9 @@ namespace Tangent.Parsing {
                 } else {
                     if (first) {
 
-                        switch(bufferEnumerator.Current.NodeType){
+                        switch (bufferEnumerator.Current.NodeType) {
                             case ExpressionNodeType.ParameterAccess:
-                                if(((ParameterAccessExpression)bufferEnumerator.Current).Parameter.Returns != terminalEnumerator.Current.Parameter.Returns){
+                                if (((ParameterAccessExpression)bufferEnumerator.Current).Parameter.Returns != terminalEnumerator.Current.Parameter.Returns) {
                                     return false;
                                 }
 
@@ -176,7 +192,7 @@ namespace Tangent.Parsing {
                                 break;
 
                             case ExpressionNodeType.FunctionInvocation:
-                                if(((FunctionInvocationExpression)bufferEnumerator.Current).EffectiveType != terminalEnumerator.Current.Parameter.Returns) {
+                                if (((FunctionInvocationExpression)bufferEnumerator.Current).EffectiveType != terminalEnumerator.Current.Parameter.Returns) {
                                     return false;
                                 }
 
@@ -217,7 +233,7 @@ namespace Tangent.Parsing {
             foreach (var entry in candidates) {
                 if (!best.Any()) {
                     best.Add(entry);
-                } else if ( best.First().Rule.Takes.Count == entry.Rule.Takes.Count){
+                } else if (best.First().Rule.Takes.Count == entry.Rule.Takes.Count) {
                     int cmp = Compare(best.First().Rule.Takes.First(), entry.Rule.Takes.First());
                     switch (cmp) {
                         case -1:
@@ -233,14 +249,14 @@ namespace Tangent.Parsing {
                             best.Add(entry);
                             break;
                     }
-                }else{
+                } else {
                     candidates.RemoveAll(r => best.Contains(r));
                     return best;
                 }
             }
 
-           candidates.RemoveAll(r => best.Contains(r));
-                   return best;
+            candidates.RemoveAll(r => best.Contains(r));
+            return best;
         }
 
         private int Compare(dynamic a, dynamic b) {
