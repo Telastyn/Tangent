@@ -62,7 +62,7 @@ namespace Tangent.Parsing {
                             inProgressBinding.Bindings.Add(buffer[ix + 1]);
 
                             // And recurse.
-                            var result = new Input(buffer.Take(ix + 1).Concat(buffer.Skip(ix + 1)), Scope, conversionsTaken).InterpretTowards(type);
+                            var result = new Input(buffer.Take(ix + 1).Concat(buffer.Skip(ix + 2)), Scope, conversionsTaken).InterpretTowards(type);
                             if (result.Any()) {
                                 return result;
                             } else {
@@ -208,11 +208,6 @@ namespace Tangent.Parsing {
                         }
                     }
 
-                    if (!bufferEnumerator.MoveNext()) {
-                        // We need some non-terminal, but there's no tokens.
-                        return false;
-                    }
-
                     canSkip = true;
                     // and loop.
 
@@ -220,6 +215,11 @@ namespace Tangent.Parsing {
                         // We need some non-terminal at the end of the reduction rule, and there's
                         //  at least one token there. Assume that token satisfies our need.
                         return true;
+                    }
+
+                    if (!bufferEnumerator.MoveNext()) {
+                        // We've got a rule, but no tokens. Fail.
+                        return false;
                     }
                 }
 
