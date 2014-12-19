@@ -5,14 +5,18 @@ using System.Text;
 using Tangent.Intermediate;
 using Tangent.Parsing.TypeResolved;
 
-namespace Tangent.Parsing {
-    public class HalfBoundExpression : Expression {
+namespace Tangent.Parsing
+{
+    public class HalfBoundExpression : Expression
+    {
         public readonly List<Expression> Bindings;
         public readonly ReductionRule<dynamic, dynamic> Rule;
         private readonly dynamic Declaration;
 
-        public PhrasePart NextStep {
-            get {
+        public PhrasePart NextStep
+        {
+            get
+            {
                 var takesLeft = Rule.Takes.Count - Bindings.Count;
                 if (takesLeft == 0) {
                     return null;
@@ -22,19 +26,24 @@ namespace Tangent.Parsing {
             }
         }
 
-        public bool IsDone {
-            get {
+        public bool IsDone
+        {
+            get
+            {
                 return Rule.Takes.Count == Bindings.Count;
             }
         }
 
-        public override ExpressionNodeType NodeType {
-            get {
+        public override ExpressionNodeType NodeType
+        {
+            get
+            {
                 return ExpressionNodeType.FunctionBinding;
             }
         }
 
-        public Expression FullyBind(){
+        public Expression FullyBind()
+        {
             if (!IsDone) {
                 throw new InvalidOperationException();
             }
@@ -54,25 +63,29 @@ namespace Tangent.Parsing {
             throw new NotImplementedException();
         }
 
-        public HalfBoundExpression(ParameterDeclaration declaration) {
-            Bindings = new List<Expression>();
-            Rule = new ReductionRule<dynamic,dynamic>(declaration.Takes, declaration.Returns);
-            Declaration = declaration;
-        }
-
-        public HalfBoundExpression(TypeDeclaration declaration) {
+        public HalfBoundExpression(ParameterDeclaration declaration)
+        {
             Bindings = new List<Expression>();
             Rule = new ReductionRule<dynamic, dynamic>(declaration.Takes, declaration.Returns);
             Declaration = declaration;
         }
 
-        public HalfBoundExpression(ReductionDeclaration declaration) {
+        public HalfBoundExpression(TypeDeclaration declaration)
+        {
             Bindings = new List<Expression>();
             Rule = new ReductionRule<dynamic, dynamic>(declaration.Takes, declaration.Returns);
             Declaration = declaration;
         }
 
-        private PhrasePart Fix(dynamic param) {
+        public HalfBoundExpression(ReductionDeclaration declaration)
+        {
+            Bindings = new List<Expression>();
+            Rule = new ReductionRule<dynamic, dynamic>(declaration.Takes, declaration.Returns);
+            Declaration = declaration;
+        }
+
+        private PhrasePart Fix(dynamic param)
+        {
             if (param is PhrasePart) {
                 return param;
             }

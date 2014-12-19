@@ -8,13 +8,17 @@ using Tangent.Parsing.Partial;
 using Tangent.Parsing.TypeResolved;
 using Tangent.Tokenization;
 
-namespace Tangent.Parsing {
-    public static class Parse {
-        public static ResultOrParseError<TangentProgram> TangentProgram(IEnumerable<Token> tokens) {
+namespace Tangent.Parsing
+{
+    public static class Parse
+    {
+        public static ResultOrParseError<TangentProgram> TangentProgram(IEnumerable<Token> tokens)
+        {
             return TangentProgram(new List<Token>(tokens));
         }
 
-        private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens) {
+        private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens)
+        {
             if (!tokens.Any()) {
                 return new TangentProgram(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>());
             }
@@ -103,10 +107,11 @@ namespace Tangent.Parsing {
                 }
             }
 
-            return new TangentProgram(types, resolvedFunctions.Result.Select(fn=>new ReductionDeclaration(fn.Takes, lookup[fn.Returns])).ToList());
+            return new TangentProgram(types, resolvedFunctions.Result.Select(fn => new ReductionDeclaration(fn.Takes, lookup[fn.Returns])).ToList());
         }
 
-        internal static ResultOrParseError<List<PartialPhrasePart>> PartialPhrase(List<Token> tokens) {
+        internal static ResultOrParseError<List<PartialPhrasePart>> PartialPhrase(List<Token> tokens)
+        {
             var phrase = new List<PartialPhrasePart>();
 
             ResultOrParseError<PartialPhrasePart> part = null;
@@ -128,7 +133,8 @@ namespace Tangent.Parsing {
             }
         }
 
-        internal static ResultOrParseError<PartialPhrasePart> TryPartialPhrasePart(List<Token> tokens) {
+        internal static ResultOrParseError<PartialPhrasePart> TryPartialPhrasePart(List<Token> tokens)
+        {
             var first = tokens.FirstOrDefault();
             if (first == null) {
                 return null;
@@ -141,7 +147,7 @@ namespace Tangent.Parsing {
 
             if (first.Identifier == TokenIdentifier.Symbol && first.Value == "(") {
                 tokens.RemoveAt(0);
-                var paramName = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t=>new Identifier(t.Value)).ToList();
+                var paramName = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => new Identifier(t.Value)).ToList();
                 tokens.RemoveRange(0, paramName.Count);
                 if (paramName.Count == 0) {
                     return new ResultOrParseError<PartialPhrasePart>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
@@ -173,12 +179,14 @@ namespace Tangent.Parsing {
             return null;
         }
 
-        public static ResultOrParseError<TangentType> Type(List<Token> tokens) {
+        public static ResultOrParseError<TangentType> Type(List<Token> tokens)
+        {
             // For now, only enums.
             return Enum(tokens);
         }
 
-        public static ResultOrParseError<TangentType> Enum(List<Token> tokens) {
+        public static ResultOrParseError<TangentType> Enum(List<Token> tokens)
+        {
             if (!MatchAndDiscard(TokenIdentifier.Identifier, "enum", tokens)) {
                 return new ResultOrParseError<TangentType>(new ExpectedLiteralParseError("enum", tokens.FirstOrDefault()));
             }
@@ -209,7 +217,8 @@ namespace Tangent.Parsing {
             return new TangentType(result);
         }
 
-        internal static ResultOrParseError<PartialFunction> PartialParseFunctionBits(List<Token> tokens) {
+        internal static ResultOrParseError<PartialFunction> PartialParseFunctionBits(List<Token> tokens)
+        {
             if (!tokens.Any()) {
                 return new ResultOrParseError<PartialFunction>(new ExpectedTokenParseError(TokenIdentifier.Identifier, null));
             }
@@ -229,7 +238,8 @@ namespace Tangent.Parsing {
             return new PartialFunction(identifiers, partialBlock.Result);
         }
 
-        internal static ResultOrParseError<PartialBlock> PartialBlock(List<Token> tokens) {
+        internal static ResultOrParseError<PartialBlock> PartialBlock(List<Token> tokens)
+        {
             List<IEnumerable<Identifier>> result = new List<IEnumerable<Identifier>>();
 
             if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens)) {
@@ -252,7 +262,8 @@ namespace Tangent.Parsing {
             return new ResultOrParseError<PartialBlock>(new PartialBlock(result.Select(stmt => new PartialStatement(stmt))));
         }
 
-        internal static ResultOrParseError<IEnumerable<Identifier>> PartialStatement(List<Token> tokens) {
+        internal static ResultOrParseError<IEnumerable<Identifier>> PartialStatement(List<Token> tokens)
+        {
             var identifiers = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => (Identifier)t.Value).ToList();
             if (!identifiers.Any()) {
                 return new ResultOrParseError<IEnumerable<Identifier>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
@@ -267,7 +278,8 @@ namespace Tangent.Parsing {
             return new ResultOrParseError<IEnumerable<Identifier>>(identifiers);
         }
 
-        private static bool MatchAndDiscard(TokenIdentifier id, string value, List<Token> tokens) {
+        private static bool MatchAndDiscard(TokenIdentifier id, string value, List<Token> tokens)
+        {
             if (!tokens.Any() || tokens.First().Identifier != id || tokens.First().Value != value) {
                 return false;
             }

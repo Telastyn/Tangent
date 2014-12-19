@@ -3,12 +3,15 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tangent.Tokenization;
 
-namespace Tangent.Parsing.UnitTests {
+namespace Tangent.Parsing.UnitTests
+{
     [TestClass]
-    public class PartialPhraseTests {
-        
+    public class PartialPhraseTests
+    {
+
         [TestMethod]
-        public void BasicPath() {
+        public void BasicPath()
+        {
             var test = "(x: int) plus (y: int)";
             var tokens = Tokenize.ProgramFile(test).ToList();
 
@@ -34,7 +37,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void BasicPathAvoidsRemainingTokens() {
+        public void BasicPathAvoidsRemainingTokens()
+        {
             var test = "(x: int) plus (y: int) :>";
             var tokens = Tokenize.ProgramFile(test).ToList();
 
@@ -45,7 +49,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void MissingParensIsFailure() {
+        public void MissingParensIsFailure()
+        {
             var test = "(x: int) plus (y: int :>";
             var tokens = Tokenize.ProgramFile(test).ToList();
 
@@ -55,7 +60,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void BadInput() {
+        public void BadInput()
+        {
             var test = ":> (x: int) plus (y: int)";
             var tokens = Tokenize.ProgramFile(test).ToList();
 
@@ -65,7 +71,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void LongPhrasePart() {
+        public void LongPhrasePart()
+        {
             var test = "(x y z: unsigned int) plus (ab c: int)";
             var tokens = Tokenize.ProgramFile(test).ToList();
 
@@ -83,7 +90,7 @@ namespace Tangent.Parsing.UnitTests {
             Assert.IsFalse(y.IsIdentifier);
 
             Assert.AreEqual(3, x.Parameter.Takes.Count);
-            Assert.IsTrue(new[] { "x", "y", "z" }.SequenceEqual(x.Parameter.Takes.Select(id=>id.Value)));
+            Assert.IsTrue(new[] { "x", "y", "z" }.SequenceEqual(x.Parameter.Takes.Select(id => id.Value)));
 
             Assert.AreEqual(2, x.Parameter.Returns.Count);
             Assert.IsTrue(new[] { "unsigned", "int" }.SequenceEqual(x.Parameter.Returns.Select(id => id.Value)));

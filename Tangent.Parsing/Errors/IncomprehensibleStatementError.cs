@@ -4,10 +4,13 @@ using System.Linq;
 using System.Text;
 using Tangent.Intermediate;
 
-namespace Tangent.Parsing.Errors {
-    public class IncomprehensibleStatementError : StatementParseError {
+namespace Tangent.Parsing.Errors
+{
+    public class IncomprehensibleStatementError : StatementParseError
+    {
         public IncomprehensibleStatementError(IEnumerable<Identifier> statement)
-            : base(statement) {
+            : base(statement)
+        {
 
         }
     }

@@ -5,13 +5,16 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tangent.Tokenization;
 using Tangent.Intermediate;
 
-namespace Tangent.Parsing.UnitTests {
+namespace Tangent.Parsing.UnitTests
+{
 
     [TestClass]
-    public class PartialStatementParseTests {
-    
+    public class PartialStatementParseTests
+    {
+
         [TestMethod]
-        public void HappyPath() {
+        public void HappyPath()
+        {
             var test = Tokenize.ProgramFile("a b c;");
 
             var result = Parse.PartialStatement(test.ToList());
@@ -22,7 +25,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void UnexpectedSymbol() {
+        public void UnexpectedSymbol()
+        {
             var test = Tokenize.ProgramFile("a + c;");
 
             var result = Parse.PartialStatement(test.ToList());
@@ -31,7 +35,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void StopAtSemi() {
+        public void StopAtSemi()
+        {
             var test = Tokenize.ProgramFile("a b c; +");
 
             var result = Parse.PartialStatement(test.ToList());
@@ -40,7 +45,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void MissingSemiErrors() {
+        public void MissingSemiErrors()
+        {
             var test = Tokenize.ProgramFile("a b c");
 
             var result = Parse.PartialStatement(test.ToList());

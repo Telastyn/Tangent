@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Tangent.Tokenization {
-    public static class Tokenize {
-        public static IEnumerable<Token> ProgramFile(string input) {
+namespace Tangent.Tokenization
+{
+    public static class Tokenize
+    {
+        public static IEnumerable<Token> ProgramFile(string input)
+        {
             int ix = 0;
 
             while (ix < input.Length) {
@@ -26,7 +29,8 @@ namespace Tangent.Tokenization {
             }
         }
 
-        public static int Skip(string input, int index) {
+        public static int Skip(string input, int index)
+        {
             if (index >= input.Length) { return input.Length; }
 
             if (index < input.Length - 1) {
@@ -46,11 +50,12 @@ namespace Tangent.Tokenization {
             return index;
         }
 
-        public static Token Identifier(string input, int index) {
+        public static Token Identifier(string input, int index)
+        {
             if (index >= input.Length) { return null; }
 
             int endIx = index;
-            
+
             // For now, let's just worry about ascii.
             while (endIx < input.Length && ((input[endIx] >= 'a' && input[endIx] <= 'z') || (input[endIx] >= 'A' && input[endIx] <= 'Z'))) {
                 endIx++;
@@ -63,14 +68,16 @@ namespace Tangent.Tokenization {
             return new Token(TokenIdentifier.Identifier, input, index, endIx);
         }
 
-        public static Token Symbol(string input, int index) {
+        public static Token Symbol(string input, int index)
+        {
             if (index >= input.Length) { return null; }
 
             // For now, everything is cool.
             return new Token(TokenIdentifier.Symbol, input, index, index + 1);
         }
 
-        private static Token Match(string target, TokenIdentifier id,  string input, int index) {
+        private static Token Match(string target, TokenIdentifier id, string input, int index)
+        {
             if (index > input.Length - target.Length) {
                 return null;
             }

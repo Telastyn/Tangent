@@ -5,13 +5,16 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tangent.Tokenization;
 using Tangent.Intermediate;
 
-namespace Tangent.Parsing.UnitTests {
+namespace Tangent.Parsing.UnitTests
+{
 
     [TestClass]
-    public class PartialBlockParseTests {
+    public class PartialBlockParseTests
+    {
 
         [TestMethod]
-        public void MissingOpenDoesNotMatch() {
+        public void MissingOpenDoesNotMatch()
+        {
             var test = Tokenize.ProgramFile("x");
 
             var result = Parse.PartialBlock(test.ToList());
@@ -20,7 +23,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void MissingCloseDoesNotMatch() {
+        public void MissingCloseDoesNotMatch()
+        {
             var test = Tokenize.ProgramFile("{x;");
 
             var result = Parse.PartialBlock(test.ToList());
@@ -29,7 +33,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void EmptyBlocksAreFine() {
+        public void EmptyBlocksAreFine()
+        {
             var test = Tokenize.ProgramFile("{}");
 
             var result = Parse.PartialBlock(test.ToList());
@@ -38,7 +43,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void BlocksAreFine() {
+        public void BlocksAreFine()
+        {
             var test = Tokenize.ProgramFile("{x;}");
 
             var result = Parse.PartialBlock(test.ToList());

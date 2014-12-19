@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Tangent.Parsing.Partial {
-    public class PartialBlock {
+namespace Tangent.Parsing.Partial
+{
+    public class PartialBlock
+    {
         public readonly IEnumerable<PartialStatement> Statements;
 
-        public PartialBlock(IEnumerable<PartialStatement> statements) {
+        public PartialBlock(IEnumerable<PartialStatement> statements)
+        {
             Statements = statements;
         }
     }

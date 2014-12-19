@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Tangent.Tokenization {
-    public enum TokenIdentifier {
+namespace Tangent.Tokenization
+{
+    public enum TokenIdentifier
+    {
         Identifier,
         Symbol,
 
@@ -13,35 +15,43 @@ namespace Tangent.Tokenization {
     }
 
     [Serializable]
-    public class Token {
+    public class Token
+    {
         private readonly string input;
         internal int StartIndex { get; private set; }
         internal int EndIndex { get; private set; }
 
-        public Token(TokenIdentifier id, string input, int startIndex, int endIndex) {
+        public Token(TokenIdentifier id, string input, int startIndex, int endIndex)
+        {
             this.Identifier = id;
             this.input = input;
             this.StartIndex = startIndex;
             this.EndIndex = endIndex;
         }
 
-        public TokenIdentifier Identifier {
+        public TokenIdentifier Identifier
+        {
             get;
             private set;
         }
 
-        public string Value {
+        public string Value
+        {
             get { return input.Substring(StartIndex, EndIndex - StartIndex); }
         }
 
-        public LineColumnPosition StartPosition {
-            get {
+        public LineColumnPosition StartPosition
+        {
+            get
+            {
                 return LineColumnPosition.Create(input, StartIndex);
             }
         }
 
-        public LineColumnPosition EndPosition {
-            get {
+        public LineColumnPosition EndPosition
+        {
+            get
+            {
                 return LineColumnPosition.Create(input, EndIndex);
             }
         }

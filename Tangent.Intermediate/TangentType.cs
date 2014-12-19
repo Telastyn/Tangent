@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Tangent.Intermediate {
-    public class TangentType {
+namespace Tangent.Intermediate
+{
+    public class TangentType
+    {
         public readonly IEnumerable<Identifier> Values;
 
-        public TangentType(IEnumerable<Identifier> values) {
+        public TangentType(IEnumerable<Identifier> values)
+        {
             Values = values;
         }
 

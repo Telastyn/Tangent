@@ -5,29 +5,35 @@ using System.Text;
 using Tangent.Intermediate;
 using Tangent.Parsing.TypeResolved;
 
-namespace Tangent.Parsing {
-    public class Input {
+namespace Tangent.Parsing
+{
+    public class Input
+    {
         private readonly List<Expression> buffer;
         public readonly Scope Scope;
         private readonly List<ReductionDeclaration> conversionsTaken;
 
-        public Input(IEnumerable<Identifier> identifiers, Scope scope) {
+        public Input(IEnumerable<Identifier> identifiers, Scope scope)
+        {
             buffer = new List<Expression>(identifiers.Select(id => new IdentifierExpression(id)));
             Scope = scope;
             conversionsTaken = new List<ReductionDeclaration>();
         }
 
-        private Input(IEnumerable<Expression> exprs, Scope scope, IEnumerable<ReductionDeclaration> conversionsTaken) {
+        private Input(IEnumerable<Expression> exprs, Scope scope, IEnumerable<ReductionDeclaration> conversionsTaken)
+        {
             buffer = new List<Expression>(exprs);
             Scope = scope;
             this.conversionsTaken = new List<ReductionDeclaration>(conversionsTaken);
         }
 
-        public List<Expression> InterpretAsStatement() {
+        public List<Expression> InterpretAsStatement()
+        {
             return InterpretTowards(TangentType.Void);
         }
 
-        private List<Expression> InterpretTowards(TangentType type) {
+        private List<Expression> InterpretTowards(TangentType type)
+        {
             if (buffer.Count == 1) {
                 if (type == GetEffectiveTypeIfPossible(buffer[0])) {
                     return buffer;
@@ -106,7 +112,8 @@ namespace Tangent.Parsing {
             return new List<Expression>();
         }
 
-        private TangentType GetEffectiveTypeIfPossible(Expression expr) {
+        private TangentType GetEffectiveTypeIfPossible(Expression expr)
+        {
             switch (expr.NodeType) {
                 case ExpressionNodeType.FunctionInvocation:
                     var invoke = (FunctionInvocationExpression)expr;
@@ -126,7 +133,8 @@ namespace Tangent.Parsing {
             }
         }
 
-        private IEnumerable<List<HalfBoundExpression>> CandidatesInPriorityOrder(IEnumerable<Expression> tokenStream) {
+        private IEnumerable<List<HalfBoundExpression>> CandidatesInPriorityOrder(IEnumerable<Expression> tokenStream)
+        {
             // Parameters first.
             var parameterCandidates = Scope.Parameters.Where(pd => HasTerminalsInOrder(pd.Takes.Select(id => new PhrasePart(id)), tokenStream)).Select(c => new HalfBoundExpression(c)).ToList();
             while (parameterCandidates.Any()) {
@@ -146,7 +154,8 @@ namespace Tangent.Parsing {
             }
         }
 
-        private bool HasTerminalsInOrder(IEnumerable<PhrasePart> reductionTerminals, IEnumerable<Expression> tokenStream) {
+        private bool HasTerminalsInOrder(IEnumerable<PhrasePart> reductionTerminals, IEnumerable<Expression> tokenStream)
+        {
             var terminalEnumerator = reductionTerminals.GetEnumerator();
             var bufferEnumerator = tokenStream.GetEnumerator();
             bufferEnumerator.MoveNext();
@@ -229,7 +238,8 @@ namespace Tangent.Parsing {
         }
 
 
-        private List<HalfBoundExpression> PopBestCandidates(List<HalfBoundExpression> candidates) {
+        private List<HalfBoundExpression> PopBestCandidates(List<HalfBoundExpression> candidates)
+        {
             var best = new List<HalfBoundExpression>();
             foreach (var entry in candidates) {
                 if (!best.Any()) {
@@ -260,7 +270,8 @@ namespace Tangent.Parsing {
             return best;
         }
 
-        private int Compare(dynamic a, dynamic b) {
+        private int Compare(dynamic a, dynamic b)
+        {
             var phraseA = a is PhrasePart;
             var phraseB = b is PhrasePart;
 

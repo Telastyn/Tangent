@@ -5,12 +5,15 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tangent.Intermediate;
 using Tangent.Parsing.Partial;
 
-namespace Tangent.Parsing.UnitTests {
+namespace Tangent.Parsing.UnitTests
+{
     [TestClass]
-    public class TypeResolveTests {
+    public class TypeResolveTests
+    {
 
         [TestMethod]
-        public void BasicTypeResolve() {
+        public void BasicTypeResolve()
+        {
             var foo = new TangentType(new Identifier[0]);
             var typeDecl = new TypeDeclaration("foo", foo);
 
@@ -20,7 +23,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void FullMatchRequiredTypeResolve1() {
+        public void FullMatchRequiredTypeResolve1()
+        {
             var foo = new TangentType(new Identifier[0]);
             var typeDecl = new TypeDeclaration("foo", foo);
 
@@ -30,7 +34,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void FullMatchRequiredTypeResolve2() {
+        public void FullMatchRequiredTypeResolve2()
+        {
             var foo = new TangentType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
@@ -40,7 +45,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void PhraseTypeResolve() {
+        public void PhraseTypeResolve()
+        {
             var foo = new TangentType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
@@ -50,7 +56,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void PhraseTypeResolveOrderMatters() {
+        public void PhraseTypeResolveOrderMatters()
+        {
             var foo = new TangentType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
@@ -60,7 +67,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void PhraseTypeResolvePicksFromMany() {
+        public void PhraseTypeResolvePicksFromMany()
+        {
             var foo = new TangentType(new Identifier[0]);
             var typeDecl = new[]{
                 new TypeDeclaration(new Identifier[] { "foo", "baz" }, new TangentType(new Identifier[0])),
@@ -78,7 +86,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void ParameterResolutionHappyPath() {
+        public void ParameterResolutionHappyPath()
+        {
             var foo = new TangentType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
@@ -92,7 +101,8 @@ namespace Tangent.Parsing.UnitTests {
 
 
         [TestMethod]
-        public void ParameterResolutionSadPath() {
+        public void ParameterResolutionSadPath()
+        {
             var foo = new TangentType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
@@ -103,7 +113,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void FunctionResolutionHappyPath() {
+        public void FunctionResolutionHappyPath()
+        {
             var foo = new TangentType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 

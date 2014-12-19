@@ -7,9 +7,12 @@ using Tangent.Parsing.Errors;
 using Tangent.Parsing.Partial;
 using Tangent.Parsing.TypeResolved;
 
-namespace Tangent.Parsing {
-    public static class TypeResolve {
-        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types) {
+namespace Tangent.Parsing
+{
+    public static class TypeResolve
+    {
+        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types)
+        {
             var errors = new List<BadTypePhrase>();
             var results = new List<ReductionDeclaration>();
 
@@ -30,7 +33,8 @@ namespace Tangent.Parsing {
             return results;
         }
 
-        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types) {
+        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types)
+        {
             var errors = new List<BadTypePhrase>();
             var phrase = new List<PhrasePart>();
 
@@ -56,12 +60,13 @@ namespace Tangent.Parsing {
             return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType, fn.Implementation)));
         }
 
-        internal static ResultOrParseError<PhrasePart> Resolve(PartialPhrasePart partial, IEnumerable<TypeDeclaration> types) {
+        internal static ResultOrParseError<PhrasePart> Resolve(PartialPhrasePart partial, IEnumerable<TypeDeclaration> types)
+        {
             if (partial.IsIdentifier) {
                 return new PhrasePart(partial.Identifier);
             }
 
-            var resolved= Resolve(partial.Parameter, types);
+            var resolved = Resolve(partial.Parameter, types);
             if (resolved.Success) {
                 return new ResultOrParseError<PhrasePart>(new PhrasePart(resolved.Result));
             } else {
@@ -69,7 +74,8 @@ namespace Tangent.Parsing {
             }
         }
 
-        internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types) {
+        internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types)
+        {
             var type = ResolveType(partial.Returns, types);
             if (type == null) {
                 return new ResultOrParseError<ParameterDeclaration>(new TypeResolutionErrors(new[] { new BadTypePhrase(partial.Returns) }));
@@ -78,7 +84,8 @@ namespace Tangent.Parsing {
             return new ResultOrParseError<ParameterDeclaration>(new ParameterDeclaration(partial.Takes, type));
         }
 
-        internal static TangentType ResolveType(IEnumerable<Identifier> identifiers, IEnumerable<TypeDeclaration> types) {
+        internal static TangentType ResolveType(IEnumerable<Identifier> identifiers, IEnumerable<TypeDeclaration> types)
+        {
             // TODO: fix perf.
             foreach (var type in types) {
                 var typeIdentifiers = type.Takes;

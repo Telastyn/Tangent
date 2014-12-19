@@ -3,15 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Tangent.Intermediate {
-    public class Identifier {
+namespace Tangent.Intermediate
+{
+    public class Identifier
+    {
         public readonly string Value;
 
-        public Identifier(string value) {
+        public Identifier(string value)
+        {
             Value = value;
         }
 
-        public static bool operator ==(Identifier me, Identifier other) {
+        public static bool operator ==(Identifier me, Identifier other)
+        {
             if (object.ReferenceEquals(me, null)) {
                 return object.ReferenceEquals(other, null);
             }
@@ -19,11 +23,13 @@ namespace Tangent.Intermediate {
             return me.Equals(other);
         }
 
-        public static bool operator !=(Identifier me, Identifier other) {
+        public static bool operator !=(Identifier me, Identifier other)
+        {
             return !(me == other);
         }
 
-        public override bool Equals(object obj) {
+        public override bool Equals(object obj)
+        {
             if (object.Equals(obj, null)) { return false; }
             Identifier objIdentifier = obj as Identifier;
             if (!object.ReferenceEquals(objIdentifier, null)) {
@@ -33,11 +39,13 @@ namespace Tangent.Intermediate {
             return false;
         }
 
-        public override int GetHashCode() {
+        public override int GetHashCode()
+        {
             return Value.GetHashCode();
         }
 
-        public static implicit operator Identifier(string value) {
+        public static implicit operator Identifier(string value)
+        {
             return new Identifier(value);
         }
     }

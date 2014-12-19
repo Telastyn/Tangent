@@ -1,13 +1,16 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Tangent.Tokenization.UnitTests {
+namespace Tangent.Tokenization.UnitTests
+{
 
     [TestClass]
-    public class LineColumnPositionTests {
+    public class LineColumnPositionTests
+    {
 
         [TestMethod]
-        public void BasicHappyPath() {
+        public void BasicHappyPath()
+        {
             string test = "How Now Brown Cow";
             LineColumnPosition result = LineColumnPosition.Create(test, 7);
 
@@ -16,7 +19,8 @@ namespace Tangent.Tokenization.UnitTests {
         }
 
         [TestMethod]
-        public void NewLinedHappyPath() {
+        public void NewLinedHappyPath()
+        {
             string test = "How\nNow\nBrown\nCow\n";
             LineColumnPosition result = LineColumnPosition.Create(test, 6);
 
@@ -25,7 +29,8 @@ namespace Tangent.Tokenization.UnitTests {
         }
 
         [TestMethod]
-        public void IndexIsNewLine() {
+        public void IndexIsNewLine()
+        {
             string test = "How\nNow\nBrown\nCow\n";
             LineColumnPosition result = LineColumnPosition.Create(test, 7);
 
@@ -35,14 +40,16 @@ namespace Tangent.Tokenization.UnitTests {
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
-        public void SmallIndex() {
+        public void SmallIndex()
+        {
             string test = "How\nNow\nBrown\nCow\n";
             LineColumnPosition result = LineColumnPosition.Create(test, -7); // boom.
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
-        public void BigIndex() {
+        public void BigIndex()
+        {
             string test = "How\nNow\nBrown\nCow\n";
             LineColumnPosition result = LineColumnPosition.Create(test, 42); // boom.
         }

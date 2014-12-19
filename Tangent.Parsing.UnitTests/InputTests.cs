@@ -4,13 +4,16 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tangent.Intermediate;
 using Tangent.Tokenization;
 
-namespace Tangent.Parsing.UnitTests {
+namespace Tangent.Parsing.UnitTests
+{
 
     [TestClass]
-    public class InputTests {
+    public class InputTests
+    {
 
         [TestMethod]
-        public void BasicParameterResolution() {
+        public void BasicParameterResolution()
+        {
             var scope = new Scope(
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("foo", TangentType.Void) },
@@ -27,10 +30,11 @@ namespace Tangent.Parsing.UnitTests {
 
 
         [TestMethod]
-        public void ParameterPhraseResolution() {
+        public void ParameterPhraseResolution()
+        {
             var scope = new Scope(
                 Enumerable.Empty<TypeDeclaration>(),
-                new[] { new ParameterDeclaration(new Identifier[]{"foo", "bar"}, TangentType.Void) },
+                new[] { new ParameterDeclaration(new Identifier[] { "foo", "bar" }, TangentType.Void) },
                 Enumerable.Empty<ReductionDeclaration>());
 
             var tokens = Tokenize.ProgramFile("foo bar").Select(t => new Identifier(t.Value));
@@ -43,7 +47,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void BasicFunctionResolution() {
+        public void BasicFunctionResolution()
+        {
             var scope = new Scope(
                 Enumerable.Empty<TypeDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
@@ -59,7 +64,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void FunctionPhraseResolution() {
+        public void FunctionPhraseResolution()
+        {
             var scope = new Scope(
                 Enumerable.Empty<TypeDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
@@ -75,7 +81,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void BasicFunctionConsumption() {
+        public void BasicFunctionConsumption()
+        {
             // foo (x: t) => void;
             // (bar: t) => * {
             //    foo bar;
@@ -100,7 +107,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void ReverseFunctionConsumption() {
+        public void ReverseFunctionConsumption()
+        {
             // (x: t) foo => void;
             // (bar: t) => * {
             //    bar foo;
@@ -125,7 +133,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void InfixFunctionConsumption() {
+        public void InfixFunctionConsumption()
+        {
             // (x: t) foo (y: t) => void;
             // (bar: t) => * {
             //    bar foo bar;
@@ -152,7 +161,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void MismatchReturnsNoResults() {
+        public void MismatchReturnsNoResults()
+        {
             var scope = new Scope(
                 Enumerable.Empty<TypeDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
@@ -166,7 +176,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void ParametersWinScope() {
+        public void ParametersWinScope()
+        {
             var scope = new Scope(
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("foo", TangentType.Void) },
@@ -182,7 +193,8 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
-        public void ReturnTypesMatter() {
+        public void ReturnTypesMatter()
+        {
             var t = new TangentType(Enumerable.Empty<Identifier>());
             var scope = new Scope(
                 Enumerable.Empty<TypeDeclaration>(),

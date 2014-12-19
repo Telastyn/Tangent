@@ -2,62 +2,73 @@
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Tangent.Tokenization.UnitTests {
+namespace Tangent.Tokenization.UnitTests
+{
 
     [TestClass]
-    public class TokenizeTests {
+    public class TokenizeTests
+    {
 
         [TestMethod]
-        public void EndOfFileGraceful() {
+        public void EndOfFileGraceful()
+        {
             var test = "";
             Assert.AreEqual(0, Tokenize.Skip(test, 0));
         }
 
         [TestMethod]
-        public void PastEndOfFileGraceful() {
+        public void PastEndOfFileGraceful()
+        {
             var test = "foo";
             Assert.AreEqual(3, Tokenize.Skip(test, 42));
         }
 
         [TestMethod]
-        public void SkipCommentsWorks() {
+        public void SkipCommentsWorks()
+        {
             var test = @"foo // blah blah
 bar";
             Assert.AreEqual(17, Tokenize.Skip(test, 4));
         }
 
         [TestMethod]
-        public void SkipCommentsEofGraceful() {
+        public void SkipCommentsEofGraceful()
+        {
             var test = @"foo // blah blah";
             Assert.AreEqual(test.Length, Tokenize.Skip(test, 4));
         }
 
         [TestMethod]
-        public void SkipSpacesWorks() {
+        public void SkipSpacesWorks()
+        {
             var test = "   \r\n";
             Assert.AreEqual(test.Length, Tokenize.Skip(test, 0));
         }
 
         [TestMethod]
-        public void SkipSpacesStopsAtNonSpace1() {
+        public void SkipSpacesStopsAtNonSpace1()
+        {
             var test = " \t\r\nfoo";
             Assert.AreEqual(4, Tokenize.Skip(test, 0));
         }
 
         [TestMethod]
-        public void SkipSpacesStopsAtNonSpace2() {
+        public void SkipSpacesStopsAtNonSpace2()
+        {
             var test = " \t\r\n-";
             Assert.AreEqual(4, Tokenize.Skip(test, 0));
         }
 
         [TestMethod]
-        public void SkipSpacesNoopWhenOnWord() {
+        public void SkipSpacesNoopWhenOnWord()
+        {
             var test = "foo";
             Assert.AreEqual(0, Tokenize.Skip(test, 0));
         }
 
         [TestMethod]
-        public void ReductionMatches() {
+        public void ReductionMatches()
+        {
             var test = "=>";
             var result = Tokenize.ProgramFile(test);
 
@@ -66,7 +77,8 @@ bar";
         }
 
         [TestMethod]
-        public void TypeDeclarationSeparatorMatches() {
+        public void TypeDeclarationSeparatorMatches()
+        {
             var test = ":>";
             var result = Tokenize.ProgramFile(test);
 
@@ -75,7 +87,8 @@ bar";
         }
 
         [TestMethod]
-        public void IdentifierHappyPath1() {
+        public void IdentifierHappyPath1()
+        {
             var test = "foo";
             var result = Tokenize.Identifier(test, 0);
 
@@ -85,7 +98,8 @@ bar";
         }
 
         [TestMethod]
-        public void IdentifierHappyPath2() {
+        public void IdentifierHappyPath2()
+        {
             var test = "foo-";
             var result = Tokenize.Identifier(test, 0);
 
@@ -95,7 +109,8 @@ bar";
         }
 
         [TestMethod]
-        public void IdentifierHappyPath3() {
+        public void IdentifierHappyPath3()
+        {
             var test = "foo ";
             var result = Tokenize.Identifier(test, 0);
 
@@ -105,7 +120,8 @@ bar";
         }
 
         [TestMethod]
-        public void IdentifierHappyPath4() {
+        public void IdentifierHappyPath4()
+        {
             var test = "fooあ";
             var result = Tokenize.Identifier(test, 0);
 
@@ -115,7 +131,8 @@ bar";
         }
 
         [TestMethod]
-        public void SymbolHappyPath1() {
+        public void SymbolHappyPath1()
+        {
             var test = "あ";
             var result = Tokenize.Symbol(test, 0);
 
@@ -125,7 +142,8 @@ bar";
         }
 
         [TestMethod]
-        public void SymbolHappyPath2() {
+        public void SymbolHappyPath2()
+        {
             var test = "+";
             var result = Tokenize.Symbol(test, 0);
 
@@ -135,7 +153,8 @@ bar";
         }
 
         [TestMethod]
-        public void SymbolHappyPath3() {
+        public void SymbolHappyPath3()
+        {
             var test = "++";
             var result = Tokenize.Symbol(test, 0);
 
@@ -145,7 +164,8 @@ bar";
         }
 
         [TestMethod]
-        public void SymbolHappyPath4() {
+        public void SymbolHappyPath4()
+        {
             var test = "+ ";
             var result = Tokenize.Symbol(test, 0);
 
@@ -155,7 +175,8 @@ bar";
         }
 
         [TestMethod]
-        public void SymbolHappyPath5() {
+        public void SymbolHappyPath5()
+        {
             var test = "+foo";
             var result = Tokenize.Symbol(test, 0);
 
