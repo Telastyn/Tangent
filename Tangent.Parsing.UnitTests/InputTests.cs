@@ -125,6 +125,33 @@ namespace Tangent.Parsing.UnitTests {
         }
 
         [TestMethod]
+        public void InfixFunctionConsumption() {
+            // (x: t) foo (y: t) => void;
+            // (bar: t) => * {
+            //    bar foo bar;
+            // }
+            var t = new TangentType(Enumerable.Empty<Identifier>());
+            var scope = new Scope(
+                Enumerable.Empty<TypeDeclaration>(),
+                new[] { new ParameterDeclaration("bar", t) },
+                new[] { new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("x", t)), new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("y", t)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
+
+            var tokens = Tokenize.ProgramFile("bar foo bar").Select(token => new Identifier(token.Value));
+
+            var result = new Input(tokens, scope).InterpretAsStatement();
+
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
+            var invoke = ((FunctionInvocationExpression)result.First());
+            Assert.AreEqual(scope.Functions.First(), invoke.Bindings.FunctionDefinition);
+            Assert.AreEqual(2, invoke.Bindings.Parameters.Count());
+            Assert.AreEqual(ExpressionNodeType.ParameterAccess, invoke.Bindings.Parameters.First().NodeType);
+            Assert.AreEqual(scope.Parameters.First(), ((ParameterAccessExpression)invoke.Bindings.Parameters.First()).Parameter);
+            Assert.AreEqual(ExpressionNodeType.ParameterAccess, invoke.Bindings.Parameters.Skip(1).First().NodeType);
+            Assert.AreEqual(scope.Parameters.First(), ((ParameterAccessExpression)invoke.Bindings.Parameters.Skip(1).First()).Parameter);
+        }
+
+        [TestMethod]
         public void MismatchReturnsNoResults() {
             var scope = new Scope(
                 Enumerable.Empty<TypeDeclaration>(),
