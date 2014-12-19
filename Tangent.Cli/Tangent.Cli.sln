@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Cli", "Tangent.Cli.csproj", "{46692EC2-E8D9-409B-9D8F-EC28338C744A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Tokenization", "..\Tangent.Tokenization\Tangent.Tokenization.csproj", "{AE943962-7EB9-47D5-8436-821035AC0B74}"
@@ -14,6 +16,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Parsing.UnitTests", "..\Tangent.Parsing.UnitTests\Tangent.Parsing.UnitTests.csproj", "{8F33874E-61AA-49D3-87EF-F319EC555540}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Tokenization.UnitTests", "..\Tangent.Tokenization.UnitTests\Tangent.Tokenization.UnitTests.csproj", "{233955FC-538F-4E6C-B9ED-8CCE4865A0D1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.CilGeneration", "..\Tangent.CilGeneration\Tangent.CilGeneration.csproj", "{7D611411-13A3-4AE2-B382-5B91DB6DB07A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.CilGeneration.UnitTests", "..\Tangent.CilGeneration.UnitTests\Tangent.CilGeneration.UnitTests.csproj", "{7AC7335C-D096-44CE-A852-8157BB04F6BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,6 +55,14 @@ Global
 		{233955FC-538F-4E6C-B9ED-8CCE4865A0D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{233955FC-538F-4E6C-B9ED-8CCE4865A0D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{233955FC-538F-4E6C-B9ED-8CCE4865A0D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D611411-13A3-4AE2-B382-5B91DB6DB07A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D611411-13A3-4AE2-B382-5B91DB6DB07A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D611411-13A3-4AE2-B382-5B91DB6DB07A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D611411-13A3-4AE2-B382-5B91DB6DB07A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7AC7335C-D096-44CE-A852-8157BB04F6BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7AC7335C-D096-44CE-A852-8157BB04F6BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7AC7335C-D096-44CE-A852-8157BB04F6BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7AC7335C-D096-44CE-A852-8157BB04F6BE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

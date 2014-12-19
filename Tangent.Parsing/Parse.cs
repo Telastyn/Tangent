@@ -207,6 +207,7 @@ namespace Tangent.Parsing
                     }
 
                     result.Add(id.Value);
+                    tokens.RemoveAt(0);
                 }
             }
 
