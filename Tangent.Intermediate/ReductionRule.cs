@@ -5,8 +5,8 @@ using System.Text;
 
 namespace Tangent.Intermediate {
     public class ReductionRule<T, R> {
-        public readonly List<T> Takes;
-        public readonly R Returns;
+        public List<T> Takes { get; private set; }
+        public R Returns { get; internal set; }
 
         public ReductionRule(IEnumerable<T> takes, R returns) {
             if (!takes.Any()) {

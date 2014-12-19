@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Tangent.Intermediate;
+using Tangent.Parsing.Errors;
 using Tangent.Parsing.Partial;
+using Tangent.Parsing.TypeResolved;
 using Tangent.Tokenization;
 
 namespace Tangent.Parsing {
@@ -63,15 +65,49 @@ namespace Tangent.Parsing {
             }
 
             // And now Phase 3 - Statement parsing based on syntax.
+            var lookup = new Dictionary<Function, Function>();
+            var bad = new List<IncomprehensibleStatementError>();
+            var ambiguous = new List<AmbiguousStatementError>();
 
-            // remember function replacement.
-            // if any bad statements, return good errors.
-            throw new NotImplementedException();
+            foreach (var fn in resolvedFunctions.Result) {
+                TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
+                if (partialFunction != null) {
+                    var scope = new Scope(types, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), resolvedFunctions.Result);
+                    List<Expression> statements = new List<Expression>();
+                    foreach (var line in partialFunction.Implementation.Statements) {
+                        var statement = new Input(line.FlatTokens, scope).InterpretAsStatement();
+                        if (statement.Count == 0) {
+                            bad.Add(new IncomprehensibleStatementError(line.FlatTokens));
+                        } else if (statement.Count > 1) {
+                            ambiguous.Add(new AmbiguousStatementError(line.FlatTokens, statement));
+                        } else {
+                            statements.Add(statement.First());
+                        }
+                    }
+
+                    Function newb = new Function(partialFunction.EffectiveType, new Block(statements));
+                    lookup.Add(partialFunction, newb);
+                } else {
+                    throw new NotImplementedException("We shouldn't get here... No optimizations exist to fully resolve functions in one step.");
+                }
+            }
+
+            if (bad.Any() || ambiguous.Any()) {
+                return new ResultOrParseError<TangentProgram>(new StatementGrokErrors(bad, ambiguous));
+            }
+
+            // 3a - Replace TypeResolvedFunctions with fully resolved ones.
+            foreach (var fn in lookup.Values) {
+                foreach (var stmt in fn.Implementation.Statements) {
+                    stmt.ReplaceTypeResolvedFunctions(lookup, new HashSet<Expression>());
+                }
+            }
+
+            return new TangentProgram(types, resolvedFunctions.Result.Select(fn=>new ReductionDeclaration(fn.Takes, lookup[fn.Returns])).ToList());
         }
 
         internal static ResultOrParseError<List<PartialPhrasePart>> PartialPhrase(List<Token> tokens) {
             var phrase = new List<PartialPhrasePart>();
-
 
             ResultOrParseError<PartialPhrasePart> part = null;
             while (true) {

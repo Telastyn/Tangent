@@ -15,5 +15,7 @@ namespace Tangent.Intermediate {
 
     public abstract class Expression {
         public abstract ExpressionNodeType NodeType { get; }
+        internal virtual void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset) {
+        }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Tangent.Intermediate;
+using Tangent.Parsing.Errors;
 using Tangent.Parsing.Partial;
 using Tangent.Parsing.TypeResolved;
 

@@ -20,5 +20,11 @@ namespace Tangent.Intermediate {
         public FunctionInvocationExpression(FunctionBindingExpression binding) {
             Bindings = binding;
         }
+
+        internal override void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset) {
+            if (workset.Contains(this)) { return; }
+            workset.Add(this);
+            Bindings.ReplaceTypeResolvedFunctions(replacements, workset);
+        }
     }
 }

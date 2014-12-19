@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Tangent.Tokenization;
 
-namespace Tangent.Parsing {
+namespace Tangent.Parsing.Errors {
     public class ExpectedLiteralParseError : ParseError {
         public readonly string Expected;
         public readonly Token Found;

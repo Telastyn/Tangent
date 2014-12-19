@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Tangent.Parsing {
+namespace Tangent.Parsing.Errors {
     public class ResultOrError<R,E> {
         public readonly bool Success;
         public readonly R Result;

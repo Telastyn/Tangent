@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Tangent.Parsing {
+namespace Tangent.Parsing.Errors {
     public class ResultOrParseError<R>: ResultOrError<R, ParseError> {
 
         public ResultOrParseError(R result) : base(result) { }
