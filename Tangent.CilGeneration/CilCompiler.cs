@@ -23,7 +23,7 @@ namespace Tangent.CilGeneration
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(filename + ".dll", Path.GetFileName(targetPath) + ".dll", true);
 
             Dictionary<TangentType, Type> typeLookup = new Dictionary<TangentType, Type>() { { TangentType.Void, typeof(void) } };
-            foreach (var type in program.TypeDeclarations) {
+            foreach (var type in program.TypeDeclarations.Where(td => td.Returns != TangentType.Void)) {
                 var typeName = GetNameFor(type);
                 var enumBuilder = moduleBuilder.DefineEnum(typeName, System.Reflection.TypeAttributes.Public, typeof(int));
                 int x = 1;
@@ -64,10 +64,10 @@ namespace Tangent.CilGeneration
             foreach (var param in fn.Takes.Where(t => !t.IsIdentifier)) {
                 paramLookup.Add(param.Parameter, N.Expression.Parameter(typeLookup[param.Parameter.Returns], GetNameFor(param.Parameter)));
             }
-            
+
             var block = fn.Returns.Implementation.Statements.Select(s => BuildStatement(s, paramLookup, fnLookup)).ToArray();
-            if(!block.Any()){
-                block = new N.Expression[]{N.Expression.Empty()};
+            if (!block.Any()) {
+                block = new N.Expression[] { N.Expression.Empty() };
             }
 
             var parameters = fn.Takes.Where(t => !t.IsIdentifier).Select(t => paramLookup[t.Parameter]).ToArray();
@@ -82,7 +82,26 @@ namespace Tangent.CilGeneration
                     throw new NotImplementedException("Bare binding found when compiling statement.");
                 case ExpressionNodeType.FunctionInvocation:
                     var invoke = (FunctionInvocationExpression)expr;
-                    return N.Expression.Call(fnLookup[invoke.Bindings.FunctionDefinition], invoke.Bindings.Parameters.Select(p => BuildStatement(p, paramLookup, fnLookup)).ToArray());
+                    MethodBuilder mb = null;
+                    if (fnLookup.TryGetValue(invoke.Bindings.FunctionDefinition, out mb)) {
+                        // Simple function call. Go.
+                        return N.Expression.Call(mb, invoke.Bindings.Parameters.Select(p => BuildStatement(p, paramLookup, fnLookup)).ToArray());
+                    } else {
+                        // We have some sort of anonymous function.
+                        if (!invoke.Bindings.FunctionDefinition.Takes.Any()) {
+                            // A non-parameterized function. For now, inline the thing.
+                            var guts = invoke.Bindings.FunctionDefinition.Returns.Implementation.Statements;
+                            if (guts.Any()) {
+                                return N.Expression.Block(guts.Select(line => BuildStatement(line, paramLookup, fnLookup)));
+                            } else {
+                                return N.Expression.Empty();
+                            }
+                        } else {
+                            // An anonymous function with parameters.
+                            // This currently can't occur. Throw.
+                            throw new NotImplementedException("We have an anonymous function invocation with parameters?");
+                        }
+                    }
                 case ExpressionNodeType.Identifier:
                     throw new NotImplementedException("Bare Identifier found when compiling statement.");
                 case ExpressionNodeType.ParameterAccess:
