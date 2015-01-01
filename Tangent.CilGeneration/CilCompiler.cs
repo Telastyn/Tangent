@@ -128,6 +128,8 @@ namespace Tangent.CilGeneration
                     }
                 }
 
+                // TODO: append result name since functions can vary by return type only.
+
                 names[rule] = sb.ToString();
                 return names[rule];
             }
