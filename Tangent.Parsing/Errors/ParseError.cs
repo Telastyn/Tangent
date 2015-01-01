@@ -12,9 +12,9 @@ namespace Tangent.Parsing.Errors
 
     public abstract class StatementParseError : ParseError
     {
-        public readonly IEnumerable<Identifier> ErrorLocation;
+        public readonly IEnumerable<Expression> ErrorLocation;
 
-        protected StatementParseError(IEnumerable<Identifier> statement)
+        protected StatementParseError(IEnumerable<Expression> statement)
         {
             ErrorLocation = statement;
         }

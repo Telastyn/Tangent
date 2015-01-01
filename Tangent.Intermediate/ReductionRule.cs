@@ -12,10 +12,6 @@ namespace Tangent.Intermediate
 
         public ReductionRule(IEnumerable<T> takes, R returns)
         {
-            if (!takes.Any()) {
-                throw new InvalidOperationException("ReductionRule must have some input.");
-            }
-
             Takes = new List<T>(takes);
             Returns = returns;
         }

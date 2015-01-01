@@ -80,19 +80,8 @@ namespace Tangent.Parsing
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
                 if (partialFunction != null) {
                     var scope = new Scope(types, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), resolvedFunctions.Result);
-                    List<Expression> statements = new List<Expression>();
-                    foreach (var line in partialFunction.Implementation.Statements) {
-                        var statement = new Input(line.FlatTokens, scope).InterpretAsStatement();
-                        if (statement.Count == 0) {
-                            bad.Add(new IncomprehensibleStatementError(line.FlatTokens));
-                        } else if (statement.Count > 1) {
-                            ambiguous.Add(new AmbiguousStatementError(line.FlatTokens, statement));
-                        } else {
-                            statements.Add(statement.First());
-                        }
-                    }
-
-                    Function newb = new Function(partialFunction.EffectiveType, new Block(statements));
+                    Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
+                    
                     lookup.Add(partialFunction, newb);
                 } else {
                     throw new NotImplementedException("We shouldn't get here... No optimizations exist to fully resolve functions in one step.");
@@ -111,6 +100,38 @@ namespace Tangent.Parsing
             }
 
             return new TangentProgram(types, resolvedFunctions.Result.Select(fn => new ReductionDeclaration(fn.Takes, lookup[fn.Returns])).ToList());
+        }
+
+        private static Function BuildBlock(Scope scope, TangentType effectiveType, PartialBlock partialBlock, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
+        {
+            List<Expression> statements = new List<Expression>();
+            foreach (var line in partialBlock.Statements) {
+                var statementBits = line.FlatTokens.Select(t=>ElementToExpression(scope,t, bad,ambiguous));
+                var statement = new Input(statementBits, scope).InterpretAsStatement();
+                if (statement.Count == 0) {
+                    bad.Add(new IncomprehensibleStatementError(statementBits));
+                } else if (statement.Count > 1) {
+                    ambiguous.Add(new AmbiguousStatementError(statementBits, statement));
+                } else {
+                    statements.Add(statement.First());
+                }
+            }
+
+            return new Function(effectiveType, new Block(statements));
+        }
+
+        private static Expression ElementToExpression(Scope scope, PartialElement element, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
+        {
+            switch (element.Type) {
+                case ElementType.Identifier:
+                    return new IdentifierExpression(((IdentifierElement)element).Identifier);
+                case ElementType.Parens:
+                    throw new NotImplementedException("Parens expressions not yet supported.");
+                case ElementType.Block:
+                    return new FunctionBindingExpression(new ReductionDeclaration(Enumerable.Empty<PhrasePart>(), BuildBlock(scope, TangentType.Void, ((BlockElement)element).Block, bad, ambiguous)), new Expression[]{});
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
         internal static ResultOrParseError<List<PartialPhrasePart>> PartialPhrase(List<Token> tokens)

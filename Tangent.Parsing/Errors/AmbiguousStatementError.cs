@@ -10,7 +10,7 @@ namespace Tangent.Parsing.Errors
     {
         public readonly IEnumerable<Expression> PossibleInterpretations;
 
-        public AmbiguousStatementError(IEnumerable<Identifier> statement, IEnumerable<Expression> interpretations)
+        public AmbiguousStatementError(IEnumerable<Expression> statement, IEnumerable<Expression> interpretations)
             : base(statement)
         {
             PossibleInterpretations = interpretations;

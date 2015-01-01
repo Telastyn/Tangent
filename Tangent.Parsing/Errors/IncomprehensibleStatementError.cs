@@ -8,7 +8,7 @@ namespace Tangent.Parsing.Errors
 {
     public class IncomprehensibleStatementError : StatementParseError
     {
-        public IncomprehensibleStatementError(IEnumerable<Identifier> statement)
+        public IncomprehensibleStatementError(IEnumerable<Expression> statement)
             : base(statement)
         {
 

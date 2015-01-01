@@ -14,12 +14,14 @@ namespace Tangent.Parsing
         public readonly Scope Scope;
         private readonly List<ReductionDeclaration> conversionsTaken;
 
-        public Input(IEnumerable<PartialElement> identifiers, Scope scope)
+        public Input(IEnumerable<Identifier> identifiers, Scope scope)
         {
-            buffer = new List<Expression>(identifiers.Select(id => ElementToExpression(id)));
+            buffer = new List<Expression>(identifiers.Select(id => new IdentifierExpression(id)));
             Scope = scope;
             conversionsTaken = new List<ReductionDeclaration>();
         }
+
+        public Input(IEnumerable<Expression> exprs, Scope scope) : this(exprs, scope, new List<ReductionDeclaration>()) { }
 
         private Input(IEnumerable<Expression> exprs, Scope scope, IEnumerable<ReductionDeclaration> conversionsTaken)
         {
@@ -288,15 +290,6 @@ namespace Tangent.Parsing
             }
 
             return 0;
-        }
-
-        private Expression ElementToExpression(PartialElement id)
-        {
-            switch(id.Type){
-                case ElementType.Identifier:
-                    return new IdentifierExpression(((IdentifierElement)id).Identifier);
-                case ElementType.Block:
-                    return new FunctionBindingExpression(new ReductionDeclaration("_", new TypeResolvedFunction(TangentType.Void, ((BlockElement)
         }
     }
 }
