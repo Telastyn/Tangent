@@ -48,6 +48,9 @@ namespace Tangent.Parsing
                         }
 
                         types.Add(new TypeDeclaration(phrase.Select(pp => pp.Identifier), typeDecl.Result));
+                        foreach (var value in typeDecl.Result.Values) {
+                            types.Add(new TypeDeclaration(value, new TangentType(Enumerable.Empty<Identifier>())));
+                        }
                         break;
                     case TokenIdentifier.ReductionDeclSeparator:
                         var functionParts = PartialParseFunctionBits(tokens);
@@ -241,7 +244,7 @@ namespace Tangent.Parsing
 
         internal static ResultOrParseError<PartialBlock> PartialBlock(List<Token> tokens)
         {
-            List<IEnumerable<Identifier>> result = new List<IEnumerable<Identifier>>();
+            List<IEnumerable<PartialElement>> result = new List<IEnumerable<PartialElement>>();
 
             if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens)) {
                 return new ResultOrParseError<PartialBlock>(new ExpectedLiteralParseError("{", tokens.FirstOrDefault()));
@@ -263,20 +266,36 @@ namespace Tangent.Parsing
             return new ResultOrParseError<PartialBlock>(new PartialBlock(result.Select(stmt => new PartialStatement(stmt))));
         }
 
-        internal static ResultOrParseError<IEnumerable<Identifier>> PartialStatement(List<Token> tokens)
+        internal static ResultOrParseError<IEnumerable<PartialElement>> PartialStatement(List<Token> tokens)
         {
-            var identifiers = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => (Identifier)t.Value).ToList();
-            if (!identifiers.Any()) {
-                return new ResultOrParseError<IEnumerable<Identifier>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
+            List<PartialElement> result = new List<PartialElement>();
+            while (true) {
+                var first = tokens.FirstOrDefault();
+                if(first == null){
+                    return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
+                }else if (first.Identifier == TokenIdentifier.Identifier) {
+                    tokens.RemoveAt(0);
+                    result.Add(new IdentifierElement(first.Value));
+                } else if (first.Value == "(") {
+                    throw new NotImplementedException("Paren expressions are not yet supported.");
+                } else if (first.Value == ";") {
+                    if (result.Any()) {
+                        tokens.RemoveAt(0);
+                        return result;
+                    } else {
+                        return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
+                    }
+                } else if(first.Value == "{"){
+                    var block = PartialBlock(tokens);
+                    if (block.Success) {
+                        result.Add(new BlockElement(block.Result));
+                    } else {
+                        return new ResultOrParseError<IEnumerable<PartialElement>>(block.Error);
+                    }
+                } else {
+                    return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
+                }
             }
-
-            tokens.RemoveRange(0, identifiers.Count());
-
-            if (!MatchAndDiscard(TokenIdentifier.Symbol, ";", tokens)) {
-                return new ResultOrParseError<IEnumerable<Identifier>>(new ExpectedLiteralParseError(";", tokens.FirstOrDefault()));
-            }
-
-            return new ResultOrParseError<IEnumerable<Identifier>>(identifiers);
         }
 
         private static bool MatchAndDiscard(TokenIdentifier id, string value, List<Token> tokens)

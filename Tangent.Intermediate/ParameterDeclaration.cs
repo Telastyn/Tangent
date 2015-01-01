@@ -5,7 +5,6 @@ using System.Text;
 
 namespace Tangent.Intermediate
 {
-
     public class ParameterDeclaration : ReductionRule<Identifier, TangentType>
     {
         public ParameterDeclaration(Identifier takes, TangentType returns) : this(new[] { takes }, returns) { }

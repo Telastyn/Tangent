@@ -65,5 +65,17 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.IsFalse(result.Success);
         }
+
+        [TestMethod]
+        public void FullValueCreationPath()
+        {
+            var test = "foo :> enum { a, b }";
+            var tokens = Tokenize.ProgramFile(test);
+
+            var result = Parse.TangentProgram(tokens.ToList());
+
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(3, result.Result.TypeDeclarations.Count());
+        }
     }
 }

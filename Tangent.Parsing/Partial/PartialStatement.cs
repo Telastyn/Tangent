@@ -8,8 +8,8 @@ namespace Tangent.Parsing.Partial
 {
     public class PartialStatement
     {
-        public readonly IEnumerable<Identifier> FlatTokens;
-        public PartialStatement(IEnumerable<Identifier> flatTokens)
+        public readonly IEnumerable<PartialElement> FlatTokens;
+        public PartialStatement(IEnumerable<PartialElement> flatTokens)
         {
             FlatTokens = flatTokens;
         }
