@@ -59,23 +59,23 @@ namespace Tangent.CilGeneration
 
         private void BuildFunction(ReductionDeclaration fn, ModuleBuilder mb, MethodBuilder fnBuilder, Dictionary<TangentType, Type> typeLookup, Dictionary<ReductionDeclaration, MethodBuilder> fnLookup)
         {
-            var paramLookup = new Dictionary<ParameterDeclaration, N.ParameterExpression>();
-
+            var paramLookup = new Dictionary<ParameterDeclaration, UInt16>();
+            UInt16 ix = 0;
             foreach (var param in fn.Takes.Where(t => !t.IsIdentifier)) {
-                paramLookup.Add(param.Parameter, N.Expression.Parameter(typeLookup[param.Parameter.Returns], GetNameFor(param.Parameter)));
+                paramLookup.Add(param.Parameter, ix++);
             }
 
-            var block = fn.Returns.Implementation.Statements.Select(s => BuildStatement(s, paramLookup, fnLookup)).ToArray();
-            if (!block.Any()) {
-                block = new N.Expression[] { N.Expression.Empty() };
+            var gen = fnBuilder.GetILGenerator();
+            if (!fn.Returns.Implementation.Statements.Any()) {
+                gen.Emit(OpCodes.Nop);
+            } else {
+                foreach (var statement in fn.Returns.Implementation.Statements) {
+                    BuildStatement(statement, gen, paramLookup, fnLookup);
+                }
             }
-
-            var parameters = fn.Takes.Where(t => !t.IsIdentifier).Select(t => paramLookup[t.Parameter]).ToArray();
-
-            N.Expression.Lambda(N.Expression.Block(block), parameters).CompileToMethod(fnBuilder, pdb);
         }
 
-        private N.Expression BuildStatement(Expression expr, Dictionary<ParameterDeclaration, N.ParameterExpression> paramLookup, Dictionary<ReductionDeclaration, MethodBuilder> fnLookup)
+        private void BuildStatement(Expression expr, ILGenerator gen, Dictionary<ParameterDeclaration, UInt16> paramLookup, Dictionary<ReductionDeclaration, MethodBuilder> fnLookup)
         {
             switch (expr.NodeType) {
                 case ExpressionNodeType.FunctionBinding:
@@ -85,16 +85,18 @@ namespace Tangent.CilGeneration
                     MethodBuilder mb = null;
                     if (fnLookup.TryGetValue(invoke.Bindings.FunctionDefinition, out mb)) {
                         // Simple function call. Go.
-                        return N.Expression.Call(mb, invoke.Bindings.Parameters.Select(p => BuildStatement(p, paramLookup, fnLookup)).ToArray());
+                        foreach (var p in invoke.Bindings.Parameters) {
+                            BuildStatement(p, gen, paramLookup, fnLookup);
+                        }
+
+                        gen.EmitCall(OpCodes.Call, mb, null);
                     } else {
                         // We have some sort of anonymous function.
                         if (!invoke.Bindings.FunctionDefinition.Takes.Any()) {
                             // A non-parameterized function. For now, inline the thing.
                             var guts = invoke.Bindings.FunctionDefinition.Returns.Implementation.Statements;
-                            if (guts.Any()) {
-                                return N.Expression.Block(guts.Select(line => BuildStatement(line, paramLookup, fnLookup)));
-                            } else {
-                                return N.Expression.Empty();
+                            foreach (var line in guts) {
+                                BuildStatement(line, gen, paramLookup, fnLookup);
                             }
                         } else {
                             // An anonymous function with parameters.
@@ -102,10 +104,13 @@ namespace Tangent.CilGeneration
                             throw new NotImplementedException("We have an anonymous function invocation with parameters?");
                         }
                     }
+
+                    return;
                 case ExpressionNodeType.Identifier:
                     throw new NotImplementedException("Bare Identifier found when compiling statement.");
                 case ExpressionNodeType.ParameterAccess:
-                    return paramLookup[((ParameterAccessExpression)expr).Parameter];
+                    gen.Emit(OpCodes.Ldarg, paramLookup[((ParameterAccessExpression)expr).Parameter]);
+                    return;
                 case ExpressionNodeType.TypeAccess:
                     throw new NotImplementedException("Type constants are not currently supported.");
                 case ExpressionNodeType.Unknown:

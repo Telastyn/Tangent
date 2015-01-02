@@ -15,5 +15,12 @@ namespace Tangent.Intermediate
             EffectiveType = type;
             Implementation = implementation;
         }
+
+        internal virtual void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
+        {
+            foreach (var entry in Implementation.Statements) {
+                entry.ReplaceTypeResolvedFunctions(replacements, workset);
+            }
+        }
     }
 }

@@ -31,6 +31,8 @@ namespace Tangent.Intermediate
                 FunctionDefinition.Returns = replacement;
             }
 
+            FunctionDefinition.Returns.ReplaceTypeResolvedFunctions(replacements, workset);
+
             foreach (var entry in Parameters) {
                 entry.ReplaceTypeResolvedFunctions(replacements, workset);
             }

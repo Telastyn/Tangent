@@ -90,10 +90,9 @@ namespace Tangent.Parsing
             }
 
             // 3a - Replace TypeResolvedFunctions with fully resolved ones.
+            var workset = new HashSet<Expression>();
             foreach (var fn in lookup.Values) {
-                foreach (var stmt in fn.Implementation.Statements) {
-                    stmt.ReplaceTypeResolvedFunctions(lookup, new HashSet<Expression>());
-                }
+                fn.ReplaceTypeResolvedFunctions(lookup, workset);
             }
 
             return new TangentProgram(types, resolvedFunctions.Result.Select(fn =>
