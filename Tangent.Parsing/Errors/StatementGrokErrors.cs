@@ -15,5 +15,10 @@ namespace Tangent.Parsing.Errors
             IncomprehensibleStatements = incomprehensible;
             AmbiguousStatements = ambiguous;
         }
+
+        public override string ToString()
+        {
+            return string.Join(Environment.NewLine, IncomprehensibleStatements.Cast<StatementParseError>().Concat(AmbiguousStatements));
+        }
     }
 }

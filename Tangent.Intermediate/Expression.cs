@@ -14,6 +14,7 @@ namespace Tangent.Intermediate
         FunctionInvocation = 4,
         TypeAccess = 5,
         HalfBoundExpression = 6,
+        DelegateInvocation = 7
     }
 
     public abstract class Expression

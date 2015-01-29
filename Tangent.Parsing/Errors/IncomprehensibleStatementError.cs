@@ -13,5 +13,10 @@ namespace Tangent.Parsing.Errors
         {
 
         }
+
+        public override string ToString()
+        {
+            return string.Format("Unable to interpret statement: {0}", string.Join(" ", base.ErrorLocation));
+        }
     }
 }

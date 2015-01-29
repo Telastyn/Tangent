@@ -48,5 +48,10 @@ namespace Tangent.Intermediate
         {
             return new Identifier(value);
         }
+
+        public override string ToString()
+        {
+            return this.Value.ToString();
+        }
     }
 }

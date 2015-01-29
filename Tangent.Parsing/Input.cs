@@ -108,6 +108,17 @@ namespace Tangent.Parsing
                     }
                 }
 
+                // If we have a parameter that is a bound function, and nothing can use it simply bound, try invoking it.
+                var lazyParam = buffer[ix] as ParameterAccessExpression;
+                if (lazyParam != null) {
+                    if (lazyParam.Parameter.Returns.ImplementationType == KindOfType.Lazy) {
+                        var result = new Input(buffer.Take(ix).Concat(new[] { new DelegateInvocationExpression(lazyParam) }).Concat(buffer.Skip(ix + 1)), Scope, conversionsTaken).InterpretTowards(type);
+                        if (result.Any()) {
+                            return result;
+                        }
+                    }
+                }
+
                 // No luck. Go to next token and see if reducing there helps.
             }
 
@@ -132,12 +143,15 @@ namespace Tangent.Parsing
 
                 case ExpressionNodeType.HalfBoundExpression:
                     var halfBinding = expr as HalfBoundExpression;
-                    if (!halfBinding.IsDone)
-                    {
+                    if (!halfBinding.IsDone) {
                         return null;
                     }
 
                     return halfBinding.EffectiveType;
+
+                case ExpressionNodeType.DelegateInvocation:
+                    var delegateInvoke = expr as DelegateInvocationExpression;
+                    return delegateInvoke.EffectiveType;
 
                 case ExpressionNodeType.TypeAccess:
                 case ExpressionNodeType.Identifier:
@@ -223,6 +237,14 @@ namespace Tangent.Parsing
 
                                 // else good.
                                 break;
+
+                            case ExpressionNodeType.DelegateInvocation:
+                                if (((DelegateInvocationExpression)bufferEnumerator.Current).EffectiveType != terminalEnumerator.Current.Parameter.Returns) {
+                                    return false;
+                                }
+                                // else good.
+                                break;
+
                             case ExpressionNodeType.HalfBoundExpression:
                             case ExpressionNodeType.FunctionBinding:
                             case ExpressionNodeType.Identifier:

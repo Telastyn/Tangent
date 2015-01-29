@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Block.cs" />
+    <Compile Include="DelegateInvocationExpression.cs" />
     <Compile Include="EnumType.cs" />
     <Compile Include="Expression.cs" />
     <Compile Include="Function.cs" />

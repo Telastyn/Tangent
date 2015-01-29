@@ -18,5 +18,10 @@ namespace Tangent.Intermediate
         {
             Identifier = identifier;
         }
+
+        public override string ToString()
+        {
+            return Identifier.ToString();
+        }
     }
 }

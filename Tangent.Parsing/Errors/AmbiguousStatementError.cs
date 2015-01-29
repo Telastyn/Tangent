@@ -15,5 +15,10 @@ namespace Tangent.Parsing.Errors
         {
             PossibleInterpretations = interpretations;
         }
+
+        public override string ToString()
+        {
+            return string.Format("Ambiguous statement: {0}", string.Join(" ", base.ErrorLocation));
+        }
     }
 }
