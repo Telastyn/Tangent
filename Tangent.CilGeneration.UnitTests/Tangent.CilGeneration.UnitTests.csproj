@@ -35,6 +35,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Moq">
+      <HintPath>..\..\Moq.4.0.10827\NET40\Moq.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <Choose>
@@ -51,6 +54,18 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="DelegatingTypeLookupTests.cs" />
+    <Compile Include="CilTypeCompilerTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Tangent.CilGeneration\Tangent.CilGeneration.csproj">
+      <Project>{7d611411-13a3-4ae2-b382-5b91db6db07a}</Project>
+      <Name>Tangent.CilGeneration</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tangent.Intermediate\Tangent.Intermediate.csproj">
+      <Project>{91b94f1e-2f60-4392-bb46-ec5f65a44b59}</Project>
+      <Name>Tangent.Intermediate</Name>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

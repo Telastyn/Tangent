@@ -41,7 +41,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CilCompiler.cs" />
+    <Compile Include="CilTypeCompiler.cs" />
+    <Compile Include="ITypeCompiler.cs" />
+    <Compile Include="ITypeLookup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="DelegatingTypeLookup.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.Intermediate\Tangent.Intermediate.csproj">

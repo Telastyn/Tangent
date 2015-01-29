@@ -22,25 +22,7 @@ namespace Tangent.CilGeneration
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName(filename), AssemblyBuilderAccess.Save);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(filename + ".dll", Path.GetFileName(targetPath) + ".dll", true);
 
-            Dictionary<TangentType, Type> typeLookup = new Dictionary<TangentType, Type>() { { TangentType.Void, typeof(void) } };
-            foreach (var type in program.TypeDeclarations.Where(td => td.Returns != TangentType.Void)) {
-                switch (type.Returns.ImplementationType)
-                {
-                    case KindOfType.Enum:
-                        var typeName = GetNameFor(type);
-                        var enumBuilder = moduleBuilder.DefineEnum(typeName, System.Reflection.TypeAttributes.Public, typeof(int));
-                        int x = 1;
-                        foreach (var value in (type.Returns as EnumType).Values)
-                        {
-                            enumBuilder.DefineLiteral(value.Value, x++);
-                        }
-
-                        typeLookup.Add(type.Returns, enumBuilder.CreateType());
-                        break;
-                    default:
-                        throw new NotImplementedException();
-                }
-            }
+            ITypeLookup typeLookup = new DelegatingTypeLookup(new CilTypeCompiler(moduleBuilder), program.TypeDeclarations);
 
             var rootClass = moduleBuilder.DefineType("_");
 
@@ -65,7 +47,7 @@ namespace Tangent.CilGeneration
             assemblyBuilder.Save(targetPath + ".dll");
         }
 
-        private void BuildFunction(ReductionDeclaration fn, ModuleBuilder mb, MethodBuilder fnBuilder, Dictionary<TangentType, Type> typeLookup, Dictionary<ReductionDeclaration, MethodBuilder> fnLookup)
+        private void BuildFunction(ReductionDeclaration fn, ModuleBuilder mb, MethodBuilder fnBuilder, ITypeLookup typeLookup, Dictionary<ReductionDeclaration, MethodBuilder> fnLookup)
         {
             var paramLookup = new Dictionary<ParameterDeclaration, UInt16>();
             UInt16 ix = 0;
@@ -125,17 +107,6 @@ namespace Tangent.CilGeneration
                     throw new NotImplementedException();
                 default:
                     throw new NotImplementedException();
-            }
-        }
-
-        private string GetNameFor(TypeDeclaration rule)
-        {
-            if (names.ContainsKey(rule)) {
-                return names[rule];
-            } else {
-                string result = string.Join(" ", rule.Takes.Select(id => id.Value));
-                names[rule] = result;
-                return result;
             }
         }
 
