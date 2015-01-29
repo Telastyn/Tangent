@@ -226,7 +226,7 @@ namespace Tangent.Parsing
 
                 tokens.RemoveAt(0);
 
-                var typeName = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier || (t.Value == ".")).Select(t => new Identifier(t.Value)).ToList();
+                var typeName = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier || t.Identifier == TokenIdentifier.LazyOperator || (t.Value == ".")).Select(t => new Identifier(t.Value)).ToList();
                 tokens.RemoveRange(0, typeName.Count);
                 if (typeName.Count == 0)
                 {

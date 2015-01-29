@@ -50,6 +50,7 @@
     <Compile Include="FunctionInvocationExpression.cs" />
     <Compile Include="Identifier.cs" />
     <Compile Include="IdentifierExpression.cs" />
+    <Compile Include="LazyType.cs" />
     <Compile Include="ParameterAccessExpression.cs" />
     <Compile Include="ParameterDeclaration.cs" />
     <Compile Include="PhrasePart.cs" />

@@ -11,7 +11,9 @@ namespace Tangent.Tokenization
         Symbol,
 
         TypeDeclSeparator,
-        ReductionDeclSeparator
+        ReductionDeclSeparator,
+        
+        LazyOperator
     }
 
     [Serializable]

@@ -87,43 +87,58 @@ namespace Tangent.Parsing
         internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<Identifier> identifiers, IEnumerable<TypeDeclaration> types)
         {
             // TODO: fix perf.
-            List<int> dots = new List<int>();
-            int ix = 0;
-            foreach (var id in identifiers)
+            if (identifiers.First().Value == "~>")
             {
-                if (id.Value == ".")
+                var nested = ResolveType(identifiers.Skip(1), types);
+                if (!nested.Success)
                 {
-                    dots.Add(ix);
+                    return nested;
                 }
 
-                ix++;
+                return nested.Result.Lazy;
             }
+            else
+            {
+                List<int> dots = new List<int>();
+                int ix = 0;
+                foreach (var id in identifiers)
+                {
+                    if (id.Value == ".")
+                    {
+                        dots.Add(ix);
+                    }
 
-            if (dots.Count == 1)
-            {
-                // For now, values can only be a single identifier, so dots needs to be a b c.v
-                if (dots[0] != ix - 2) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[]{ new BadTypePhrase(identifiers)})); }
-                var t = ResolveType(identifiers.Take(dots[0]), types);
-                if (!t.Success) { return t; }
-                if (t.Result.ImplementationType != KindOfType.Enum) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[]{ new BadTypePhrase(identifiers)})); }
-                var tenum = t.Result as EnumType;
-                var v = identifiers.Last().Value;
-                if (!tenum.Values.Contains(v)) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) })); }
-                return new SingleValueType(tenum, v);
-            }
-            else if (dots.Count > 1)
-            {
+                    ix++;
+                }
+
+                if (dots.Count == 1)
+                {
+                    // For now, values can only be a single identifier, so dots needs to be a b c.v
+                    if (dots[0] != ix - 2) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) })); }
+                    var t = ResolveType(identifiers.Take(dots[0]), types);
+                    if (!t.Success) { return t; }
+                    if (t.Result.ImplementationType != KindOfType.Enum) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) })); }
+                    var tenum = t.Result as EnumType;
+                    var v = identifiers.Last().Value;
+                    if (!tenum.Values.Contains(v)) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) })); }
+                    return tenum.SingleValueTypeFor(v);
+                }
+                else if (dots.Count > 1)
+                {
+                    return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) }));
+                } // else
+
+                foreach (var type in types)
+                {
+                    var typeIdentifiers = type.Takes;
+                    if (identifiers.SequenceEqual(typeIdentifiers))
+                    {
+                        return type.Returns;
+                    }
+                }
+
                 return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) }));
-            } // else
-
-            foreach (var type in types) {
-                var typeIdentifiers = type.Takes;
-                if (identifiers.SequenceEqual(typeIdentifiers)) {
-                    return type.Returns;
-                }
             }
-
-            return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) }));
         }
     }
 }

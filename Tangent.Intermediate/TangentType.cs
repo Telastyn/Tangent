@@ -9,7 +9,8 @@ namespace Tangent.Intermediate
     {
         Void,
         Enum,
-        SingleValue
+        SingleValue,
+        Lazy
     }
 
     public class TangentType
@@ -19,6 +20,17 @@ namespace Tangent.Intermediate
         protected TangentType(KindOfType impl)
         {
             ImplementationType = impl;
+        }
+
+        private LazyType lazy = null;
+
+        public LazyType Lazy
+        {
+            get
+            {
+                lazy = lazy ?? new LazyType(this);
+                return lazy;
+            }
         }
 
         public static readonly TangentType Void = new TangentType(KindOfType.Void);

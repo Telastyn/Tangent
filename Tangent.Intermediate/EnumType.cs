@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,18 @@ namespace Tangent.Intermediate
             : base(KindOfType.Enum)
         {
             Values = values;
+        }
+
+        private ConcurrentDictionary<Identifier, SingleValueType> cache = new ConcurrentDictionary<Identifier, SingleValueType>();
+
+        public SingleValueType SingleValueTypeFor(Identifier id)
+        {
+            if (!Values.Contains(id))
+            {
+                throw new InvalidOperationException();
+            }
+
+            return cache.GetOrAdd(id, i => new SingleValueType(this, i));
         }
     }
 }

@@ -189,5 +189,52 @@ namespace Tangent.Parsing.UnitTests
             var result = TypeResolve.ResolveType(new Identifier[] { "foo", "baa", ".", "moocow" }, new[] { typeDecl });
             Assert.IsFalse(result.Success);
         }
+
+        [TestMethod]
+        public void LazyHappyPath()
+        {
+            var foo = new EnumType(new Identifier[0]);
+            var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
+
+            var result = TypeResolve.ResolveType(new Identifier[] { "~>", "foo", "bar" }, new[] { typeDecl });
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(KindOfType.Lazy, result.Result.ImplementationType);
+            Assert.AreEqual(foo.Lazy, result.Result);
+        }
+
+        [TestMethod]
+        public void SuperLazyHappyPath()
+        {
+            var foo = new EnumType(new Identifier[0]);
+            var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
+
+            var result = TypeResolve.ResolveType(new Identifier[] { "~>", "~>", "foo", "bar" }, new[] { typeDecl });
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(KindOfType.Lazy, result.Result.ImplementationType);
+            Assert.AreEqual(foo.Lazy.Lazy, result.Result);
+        }
+
+        [TestMethod]
+        public void LazyWithDots()
+        {
+            var foo = new EnumType(new Identifier[] { "a", "moocow" });
+            var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
+
+            var result = TypeResolve.ResolveType(new Identifier[] { "~>", "foo", "bar", ".", "moocow"}, new[] { typeDecl });
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(KindOfType.Lazy, result.Result.ImplementationType);
+            Assert.AreEqual(foo.SingleValueTypeFor("moocow").Lazy, result.Result);
+        }
+
+
+        [TestMethod]
+        public void LazyResolutionFailsGracefully()
+        {
+            var foo = new EnumType(new Identifier[0]);
+            var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
+
+            var result = TypeResolve.ResolveType(new Identifier[] { "~>", "foo", "bah" }, new[] { typeDecl });
+            Assert.IsFalse(result.Success);
+        }
     }
 }

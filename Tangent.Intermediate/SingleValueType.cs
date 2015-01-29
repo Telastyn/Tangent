@@ -14,7 +14,8 @@ namespace Tangent.Intermediate
         public SingleValueType(EnumType valueType, Identifier value)
             : base(KindOfType.SingleValue)
         {
-            if (!valueType.Values.Contains(value)) {
+            if (!valueType.Values.Contains(value))
+            {
                 throw new InvalidOperationException();
             }
 
