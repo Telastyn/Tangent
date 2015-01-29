@@ -10,85 +10,87 @@ namespace Tangent.Parsing.UnitTests
     [TestClass]
     public class TypeResolveTests
     {
-
         [TestMethod]
         public void BasicTypeResolve()
         {
-            var foo = new TangentType(new Identifier[0]);
+            var foo = new EnumType(new Identifier[0]);
             var typeDecl = new TypeDeclaration("foo", foo);
 
             var result = TypeResolve.ResolveType(new Identifier[] { "foo" }, new[] { typeDecl });
 
-            Assert.AreEqual(foo, result);
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(foo, result.Result);
         }
 
         [TestMethod]
         public void FullMatchRequiredTypeResolve1()
         {
-            var foo = new TangentType(new Identifier[0]);
+            var foo = new EnumType(new Identifier[0]);
             var typeDecl = new TypeDeclaration("foo", foo);
 
             var result = TypeResolve.ResolveType(new Identifier[] { "foo", "bar" }, new[] { typeDecl });
 
-            Assert.IsNull(result);
+            Assert.IsFalse(result.Success);
         }
 
         [TestMethod]
         public void FullMatchRequiredTypeResolve2()
         {
-            var foo = new TangentType(new Identifier[0]);
+            var foo = new EnumType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
             var result = TypeResolve.ResolveType(new Identifier[] { "foo" }, new[] { typeDecl });
 
-            Assert.IsNull(result);
+            Assert.IsFalse(result.Success);
         }
 
         [TestMethod]
         public void PhraseTypeResolve()
         {
-            var foo = new TangentType(new Identifier[0]);
+            var foo = new EnumType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
             var result = TypeResolve.ResolveType(new Identifier[] { "foo", "bar" }, new[] { typeDecl });
-
-            Assert.AreEqual(foo, result);
+            
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(foo, result.Result);
         }
 
         [TestMethod]
         public void PhraseTypeResolveOrderMatters()
         {
-            var foo = new TangentType(new Identifier[0]);
+            var foo = new EnumType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
             var result = TypeResolve.ResolveType(new Identifier[] { "bar", "foo" }, new[] { typeDecl });
 
-            Assert.IsNull(result);
+            Assert.IsFalse(result.Success);
         }
 
         [TestMethod]
         public void PhraseTypeResolvePicksFromMany()
         {
-            var foo = new TangentType(new Identifier[0]);
+            var foo = new EnumType(new Identifier[0]);
             var typeDecl = new[]{
-                new TypeDeclaration(new Identifier[] { "foo", "baz" }, new TangentType(new Identifier[0])),
-                new TypeDeclaration(new Identifier[] { "foo", "baa" }, new TangentType(new Identifier[0])),
+                new TypeDeclaration(new Identifier[] { "foo", "baz" }, new EnumType(new Identifier[0])),
+                new TypeDeclaration(new Identifier[] { "foo", "baa" }, new EnumType(new Identifier[0])),
                 new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo),
-                new TypeDeclaration(new Identifier[] { "foo", "bar", "baz" }, new TangentType(new Identifier[0]))};
+                new TypeDeclaration(new Identifier[] { "foo", "bar", "baz" }, new EnumType(new Identifier[0]))};
 
 
             var result = TypeResolve.ResolveType(new Identifier[] { "foo", "bar" }, typeDecl);
 
-            Assert.AreEqual(foo, result);
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(foo, result.Result);
 
-            Assert.IsNotNull(TypeResolve.ResolveType(new Identifier[] { "foo", "bar", "baz" }, typeDecl));
-            Assert.AreNotEqual(foo, TypeResolve.ResolveType(new Identifier[] { "foo", "bar", "baz" }, typeDecl));
+            Assert.IsTrue(TypeResolve.ResolveType(new Identifier[] { "foo", "bar", "baz" }, typeDecl).Success);
+            Assert.AreNotEqual(foo, TypeResolve.ResolveType(new Identifier[] { "foo", "bar", "baz" }, typeDecl).Result);
         }
 
         [TestMethod]
         public void ParameterResolutionHappyPath()
         {
-            var foo = new TangentType(new Identifier[0]);
+            var foo = new EnumType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
             var partial = new PartialParameterDeclaration("x", new List<Identifier>() { "foo", "bar" });
@@ -103,7 +105,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void ParameterResolutionSadPath()
         {
-            var foo = new TangentType(new Identifier[0]);
+            var foo = new EnumType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
             var partial = new PartialParameterDeclaration("x", new List<Identifier>() { "foo", "baz" });
@@ -115,7 +117,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void FunctionResolutionHappyPath()
         {
-            var foo = new TangentType(new Identifier[0]);
+            var foo = new EnumType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
             var partial = new PartialReductionDeclaration(
@@ -132,6 +134,60 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(new Identifier("x"), x.Takes.First());
 
             Assert.AreEqual(foo, result.Result.Returns.EffectiveType);
+        }
+
+        [TestMethod]
+        public void SingleValueResolutionHappyPath()
+        {
+            var foo = new EnumType(new Identifier[] { "a", "moocow" });
+            var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
+
+            var result = TypeResolve.ResolveType(new Identifier[] { "foo", "bar", ".", "a" }, new[] { typeDecl });
+
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(KindOfType.SingleValue, result.Result.ImplementationType);
+            var svt = result.Result as SingleValueType;
+            Assert.AreEqual(foo, svt.ValueType);
+            Assert.AreEqual("a", svt.Value);
+
+            result = TypeResolve.ResolveType(new Identifier[] { "foo", "bar", ".", "moocow" }, new[] { typeDecl });
+
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(KindOfType.SingleValue, result.Result.ImplementationType);
+            svt = result.Result as SingleValueType;
+            Assert.AreEqual(foo, svt.ValueType);
+            Assert.AreEqual("moocow", svt.Value);
+        }
+
+        [TestMethod]
+        public void SingleValueResolutionTwoDotsDies()
+        {
+            var foo = new EnumType(new Identifier[] { "a", "moocow" });
+            var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
+
+            var result = TypeResolve.ResolveType(new Identifier[] { "foo", "bar", ".", ".", "a" }, new[] { typeDecl });
+            Assert.IsFalse(result.Success);
+        }
+
+
+        [TestMethod]
+        public void SingleValueResolutionIdMismatchFails()
+        {
+            var foo = new EnumType(new Identifier[] { "a", "moocow" });
+            var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
+
+            var result = TypeResolve.ResolveType(new Identifier[] { "foo", "bar", ".", "moo" }, new[] { typeDecl });
+            Assert.IsFalse(result.Success);
+        }
+
+        [TestMethod]
+        public void SingleValueResolutionTypeMismatchFails()
+        {
+            var foo = new EnumType(new Identifier[] { "a", "moocow" });
+            var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
+
+            var result = TypeResolve.ResolveType(new Identifier[] { "foo", "baa", ".", "moocow" }, new[] { typeDecl });
+            Assert.IsFalse(result.Success);
         }
     }
 }

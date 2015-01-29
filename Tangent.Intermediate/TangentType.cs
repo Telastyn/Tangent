@@ -5,15 +5,22 @@ using System.Text;
 
 namespace Tangent.Intermediate
 {
+    public enum KindOfType
+    {
+        Void,
+        Enum,
+        SingleValue
+    }
+
     public class TangentType
     {
-        public readonly IEnumerable<Identifier> Values;
+        public readonly KindOfType ImplementationType;
 
-        public TangentType(IEnumerable<Identifier> values)
+        protected TangentType(KindOfType impl)
         {
-            Values = values;
+            ImplementationType = impl;
         }
 
-        public static readonly TangentType Void = new TangentType(Enumerable.Empty<Identifier>());
+        public static readonly TangentType Void = new TangentType(KindOfType.Void);
     }
 }

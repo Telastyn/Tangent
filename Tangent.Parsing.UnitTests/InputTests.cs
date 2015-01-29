@@ -87,7 +87,7 @@ namespace Tangent.Parsing.UnitTests
             // (bar: t) => * {
             //    foo bar;
             // }
-            var t = new TangentType(Enumerable.Empty<Identifier>());
+            var t = new EnumType(Enumerable.Empty<Identifier>());
             var scope = new Scope(
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("bar", t) },
@@ -113,7 +113,7 @@ namespace Tangent.Parsing.UnitTests
             // (bar: t) => * {
             //    bar foo;
             // }
-            var t = new TangentType(Enumerable.Empty<Identifier>());
+            var t = new EnumType(Enumerable.Empty<Identifier>());
             var scope = new Scope(
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("bar", t) },
@@ -139,7 +139,7 @@ namespace Tangent.Parsing.UnitTests
             // (bar: t) => * {
             //    bar foo bar;
             // }
-            var t = new TangentType(Enumerable.Empty<Identifier>());
+            var t = new EnumType(Enumerable.Empty<Identifier>());
             var scope = new Scope(
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("bar", t) },
@@ -195,7 +195,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void ReturnTypesMatter()
         {
-            var t = new TangentType(Enumerable.Empty<Identifier>());
+            var t = new EnumType(Enumerable.Empty<Identifier>());
             var scope = new Scope(
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("foo", t) },

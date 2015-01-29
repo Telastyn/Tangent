@@ -38,8 +38,8 @@ namespace Tangent.Tokenization
                 // Comments.
                 if (input[index] == '/' && input[index + 1] == '/') {
                     var eol = input.IndexOf('\n', index + 2);
-                    if (eol == -1) { eol = input.Length; }
-                    return eol;
+                    if (eol == -1) { eol = input.Length - 1; }
+                    return eol + 1;
                 }
             }
 

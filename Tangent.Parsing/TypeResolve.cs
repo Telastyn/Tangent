@@ -49,7 +49,7 @@ namespace Tangent.Parsing
 
             var fn = partialFunction.Returns;
             var effectiveType = ResolveType(fn.EffectiveType, types);
-            if (effectiveType == null) {
+            if (!effectiveType.Success) {
                 errors.Add(new BadTypePhrase(fn.EffectiveType));
             }
 
@@ -57,7 +57,7 @@ namespace Tangent.Parsing
                 return new ResultOrParseError<ReductionDeclaration>(new TypeResolutionErrors(errors));
             }
 
-            return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType, fn.Implementation)));
+            return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType.Result, fn.Implementation)));
         }
 
         internal static ResultOrParseError<PhrasePart> Resolve(PartialPhrasePart partial, IEnumerable<TypeDeclaration> types)
@@ -77,16 +77,45 @@ namespace Tangent.Parsing
         internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types)
         {
             var type = ResolveType(partial.Returns, types);
-            if (type == null) {
-                return new ResultOrParseError<ParameterDeclaration>(new TypeResolutionErrors(new[] { new BadTypePhrase(partial.Returns) }));
+            if (!type.Success) {
+                return new ResultOrParseError<ParameterDeclaration>(type.Error);
             }
 
-            return new ResultOrParseError<ParameterDeclaration>(new ParameterDeclaration(partial.Takes, type));
+            return new ParameterDeclaration(partial.Takes, type.Result);
         }
 
-        internal static TangentType ResolveType(IEnumerable<Identifier> identifiers, IEnumerable<TypeDeclaration> types)
+        internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<Identifier> identifiers, IEnumerable<TypeDeclaration> types)
         {
             // TODO: fix perf.
+            List<int> dots = new List<int>();
+            int ix = 0;
+            foreach (var id in identifiers)
+            {
+                if (id.Value == ".")
+                {
+                    dots.Add(ix);
+                }
+
+                ix++;
+            }
+
+            if (dots.Count == 1)
+            {
+                // For now, values can only be a single identifier, so dots needs to be a b c.v
+                if (dots[0] != ix - 2) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[]{ new BadTypePhrase(identifiers)})); }
+                var t = ResolveType(identifiers.Take(dots[0]), types);
+                if (!t.Success) { return t; }
+                if (t.Result.ImplementationType != KindOfType.Enum) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[]{ new BadTypePhrase(identifiers)})); }
+                var tenum = t.Result as EnumType;
+                var v = identifiers.Last().Value;
+                if (!tenum.Values.Contains(v)) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) })); }
+                return new SingleValueType(tenum, v);
+            }
+            else if (dots.Count > 1)
+            {
+                return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) }));
+            } // else
+
             foreach (var type in types) {
                 var typeIdentifiers = type.Takes;
                 if (identifiers.SequenceEqual(typeIdentifiers)) {
@@ -94,7 +123,7 @@ namespace Tangent.Parsing
                 }
             }
 
-            return null;
+            return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) }));
         }
     }
 }

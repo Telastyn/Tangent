@@ -24,14 +24,22 @@ namespace Tangent.CilGeneration
 
             Dictionary<TangentType, Type> typeLookup = new Dictionary<TangentType, Type>() { { TangentType.Void, typeof(void) } };
             foreach (var type in program.TypeDeclarations.Where(td => td.Returns != TangentType.Void)) {
-                var typeName = GetNameFor(type);
-                var enumBuilder = moduleBuilder.DefineEnum(typeName, System.Reflection.TypeAttributes.Public, typeof(int));
-                int x = 1;
-                foreach (var value in type.Returns.Values) {
-                    enumBuilder.DefineLiteral(value.Value, x++);
-                }
+                switch (type.Returns.ImplementationType)
+                {
+                    case KindOfType.Enum:
+                        var typeName = GetNameFor(type);
+                        var enumBuilder = moduleBuilder.DefineEnum(typeName, System.Reflection.TypeAttributes.Public, typeof(int));
+                        int x = 1;
+                        foreach (var value in (type.Returns as EnumType).Values)
+                        {
+                            enumBuilder.DefineLiteral(value.Value, x++);
+                        }
 
-                typeLookup.Add(type.Returns, enumBuilder.CreateType());
+                        typeLookup.Add(type.Returns, enumBuilder.CreateType());
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
             }
 
             var rootClass = moduleBuilder.DefineType("_");
