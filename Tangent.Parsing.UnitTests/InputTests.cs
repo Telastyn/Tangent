@@ -209,5 +209,47 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
             Assert.AreEqual(scope.Functions.First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
         }
+
+        [TestMethod]
+        public void LazyWorksWithBindings()
+        {
+            var scope = new Scope(
+                Enumerable.Empty<TypeDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
+                new[] { 
+                    new ReductionDeclaration(new PhrasePart[] { new PhrasePart("f"), new ParameterDeclaration("x", TangentType.Void.Lazy) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) ,
+                    new ReductionDeclaration(new PhrasePart[]{ new PhrasePart("g")}, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())))
+                });
+
+            var tokens = Tokenize.ProgramFile("f g").Select(t => new Identifier(t.Value));
+
+            var result = new Input(tokens, scope).InterpretAsStatement();
+
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
+            Assert.AreEqual(ExpressionNodeType.HalfBoundExpression, ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First().NodeType);
+        }
+
+        [TestMethod]
+        public void LazyWorksWithParams()
+        {
+            var scope = new Scope(
+                Enumerable.Empty<TypeDeclaration>(),
+                new[] { new ParameterDeclaration("g", TangentType.Void) },
+                new[] { 
+                    new ReductionDeclaration(new PhrasePart[] { new PhrasePart("f"), new ParameterDeclaration("x", TangentType.Void.Lazy) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())))
+                });
+
+            var tokens = Tokenize.ProgramFile("f g").Select(t => new Identifier(t.Value));
+
+            var result = new Input(tokens, scope).InterpretAsStatement();
+
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
+            Assert.AreEqual(ExpressionNodeType.HalfBoundExpression, ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First().NodeType);
+            var hbe = ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First() as HalfBoundExpression;
+            dynamic decl = new PrivateObject(hbe).GetField("Declaration");
+            Assert.IsTrue(scope.Parameters.First() == decl);
+        }
     }
 }

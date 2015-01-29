@@ -38,7 +38,25 @@ namespace Tangent.Parsing
         {
             get
             {
-                return ExpressionNodeType.FunctionBinding;
+                return ExpressionNodeType.HalfBoundExpression;
+            }
+        }
+
+        public TangentType EffectiveType
+        {
+            get
+            {
+                if (Declaration is ParameterDeclaration)
+                {
+                    return Declaration.Returns.Lazy;
+                }
+
+                if (Declaration is ReductionDeclaration)
+                {
+                    return Declaration.Returns.EffectiveType.Lazy;
+                }
+
+                return null;
             }
         }
 

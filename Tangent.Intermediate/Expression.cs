@@ -13,6 +13,7 @@ namespace Tangent.Intermediate
         FunctionBinding = 3,
         FunctionInvocation = 4,
         TypeAccess = 5,
+        HalfBoundExpression = 6,
     }
 
     public abstract class Expression

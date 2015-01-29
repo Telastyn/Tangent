@@ -127,6 +127,18 @@ namespace Tangent.Parsing
                     return param.Parameter.Returns;
 
                 case ExpressionNodeType.FunctionBinding:
+                    var binding = expr as FunctionBindingExpression;
+                    return binding.EffectiveType;
+
+                case ExpressionNodeType.HalfBoundExpression:
+                    var halfBinding = expr as HalfBoundExpression;
+                    if (!halfBinding.IsDone)
+                    {
+                        return null;
+                    }
+
+                    return halfBinding.EffectiveType;
+
                 case ExpressionNodeType.TypeAccess:
                 case ExpressionNodeType.Identifier:
                 case ExpressionNodeType.Unknown:
@@ -211,7 +223,7 @@ namespace Tangent.Parsing
 
                                 // else good.
                                 break;
-
+                            case ExpressionNodeType.HalfBoundExpression:
                             case ExpressionNodeType.FunctionBinding:
                             case ExpressionNodeType.Identifier:
                             case ExpressionNodeType.TypeAccess:

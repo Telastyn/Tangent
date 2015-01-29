@@ -15,9 +15,17 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.FunctionBinding; }
         }
 
+        public TangentType EffectiveType
+        {
+            get
+            {
+                return FunctionDefinition.Returns.EffectiveType.Lazy;
+            }
+        }
+
         public FunctionBindingExpression(ReductionDeclaration function, IEnumerable<Expression> parameters)
         {
-            Parameters = parameters;
+            Parameters = parameters.ToList();
             FunctionDefinition = function;
         }
 
