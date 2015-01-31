@@ -40,8 +40,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CilFunctionCompiler.cs" />
     <Compile Include="CilCompiler.cs" />
+    <Compile Include="CilScope.cs" />
     <Compile Include="CilTypeCompiler.cs" />
+    <Compile Include="EEmptyFunctionLookup.cs" />
+    <Compile Include="FallbackCompositeFunctionLookup.cs" />
+    <Compile Include="IFunctionCompiler.cs" />
+    <Compile Include="IFunctionLookup.cs" />
     <Compile Include="ITypeCompiler.cs" />
     <Compile Include="ITypeLookup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

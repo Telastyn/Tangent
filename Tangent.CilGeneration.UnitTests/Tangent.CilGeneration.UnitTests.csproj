@@ -56,6 +56,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DelegatingTypeLookupTests.cs" />
     <Compile Include="CilTypeCompilerTests.cs" />
+    <Compile Include="CilScopeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.CilGeneration\Tangent.CilGeneration.csproj">
