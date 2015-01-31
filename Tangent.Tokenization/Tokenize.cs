@@ -11,11 +11,9 @@ namespace Tangent.Tokenization
         {
             int ix = 0;
 
-            while (ix < input.Length)
-            {
+            while (ix < input.Length) {
                 ix = Skip(input, ix);
-                if (ix == input.Length)
-                {
+                if (ix == input.Length) {
                     yield break;
                 }
 
@@ -23,6 +21,7 @@ namespace Tangent.Tokenization
                     Match(":>", TokenIdentifier.TypeDeclSeparator, input, ix) ??
                     Match("~>", TokenIdentifier.LazyOperator, input, ix) ??
                     Identifier(input, ix) ??
+                    String(input, ix) ??
                     Symbol(input, ix);
 
                 yield return token;
@@ -36,20 +35,17 @@ namespace Tangent.Tokenization
         {
             if (index >= input.Length) { return input.Length; }
 
-            if (index < input.Length - 1)
-            {
+            if (index < input.Length - 1) {
 
                 // Comments.
-                if (input[index] == '/' && input[index + 1] == '/')
-                {
+                if (input[index] == '/' && input[index + 1] == '/') {
                     var eol = input.IndexOf('\n', index + 2);
                     if (eol == -1) { eol = input.Length - 1; }
                     return eol + 1;
                 }
             }
 
-            while (index < input.Length && char.IsWhiteSpace(input[index]))
-            {
+            while (index < input.Length && char.IsWhiteSpace(input[index])) {
                 index++;
             }
 
@@ -63,17 +59,33 @@ namespace Tangent.Tokenization
             int endIx = index;
 
             // For now, let's just worry about ascii.
-            while (endIx < input.Length && ((input[endIx] >= 'a' && input[endIx] <= 'z') || (input[endIx] >= 'A' && input[endIx] <= 'Z')))
-            {
+            while (endIx < input.Length && ((input[endIx] >= 'a' && input[endIx] <= 'z') || (input[endIx] >= 'A' && input[endIx] <= 'Z'))) {
                 endIx++;
             }
 
-            if (endIx == index)
-            {
+            if (endIx == index) {
                 return null;
             }
 
             return new Token(TokenIdentifier.Identifier, input, index, endIx);
+        }
+
+        public static Token String(string input, int index)
+        {
+            // Starting with the basics.
+            if (index >= input.Length) { return null; }
+            if (input[index] == '\"') {
+                int endIx;
+                for (endIx = index + 1; endIx < input.Length && input[endIx] != '\"'; ++endIx) { }
+                if (endIx == input.Length) {
+                    // TODO: pleasant error.
+                    return null;
+                }
+
+                return new Token(TokenIdentifier.StringConstant, input, index, endIx + 1);
+            } else {
+                return null;
+            }
         }
 
         public static Token Symbol(string input, int index)
@@ -86,13 +98,11 @@ namespace Tangent.Tokenization
 
         private static Token Match(string target, TokenIdentifier id, string input, int index)
         {
-            if (index > input.Length - target.Length)
-            {
+            if (index > input.Length - target.Length) {
                 return null;
             }
 
-            if (input.Substring(index, target.Length) == target)
-            {
+            if (input.Substring(index, target.Length) == target) {
                 return new Token(id, input, index, index + target.Length);
             }
 

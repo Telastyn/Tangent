@@ -28,7 +28,7 @@ namespace Tangent.Tokenization.UnitTests
         {
             var test = @"foo // blah blah
 bar";
-            Assert.AreEqual(17, Tokenize.Skip(test, 4));
+            Assert.AreEqual(18, Tokenize.Skip(test, 4));
         }
 
         [TestMethod]
@@ -183,6 +183,28 @@ bar";
             Assert.IsNotNull(result);
             Assert.AreEqual(TokenIdentifier.Symbol, result.Identifier);
             Assert.AreEqual("+", result.Value);
+        }
+
+        [TestMethod]
+        public void StringConstantHappyPath()
+        {
+            var test = "\"foo\"";
+            var result = Tokenize.String(test, 0);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(TokenIdentifier.StringConstant, result.Identifier);
+            Assert.AreEqual(1, result.StartPosition.Column);
+            Assert.AreEqual(6, result.EndPosition.Column);
+            Assert.AreEqual("\"foo\"", result.Value);
+        }
+
+        [TestMethod]
+        public void MalformedStringIsNull()
+        {
+            var test = "\"foo";
+            var result = Tokenize.String(test, 0);
+
+            Assert.IsNull(result);
         }
     }
 }

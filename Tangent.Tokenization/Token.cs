@@ -13,7 +13,8 @@ namespace Tangent.Tokenization
         TypeDeclSeparator,
         ReductionDeclSeparator,
         
-        LazyOperator
+        LazyOperator,
+        StringConstant
     }
 
     [Serializable]

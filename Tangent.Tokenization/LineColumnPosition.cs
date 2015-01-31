@@ -18,7 +18,7 @@ namespace Tangent.Tokenization
 
         public static LineColumnPosition Create(string input, int index)
         {
-            if (index < 0 || index >= input.Length) {
+            if (index < 0 || index > input.Length) {
                 throw new ArgumentOutOfRangeException("index");
             }
 
