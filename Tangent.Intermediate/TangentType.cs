@@ -7,7 +7,7 @@ namespace Tangent.Intermediate
 {
     public enum KindOfType
     {
-        Void,
+        Builtin,
         Enum,
         SingleValue,
         Lazy
@@ -33,6 +33,7 @@ namespace Tangent.Intermediate
             }
         }
 
-        public static readonly TangentType Void = new TangentType(KindOfType.Void);
+        public static readonly TangentType Void = new TangentType(KindOfType.Builtin);
+        public static readonly TangentType String = new TangentType(KindOfType.Builtin);
     }
 }

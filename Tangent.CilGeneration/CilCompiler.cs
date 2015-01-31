@@ -26,7 +26,7 @@ namespace Tangent.CilGeneration
 
             var rootClass = moduleBuilder.DefineType("_");
             var fnLookup = new CilScope(rootClass, program.Functions, typeLookup);
-            var compiler = new CilFunctionCompiler(EmptyFunctionLookup.Common);
+            var compiler = new CilFunctionCompiler(BuiltinFunctionLookup.Common);
 
             fnLookup.Compile(compiler);
 

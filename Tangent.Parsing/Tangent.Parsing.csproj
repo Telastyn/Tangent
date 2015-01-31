@@ -42,6 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BuiltinFunctions.cs" />
     <Compile Include="Errors\BadTypePhrase.cs" />
     <Compile Include="Errors\AmbiguousStatementError.cs" />
     <Compile Include="Errors\ExpectedLiteralParseError.cs" />
@@ -52,6 +53,7 @@
     <Compile Include="Parse.cs" />
     <Compile Include="Errors\ParseError.cs" />
     <Compile Include="Partial\BlockElement.cs" />
+    <Compile Include="Partial\ConstantElement.cs" />
     <Compile Include="Partial\IdentifierElement.cs" />
     <Compile Include="Partial\ParenedElement.cs" />
     <Compile Include="Partial\PartialBlock.cs" />

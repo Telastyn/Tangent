@@ -251,5 +251,23 @@ namespace Tangent.Parsing.UnitTests
             dynamic decl = new PrivateObject(hbe).GetField("Declaration");
             Assert.IsTrue(scope.Parameters.First() == decl);
         }
+
+        [TestMethod]
+        public void BuiltinBasicPath()
+        {
+            var scope = new Scope(
+                Enumerable.Empty<TypeDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
+                BuiltinFunctions.All);
+
+            var result = new Input(new Expression[] { new IdentifierExpression("print"), new ConstantExpression<string>(TangentType.String, "foo") }, scope).InterpretAsStatement();
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
+            Assert.AreEqual(BuiltinFunctions.PrintString, ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
+            Assert.AreEqual(ExpressionNodeType.Constant, ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First().NodeType);
+            Assert.AreEqual("foo", ((ConstantExpression<string>)((FunctionInvocationExpression)result.First()).Bindings.Parameters.First()).TypedValue);
+        }
     }
 }

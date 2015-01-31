@@ -60,8 +60,9 @@ namespace Tangent.CilGeneration
                 case KindOfType.SingleValue:
                     throw new NotImplementedException("Something is asking for the type of a SingleValueType. We should never get here.");
                 
-                case KindOfType.Void:
+                case KindOfType.Builtin:
                     lookup.Add(TangentType.Void, typeof(void));
+                    lookup.Add(TangentType.String, typeof(string));
                     return;
 
                 default:

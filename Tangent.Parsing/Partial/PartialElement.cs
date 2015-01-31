@@ -10,7 +10,8 @@ namespace Tangent.Parsing.Partial
     {
         Identifier,
         Parens,
-        Block
+        Block,
+        Constant
     }
 
     public abstract class PartialElement

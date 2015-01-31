@@ -43,6 +43,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Block.cs" />
+    <Compile Include="BuiltinFunctions.cs" />
+    <Compile Include="ConstantExpression.cs" />
     <Compile Include="DelegateInvocationExpression.cs" />
     <Compile Include="EnumType.cs" />
     <Compile Include="Expression.cs" />

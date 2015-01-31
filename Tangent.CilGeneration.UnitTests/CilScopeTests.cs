@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tangent.Intermediate;
 using System.Linq;
 using System.Reflection.Emit;
 using Moq;
+using System.Reflection;
 
 namespace Tangent.CilGeneration.UnitTests
 {
@@ -16,13 +18,14 @@ namespace Tangent.CilGeneration.UnitTests
         {
             var mock = new Mock<ITypeLookup>();
             mock.Setup(tl => tl[TangentType.Void]).Returns(typeof(void));
+            mock.Setup(tl => tl[TangentType.String]).Returns(typeof(string));
             emptyTypeLookup = mock.Object;
         }
 
         [TestMethod]
         public void BasicMethodHappyPath()
         {
-            var assembly = AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName("BasicMethodHappyPath"), AssemblyBuilderAccess.Run);
+            var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("BasicMethodHappyPath"), AssemblyBuilderAccess.Run);
             var module = assembly.DefineDynamicModule("BasicMethodHappyPath");
             var t = module.DefineType("BasicMethodHappyPath");
             var fn = new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
@@ -45,7 +48,7 @@ namespace Tangent.CilGeneration.UnitTests
             mockLookup.Setup(tl => tl[It.IsAny<TangentType>()]).Returns(typeof(DateTimeOffset));
             mockLookup.Setup(tl => tl[TangentType.Void]).Returns(typeof(void));
 
-            var assembly = AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName("MethodWithParamsHappyPath"), AssemblyBuilderAccess.Run);
+            var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("MethodWithParamsHappyPath"), AssemblyBuilderAccess.Run);
             var module = assembly.DefineDynamicModule("MethodWithParamsHappyPath");
             var t = module.DefineType("MethodWithParamsHappyPath");
             var fn = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
@@ -69,7 +72,7 @@ namespace Tangent.CilGeneration.UnitTests
             mockLookup.Setup(tl => tl[It.IsAny<TangentType>()]).Returns(typeof(DateTimeOffset));
             mockLookup.Setup(tl => tl[TangentType.Void]).Returns(typeof(void));
 
-            var assembly = AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName("MethodWithParamsHappyPath"), AssemblyBuilderAccess.Run);
+            var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("MethodWithParamsHappyPath"), AssemblyBuilderAccess.Run);
             var module = assembly.DefineDynamicModule("MethodWithParamsHappyPath");
             var t = module.DefineType("MethodWithParamsHappyPath");
             var fn = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
@@ -92,6 +95,31 @@ namespace Tangent.CilGeneration.UnitTests
             Assert.AreEqual(typeof(void), stub2.ReturnType);
 
             Assert.IsFalse(object.ReferenceEquals(stub, stub2));
+        }
+
+        [TestMethod]
+        public void PrintStringBuiltinCompilesAndRuns()
+        {
+            var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("PrintStringBuiltinCompiles"), AssemblyBuilderAccess.Run);
+            var module = assembly.DefineDynamicModule("PrintStringBuiltinCompiles");
+            var t = module.DefineType("PrintStringBuiltinCompiles");
+            var fn = new ReductionDeclaration("test", new Function(TangentType.Void, new Block(new[]{ 
+                new FunctionInvocationExpression(
+                    new FunctionBindingExpression( 
+                        BuiltinFunctions.PrintString, 
+                        new[]{new ConstantExpression<string>(TangentType.String, "moo.")}))})));
+
+            var scope = new CilScope(t, new[] { fn }, emptyTypeLookup);
+
+            scope.Compile(new CilFunctionCompiler(BuiltinFunctionLookup.Common));
+
+            t.CreateType();
+
+            var test = t.GetMethod("test");
+
+            // And should not blow up. It *should* also print moo. to the console, but the unit test can't verify that.
+            //  You the human can.
+            test.Invoke(null, new object[0]);
         }
     }
 }

@@ -86,7 +86,7 @@ namespace Tangent.Parsing
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
                 if (partialFunction != null)
                 {
-                    var scope = new Scope(types, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), resolvedFunctions.Result);
+                    var scope = new Scope(types, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), resolvedFunctions.Result.Concat(BuiltinFunctions.All));
                     Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
 
                     lookup.Add(partialFunction, newb);
@@ -156,6 +156,8 @@ namespace Tangent.Parsing
                     throw new NotImplementedException("Parens expressions not yet supported.");
                 case ElementType.Block:
                     return new FunctionBindingExpression(new ReductionDeclaration(Enumerable.Empty<PhrasePart>(), BuildBlock(scope, TangentType.Void, ((BlockElement)element).Block, bad, ambiguous)), new Expression[] { });
+                case ElementType.Constant:
+                    return ((ConstantElement)element).TypelessExpression;
                 default:
                     throw new NotImplementedException();
             }
@@ -366,37 +368,26 @@ namespace Tangent.Parsing
                 {
                     tokens.RemoveAt(0);
                     result.Add(new IdentifierElement(first.Value));
-                }
-                else if (first.Value == "(")
-                {
+                } else if (first.Identifier == TokenIdentifier.StringConstant) {
+                    tokens.RemoveAt(0);
+                    result.Add(new ConstantElement<string>(new ConstantExpression<string>(TangentType.String, first.Value.Substring(1, first.Value.Length - 2))));
+                } else if (first.Value == "(") {
                     throw new NotImplementedException("Paren expressions are not yet supported.");
-                }
-                else if (first.Value == ";")
-                {
-                    if (result.Any())
-                    {
+                } else if (first.Value == ";") {
+                    if (result.Any()) {
                         tokens.RemoveAt(0);
                         return result;
-                    }
-                    else
-                    {
+                    } else {
                         return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
                     }
-                }
-                else if (first.Value == "{")
-                {
+                } else if (first.Value == "{") {
                     var block = PartialBlock(tokens);
-                    if (block.Success)
-                    {
+                    if (block.Success) {
                         result.Add(new BlockElement(block.Result));
-                    }
-                    else
-                    {
+                    } else {
                         return new ResultOrParseError<IEnumerable<PartialElement>>(block.Error);
                     }
-                }
-                else
-                {
+                } else {
                     return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
                 }
             }

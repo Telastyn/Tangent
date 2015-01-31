@@ -153,6 +153,10 @@ namespace Tangent.Parsing
                     var delegateInvoke = expr as DelegateInvocationExpression;
                     return delegateInvoke.EffectiveType;
 
+                case ExpressionNodeType.Constant:
+                    var constant = expr as ConstantExpression;
+                    return constant.EffectiveType;
+
                 case ExpressionNodeType.TypeAccess:
                 case ExpressionNodeType.Identifier:
                 case ExpressionNodeType.Unknown:
@@ -240,6 +244,13 @@ namespace Tangent.Parsing
 
                             case ExpressionNodeType.DelegateInvocation:
                                 if (((DelegateInvocationExpression)bufferEnumerator.Current).EffectiveType != terminalEnumerator.Current.Parameter.Returns) {
+                                    return false;
+                                }
+                                // else good.
+                                break;
+
+                            case ExpressionNodeType.Constant:
+                                if (((ConstantExpression)bufferEnumerator.Current).EffectiveType != terminalEnumerator.Current.Parameter.Returns) {
                                     return false;
                                 }
                                 // else good.

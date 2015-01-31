@@ -128,6 +128,14 @@ namespace Tangent.CilGeneration
                 case ExpressionNodeType.Unknown:
                     throw new NotImplementedException();
 
+                case ExpressionNodeType.Constant:
+                    var constant = (ConstantExpression)expr;
+                    if (constant.EffectiveType == TangentType.String) {
+                        gen.Emit(OpCodes.Ldstr, (string)constant.Value);
+                        return;
+                    } else {
+                        throw new NotImplementedException();
+                    }
                 default:
                     throw new NotImplementedException();
             }

@@ -7,7 +7,7 @@ using Tangent.Intermediate;
 
 namespace Tangent.Parsing.Partial
 {
-    public class IdentifierElement: PartialElement
+    public class IdentifierElement : PartialElement
     {
         public readonly Identifier Identifier;
         public IdentifierElement(Identifier identifier)
