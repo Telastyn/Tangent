@@ -56,6 +56,11 @@ namespace Tangent.Parsing
                     return Declaration.Returns.EffectiveType.Lazy;
                 }
 
+                if (Declaration is EnumValueAccessRule)
+                {
+                    return Declaration.Returns;
+                }
+
                 return null;
             }
         }
@@ -76,6 +81,11 @@ namespace Tangent.Parsing
 
             if (Declaration is ReductionDeclaration) {
                 return new FunctionBindingExpression(Declaration, Bindings.Where(b => b != null && !(b is IdentifierExpression)));
+            }
+
+            if (Declaration is EnumValueAccessRule)
+            {
+                return new EnumValueAccessExpression(Rule.Returns);
             }
 
             throw new NotImplementedException();
@@ -102,6 +112,13 @@ namespace Tangent.Parsing
             Declaration = declaration;
         }
 
+        public HalfBoundExpression(EnumValueAccessRule rule)
+        {
+            Bindings = new List<Expression>();
+            Rule = new ReductionRule<dynamic, dynamic>(rule.Takes, rule.Returns);
+            Declaration = rule;
+        }
+
         private PhrasePart Fix(dynamic param)
         {
             if (param is PhrasePart) {
@@ -114,6 +131,5 @@ namespace Tangent.Parsing
 
             throw new InvalidOperationException();
         }
-
     }
 }

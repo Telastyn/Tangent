@@ -38,8 +38,6 @@ namespace Tangent.CilGeneration
 
             rootClass.CreateType();
 
-
-
             if (entrypoint != null)
             {
                 var entrypointMethod = fnLookup[entrypoint];

@@ -35,6 +35,8 @@ namespace Tangent.CilGeneration
                 var fnSpecializations = specializations.Where(fnsp => fnsp.IsSpecializationOf(fn)).ToList();
                 this.specializations.Add(fn, fnSpecializations);
             }
+
+            this.scope = scope;
         }
 
         public void Compile(IFunctionCompiler compiler)
