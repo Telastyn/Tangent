@@ -15,8 +15,7 @@ namespace Tangent.Intermediate
         TypeAccess = 5,
         HalfBoundExpression = 6,
         DelegateInvocation = 7,
-        Constant = 8,
-        EnumValueAccess = 9
+        Constant = 8
     }
 
     public abstract class Expression

@@ -21,23 +21,12 @@ namespace Tangent.Intermediate
 
         public SingleValueType SingleValueTypeFor(Identifier id)
         {
-            return cache.GetOrAdd(id, i => new SingleValueType(this, i, NumericEquivalenceOf(id)));
-        }
-
-        private int NumericEquivalenceOf(Identifier id)
-        {
-            int ix = 1;
-            foreach (var value in Values)
+            if (!Values.Contains(id))
             {
-                if (value == id)
-                {
-                    return ix;
-                }
-
-                ix++;
+                throw new InvalidOperationException();
             }
 
-            throw new InvalidOperationException();
+            return cache.GetOrAdd(id, i => new SingleValueType(this, i));
         }
     }
 }
