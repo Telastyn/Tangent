@@ -45,18 +45,10 @@ namespace Tangent.CilGeneration
                 Label next = gen.DefineLabel();
                 foreach (var typeValuePair in fn.Takes.Zip(specialization.Takes, Tuple.Create).Where(z => !z.Item2.IsIdentifier && z.Item2.Parameter.Returns.ImplementationType == KindOfType.SingleValue)) {
                     var single = (SingleValueType)typeValuePair.Item2.Parameter.Returns;
-                    int v = 1;
-                    foreach (var value in single.ValueType.Values) {
-                        if (value == single.Value) {
-                            break;
-                        }
-
-                        v++;
-                    }
 
                     // If the specialization is not met, go to next specialization.
                     parameterAccessors[typeValuePair.Item1.Parameter]();
-                    gen.Emit(OpCodes.Ldc_I4, v);
+                    gen.Emit(OpCodes.Ldc_I4, single.NumericEquivalent);
                     gen.Emit(OpCodes.Ceq);
                     gen.Emit(OpCodes.Brfalse, next);
                     // Otherwise, proceed to next param.
@@ -136,6 +128,12 @@ namespace Tangent.CilGeneration
                     } else {
                         throw new NotImplementedException();
                     }
+
+                case ExpressionNodeType.EnumValueAccess:
+                    var eva = (EnumValueAccessExpression)expr;
+                    gen.Emit(OpCodes.Ldc_I4, eva.EnumValue.NumericEquivalent);
+                    return;
+
                 default:
                     throw new NotImplementedException();
             }

@@ -76,7 +76,7 @@ namespace Tangent.CilGeneration.UnitTests
             var module = assembly.DefineDynamicModule("MethodWithParamsHappyPath");
             var t = module.DefineType("MethodWithParamsHappyPath");
             var fn = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
-            var fn2 = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", new SingleValueType(enumT, "b"))) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
+            var fn2 = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT.SingleValueTypeFor("b"))) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
             var scope = new CilScope(t, new[] { fn, fn2 }, mockLookup.Object);
 
             scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common));

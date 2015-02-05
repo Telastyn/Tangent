@@ -269,5 +269,97 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(ExpressionNodeType.Constant, ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First().NodeType);
             Assert.AreEqual("foo", ((ConstantExpression<string>)((FunctionInvocationExpression)result.First()).Bindings.Parameters.First()).TypedValue);
         }
+
+        [TestMethod]
+        public void EnumValueBasicPath()
+        {
+            Identifier bar = "bar";
+            var foo = new EnumType(new[] { bar });
+            var foodecl = new TypeDeclaration("foo", foo);
+            var scope = new Scope(
+                new[] { foodecl },
+                Enumerable.Empty<ParameterDeclaration>(),
+                new[] { new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo.SingleValueTypeFor(bar))), new Function(TangentType.Void, null)) });
+
+            var result = new Input(new Expression[] { new IdentifierExpression("bar") }, scope).InterpretAsStatement();
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(1, result.Count);
+        }
+
+        [TestMethod]
+        public void SpecializationWins()
+        {
+            Identifier bar = "bar";
+            var foo = new EnumType(new[] { bar });
+            var foodecl = new TypeDeclaration("foo", foo);
+
+            var special = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo.SingleValueTypeFor( bar))), new Function(TangentType.Void, null));
+            var generic = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo)), new Function(TangentType.Void, null));
+            var scope = new Scope(
+                new[] { foodecl },
+                Enumerable.Empty<ParameterDeclaration>(),
+                new[] { special, generic });
+
+            var result = new Input(new Expression[] { new IdentifierExpression("bar") }, scope).InterpretAsStatement();
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
+            Assert.AreEqual(special, ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
+        }
+
+        [TestMethod]
+        public void FallbackToEnumWorks()
+        {
+            Identifier bar = "bar";
+            var foo = new EnumType(new[] { bar });
+            var foodecl = new TypeDeclaration("foo", foo);
+
+            var generic = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo)), new Function(TangentType.Void, null));
+            var scope = new Scope(
+                new[] { foodecl },
+                Enumerable.Empty<ParameterDeclaration>(),
+                new[] { generic });
+
+            var result = new Input(new Expression[] { new IdentifierExpression("bar") }, scope).InterpretAsStatement();
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
+            Assert.AreEqual(generic, ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
+        }
+
+        [TestMethod]
+        public void BasicIfTest()
+        {
+            Identifier t = "true";
+            Identifier f = "false";
+            var boolean = new EnumType(new[] { t, f });
+            var booleanDecl = new TypeDeclaration("bool", boolean);
+            var ifFalse = new ReductionDeclaration(new PhrasePart[]{
+                new PhrasePart("if"),
+                new PhrasePart(new ParameterDeclaration("condition", boolean)),
+                new PhrasePart(new ParameterDeclaration("positive", TangentType.Void.Lazy))},
+
+                new Function(TangentType.Void, null));
+
+            var ifTrue = new ReductionDeclaration(new PhrasePart[]{
+                new PhrasePart("if"),
+                new PhrasePart(new ParameterDeclaration("condition", boolean.SingleValueTypeFor(t))),
+                new PhrasePart(new ParameterDeclaration("positive", TangentType.Void.Lazy))},
+
+                new Function(TangentType.Void, null));
+
+            var scope = new Scope(
+                new[] { booleanDecl },
+                Enumerable.Empty<ParameterDeclaration>(),
+                new[] { ifTrue, ifFalse });
+
+            var result = new Input(new Expression[] { new IdentifierExpression("if"), new IdentifierExpression("true"), new FunctionBindingExpression(new ReductionDeclaration(Enumerable.Empty<PhrasePart>(), new Function(TangentType.Void, null)), new Expression[] { }) }, scope).InterpretAsStatement();
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(1, result.Count);
+        }
     }
 }

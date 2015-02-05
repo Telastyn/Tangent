@@ -33,6 +33,7 @@ namespace Tangent.Intermediate
         {
             if (workset.Contains(this)) { return; }
             workset.Add(this);
+            if (BuiltinFunctions.All.Contains(FunctionDefinition)) { return; }
 
             Function replacement = null;
             if (replacements.TryGetValue(FunctionDefinition.Returns, out replacement)) {

@@ -27,7 +27,8 @@ namespace Tangent.Intermediate
         public static MethodInfo DotNetFunctionForBuiltin(ReductionDeclaration fn)
         {
             MethodInfo result = null;
-            if (!lookup.TryGetValue(fn, out result)){
+            if (!lookup.TryGetValue(fn, out result))
+            {
                 return null;
             }
 

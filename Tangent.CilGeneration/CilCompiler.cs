@@ -18,9 +18,15 @@ namespace Tangent.CilGeneration
 
         public void Compile(TangentProgram program, string targetPath)
         {
+            var entrypoint = program.Functions.FirstOrDefault(
+                fn => fn.Takes.Count == 1 &&
+                    fn.Takes.First().IsIdentifier &&
+                    fn.Takes.First().Identifier.Value == "entrypoint" &&
+                    fn.Returns.EffectiveType == TangentType.Void);
+
             string filename = Path.GetFileNameWithoutExtension(targetPath);
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName(filename), AssemblyBuilderAccess.Save);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(filename + ".dll", Path.GetFileName(targetPath) + ".dll", true);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(filename + (entrypoint == null ? ".dll" : ".exe"), Path.GetFileName(targetPath) + (entrypoint == null ? ".dll" : ".exe"), true);
 
             ITypeLookup typeLookup = new DelegatingTypeLookup(new CilTypeCompiler(moduleBuilder), program.TypeDeclarations);
 
@@ -32,7 +38,15 @@ namespace Tangent.CilGeneration
 
             rootClass.CreateType();
 
-            assemblyBuilder.Save(targetPath + ".dll");
+
+
+            if (entrypoint != null)
+            {
+                var entrypointMethod = fnLookup[entrypoint];
+                assemblyBuilder.SetEntryPoint(entrypointMethod);
+            }
+
+            assemblyBuilder.Save(targetPath + (entrypoint == null ? ".dll" : ".exe"));
         }
     }
 }

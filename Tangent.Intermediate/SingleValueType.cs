@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,10 +9,12 @@ namespace Tangent.Intermediate
 {
     public class SingleValueType : TangentType
     {
+
         public readonly EnumType ValueType;
         public readonly Identifier Value;
+        public readonly int NumericEquivalent;
 
-        public SingleValueType(EnumType valueType, Identifier value)
+        internal SingleValueType(EnumType valueType, Identifier value, int numeric)
             : base(KindOfType.SingleValue)
         {
             if (!valueType.Values.Contains(value))
@@ -21,6 +24,7 @@ namespace Tangent.Intermediate
 
             ValueType = valueType;
             Value = value;
+            NumericEquivalent = numeric;
         }
     }
 }
