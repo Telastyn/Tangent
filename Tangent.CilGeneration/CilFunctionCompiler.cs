@@ -28,7 +28,7 @@ namespace Tangent.CilGeneration
 
             if (target.ReturnType != typeof(void))
             {
-                gen.DeclareLocal(target.ReturnType);
+                returnValue = gen.DeclareLocal(target.ReturnType);
             }
 
             AddDispatchCode(gen, fn, specializations, fnLookup, typeLookup, parameterCodes, returnValue, returnLabel);
@@ -109,12 +109,26 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.FunctionInvocation:
                     var invoke = (FunctionInvocationExpression)expr;
+
                     foreach (var p in invoke.Bindings.Parameters)
                     {
                         AddExpression(p, gen, fnLookup, typeLookup, closureScope, parameterCodes, returnVariable, returnLabel);
                     }
 
-                    gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
+                    if (invoke.Bindings.FunctionDefinition.Returns == BuiltinFunctions.Return)
+                    {
+                        if (invoke.Bindings.Parameters.Any())
+                        {
+                            gen.Emit(OpCodes.Stloc, returnVariable);
+                        }
+
+                        gen.Emit(OpCodes.Br, returnLabel.Value);
+                    }
+                    else
+                    {
+                        gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
+                    }
+
                     return;
 
                 case ExpressionNodeType.HalfBoundExpression:

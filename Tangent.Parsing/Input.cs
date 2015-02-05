@@ -220,7 +220,20 @@ namespace Tangent.Parsing
 
         private IEnumerable<List<HalfBoundExpression>> CandidatesInPriorityOrder(IEnumerable<Expression> tokenStream)
         {
-            // Parameters first.
+            // Return first.
+            if (tokenStream.First().NodeType == ExpressionNodeType.Identifier && ((IdentifierExpression)tokenStream.First()).Identifier.Value == "return")
+            {
+                if (Scope.ReturnType == TangentType.Void)
+                {
+                    yield return new List<HalfBoundExpression>() { new HalfBoundExpression(new ReductionDeclaration("return", BuiltinFunctions.Return)) };
+                }
+                else
+                {
+                    yield return new List<HalfBoundExpression>() { new HalfBoundExpression(new ReductionDeclaration(new[] { new PhrasePart("return"), new PhrasePart(new ParameterDeclaration("value", Scope.ReturnType)) }, BuiltinFunctions.Return)) };
+                }
+            }
+
+            // Then parameters.
             var parameterCandidates = Scope.Parameters.Where(pd => HasTerminalsInOrder(pd.Takes.Select(id => new PhrasePart(id)), tokenStream)).Select(c => new HalfBoundExpression(c)).ToList();
             while (parameterCandidates.Any())
             {
@@ -457,35 +470,36 @@ namespace Tangent.Parsing
                 return 1;
             }
 
-            if (phraseA){
+            if (phraseA)
+            {
                 var ppa = ((PhrasePart)a);
-                if (!ppa.IsIdentifier && ppa.Parameter.Returns.ImplementationType == KindOfType.SingleValue)
+                if (!ppa.IsIdentifier)
                 {
-                    if (phraseB)
+                    if (ppa.Parameter.Returns.ImplementationType == KindOfType.SingleValue)
                     {
-                        var ppb = ((PhrasePart)b);
-                        if (!ppb.IsIdentifier && ppb.Parameter.Returns.ImplementationType == KindOfType.Enum)
+                        if (phraseB)
                         {
-                            if (((SingleValueType)a.Parameter.Returns).ValueType == b.Parameter.Returns)
+                            var ppb = ((PhrasePart)b);
+                            if (!ppb.IsIdentifier && ppb.Parameter.Returns.ImplementationType == KindOfType.Enum)
                             {
-                                return -1;
+                                if (((SingleValueType)a.Parameter.Returns).ValueType == b.Parameter.Returns)
+                                {
+                                    return -1;
+                                }
                             }
                         }
                     }
-                }
-            }
-            else if (phraseA){
-                var ppa = ((PhrasePart)a);
-                if (!ppa.IsIdentifier && ppa.Parameter.Returns.ImplementationType == KindOfType.Enum)
-                {
-                    if (phraseB)
+                    else if (ppa.Parameter.Returns.ImplementationType == KindOfType.Enum)
                     {
-                        var ppb = ((PhrasePart)b);
-                        if (!ppb.IsIdentifier && ppb.Parameter.Returns.ImplementationType == KindOfType.SingleValue)
+                        if (phraseB)
                         {
-                            if (a.Parameter.Returns == ((SingleValueType)b.Parameter.Returns).ValueType)
+                            var ppb = ((PhrasePart)b);
+                            if (!ppb.IsIdentifier && ppb.Parameter.Returns.ImplementationType == KindOfType.SingleValue)
                             {
-                                return 1;
+                                if (a.Parameter.Returns == ((SingleValueType)b.Parameter.Returns).ValueType)
+                                {
+                                    return 1;
+                                }
                             }
                         }
                     }

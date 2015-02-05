@@ -15,6 +15,7 @@ namespace Tangent.Parsing.UnitTests
         public void BasicParameterResolution()
         {
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("foo", TangentType.Void) },
                 Enumerable.Empty<ReductionDeclaration>());
@@ -33,6 +34,7 @@ namespace Tangent.Parsing.UnitTests
         public void ParameterPhraseResolution()
         {
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration(new Identifier[] { "foo", "bar" }, TangentType.Void) },
                 Enumerable.Empty<ReductionDeclaration>());
@@ -50,6 +52,7 @@ namespace Tangent.Parsing.UnitTests
         public void BasicFunctionResolution()
         {
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
@@ -67,6 +70,7 @@ namespace Tangent.Parsing.UnitTests
         public void FunctionPhraseResolution()
         {
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart("bar") }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
@@ -89,6 +93,7 @@ namespace Tangent.Parsing.UnitTests
             // }
             var t = new EnumType(Enumerable.Empty<Identifier>());
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("bar", t) },
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("x", t)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
@@ -115,6 +120,7 @@ namespace Tangent.Parsing.UnitTests
             // }
             var t = new EnumType(Enumerable.Empty<Identifier>());
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("bar", t) },
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("x", t)), new PhrasePart(new Identifier("foo")) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
@@ -141,6 +147,7 @@ namespace Tangent.Parsing.UnitTests
             // }
             var t = new EnumType(Enumerable.Empty<Identifier>());
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("bar", t) },
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("x", t)), new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("y", t)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
@@ -164,6 +171,7 @@ namespace Tangent.Parsing.UnitTests
         public void MismatchReturnsNoResults()
         {
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
                 Enumerable.Empty<ReductionDeclaration>());
@@ -179,6 +187,7 @@ namespace Tangent.Parsing.UnitTests
         public void ParametersWinScope()
         {
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("foo", TangentType.Void) },
                 new[] { new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
@@ -197,6 +206,7 @@ namespace Tangent.Parsing.UnitTests
         {
             var t = new EnumType(Enumerable.Empty<Identifier>());
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("foo", t) },
                 new[] { new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
@@ -214,6 +224,7 @@ namespace Tangent.Parsing.UnitTests
         public void LazyWorksWithBindings()
         {
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { 
@@ -234,6 +245,7 @@ namespace Tangent.Parsing.UnitTests
         public void LazyWorksWithParams()
         {
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("g", TangentType.Void) },
                 new[] { 
@@ -256,6 +268,7 @@ namespace Tangent.Parsing.UnitTests
         public void BuiltinBasicPath()
         {
             var scope = new Scope(
+                TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
                 BuiltinFunctions.All);
@@ -277,6 +290,7 @@ namespace Tangent.Parsing.UnitTests
             var foo = new EnumType(new[] { bar });
             var foodecl = new TypeDeclaration("foo", foo);
             var scope = new Scope(
+                TangentType.Void,
                 new[] { foodecl },
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo.SingleValueTypeFor(bar))), new Function(TangentType.Void, null)) });
@@ -297,6 +311,7 @@ namespace Tangent.Parsing.UnitTests
             var special = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo.SingleValueTypeFor( bar))), new Function(TangentType.Void, null));
             var generic = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo)), new Function(TangentType.Void, null));
             var scope = new Scope(
+                TangentType.Void,
                 new[] { foodecl },
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { special, generic });
@@ -318,6 +333,7 @@ namespace Tangent.Parsing.UnitTests
 
             var generic = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo)), new Function(TangentType.Void, null));
             var scope = new Scope(
+                TangentType.Void,
                 new[] { foodecl },
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { generic });
@@ -352,6 +368,7 @@ namespace Tangent.Parsing.UnitTests
                 new Function(TangentType.Void, null));
 
             var scope = new Scope(
+                TangentType.Void,
                 new[] { booleanDecl },
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { ifTrue, ifFalse });
@@ -384,6 +401,7 @@ namespace Tangent.Parsing.UnitTests
                 new Function(TangentType.Void, null));
 
             var scope = new Scope(
+                TangentType.Void,
                 new[] { booleanDecl },
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { ifTrue, ifFalse });
