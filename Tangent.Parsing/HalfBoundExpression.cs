@@ -58,7 +58,7 @@ namespace Tangent.Parsing
 
                 if (Declaration is EnumValueAccessRule)
                 {
-                    return Declaration.Returns;
+                    return Declaration.Returns.Lazy;
                 }
 
                 return null;

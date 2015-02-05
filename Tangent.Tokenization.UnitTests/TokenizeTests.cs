@@ -28,7 +28,7 @@ namespace Tangent.Tokenization.UnitTests
         {
             var test = @"foo // blah blah
 bar";
-            Assert.AreEqual(18, Tokenize.Skip(test, 4));
+            Assert.AreEqual(17, Tokenize.Skip(test, 4));
         }
 
         [TestMethod]

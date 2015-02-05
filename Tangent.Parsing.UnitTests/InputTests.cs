@@ -308,7 +308,7 @@ namespace Tangent.Parsing.UnitTests
             var foo = new EnumType(new[] { bar });
             var foodecl = new TypeDeclaration("foo", foo);
 
-            var special = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo.SingleValueTypeFor( bar))), new Function(TangentType.Void, null));
+            var special = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo.SingleValueTypeFor(bar))), new Function(TangentType.Void, null));
             var generic = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo)), new Function(TangentType.Void, null));
             var scope = new Scope(
                 TangentType.Void,
