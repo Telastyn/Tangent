@@ -37,120 +37,126 @@ namespace Tangent.Parsing
 
         private List<Expression> InterpretTowards(TangentType type)
         {
-            if (buffer.Count == 1) {
-                if (type == GetEffectiveTypeIfPossible(buffer[0])) {
+            if (buffer.Count == 1)
+            {
+                if (type == GetEffectiveTypeIfPossible(buffer[0]))
+                {
                     return buffer;
                 }
             }
 
-            for (int ix = 0; ix < buffer.Count; ++ix) {
-                var inProgressBinding = buffer[ix] as HalfBoundExpression;
-                if (inProgressBinding != null) {
-                    if (inProgressBinding.IsDone) {
-                        // We've reached the end of some binding. Tie it off and step. We don't care what the final results are here since we have no alternatives.
-                        return new Input(buffer.Take(ix).Concat(new[] { inProgressBinding.FullyBind() }).Concat(buffer.Skip(ix + 1)), Scope, conversionsTaken).InterpretTowards(type);
-                    }
-
-                    if (ix == buffer.Count - 1) {
-                        // We have an empty binding, but no more tokens. Parse failure.
-                        return new List<Expression>();
-                    }
-
-                    var nextToken = inProgressBinding.NextStep;
-                    if (nextToken.IsIdentifier) {
-                        if (buffer[ix + 1] is IdentifierExpression && ((IdentifierExpression)buffer[ix + 1]).Identifier.Value == nextToken.Identifier.Value) {
-                            // Identifier to consume.
-                            inProgressBinding.Bindings.Add(buffer[ix + 1]);
-                            return new Input(buffer.Take(ix + 1).Concat(buffer.Skip(ix + 2)), Scope, conversionsTaken).InterpretTowards(type);
-                        } else {
-                            // No match, and no reduction will create one.
-                            return new List<Expression>();
-                        }
-                    } else {
-                        if (HasTypeCompatibility(nextToken.Parameter.Returns, GetEffectiveTypeIfPossible(buffer[ix + 1]))) {
-                            // Value to consume.
-                            if (buffer[ix + 1] is HalfBoundExpression) {
-                                var fullBinding = ((HalfBoundExpression)buffer[ix + 1]).FullyBind();
-                                
-                                if (fullBinding is ParameterAccessExpression) {
-                                    inProgressBinding.Bindings.Add(buffer[ix + 1]);
-                                } else {
-                                    inProgressBinding.Bindings.Add(fullBinding);
-                                }
-                            } else {
-                                inProgressBinding.Bindings.Add(buffer[ix + 1]);
-                            }
-
-                            // And recurse.
-                            var result = new Input(buffer.Take(ix + 1).Concat(buffer.Skip(ix + 2)), Scope, conversionsTaken).InterpretTowards(type);
-                            if (result.Any()) {
-                                return result;
-                            } else {
-                                // We could bind the next token, but that does not lead to success...
-                                //  continue on, and hope it gets reduced further.
-                            }
-                        } else {
-                            // We need some T that isn't there. Continue and hope it gets reduced to what we need.
-                        }
-                    }
-                }
-
-                // Otherwise, we have some elemental token here. Try candidates (in order) to see if it can be reduced.
-                foreach (var candidateSet in CandidatesInPriorityOrder(buffer.Skip(ix))) {
+            for (int ix = 0; ix < buffer.Count; ++ix)
+            {
+                foreach (var reductionCandidatePool in TryReduce(ix))
+                {
                     List<Expression> successes = new List<Expression>();
-                    foreach (var entry in candidateSet) {
-                        // Bind the first param to the rule and recurse.
-                        entry.Bindings.Add(buffer[ix]);
-                        successes.AddRange(new Input(buffer.Take(ix).Concat(new[] { entry }).Concat(buffer.Skip(ix + 1)), Scope, conversionsTaken).InterpretTowards(type));
+                    foreach (var candidate in reductionCandidatePool)
+                    {
+                        successes.AddRange(new Input(candidate, Scope).InterpretAsStatement());
                     }
 
-                    if (successes.Any()) {
+                    if (successes.Any())
+                    {
                         return successes;
                     }
                 }
-
-                // If we have a bound function, and nothing can use it simply bound, try invoking it.
-                var binding = buffer[ix] as FunctionBindingExpression;
-                if (binding != null) {
-                    var result = new Input(buffer.Take(ix).Concat(new[] { new FunctionInvocationExpression(binding) }).Concat(buffer.Skip(ix + 1)), Scope, conversionsTaken).InterpretTowards(type);
-                    if (result.Any()) {
-                        return result;
-                    }
-                }
-
-                // If we have a parameter that is a bound function, and nothing can use it simply bound, try invoking it.
-                var lazyParam = buffer[ix] as ParameterAccessExpression;
-                if (lazyParam != null) {
-                    if (lazyParam.Parameter.Returns.ImplementationType == KindOfType.Lazy) {
-                        var result = new Input(buffer.Take(ix).Concat(new[] { new DelegateInvocationExpression(lazyParam) }).Concat(buffer.Skip(ix + 1)), Scope, conversionsTaken).InterpretTowards(type);
-                        if (result.Any()) {
-                            return result;
-                        }
-                    }
-                }
-
-                // No luck. Go to next token and see if reducing there helps.
             }
 
             // And if we've gotten here, we have some bundle of tokens that cannot be reduced further but don't result in our target.
             return new List<Expression>();
         }
 
-        private bool HasTypeCompatibility(TangentType parameter, TangentType value)
+        /// <summary>
+        /// Checks for a match at index ix, yielding tiers of flattened expressions with the match processed.
+        /// </summary>
+        private IEnumerable<List<List<Expression>>> TryReduce(int ix)
         {
-            if (parameter == value) { return true; }
-            var enumParameter = parameter as EnumType;
-            var svtValue = value as SingleValueType;
-            if (enumParameter != null && svtValue != null) {
-                return enumParameter == svtValue.ValueType;
+            // param
+            foreach (IGrouping<int, ParameterDeclaration> parameterTier in Scope.Parameters.Where(pd => IsMatch(buffer.Skip(ix).ToList(), pd.Takes.Select(id => new PhrasePart(id)).ToList())).GroupBy(pd => pd.Takes.Count).OrderByDescending(grp => grp.Key))
+            {
+                yield return parameterTier.Select(pd => buffer.Take(ix).Concat(new[] { new ParameterAccessExpression(pd) }).Concat(buffer.Skip(ix + pd.Takes.Count)).ToList()).ToList();
             }
 
-            return false;
+            // type
+            foreach (IGrouping<int, TypeDeclaration> typeTier in Scope.Types.Where(td => IsMatch(buffer.Skip(ix).ToList(), td.Takes.Select(id => new PhrasePart(id)).ToList())).GroupBy(td => td.Takes.Count).OrderByDescending(grp => grp.Key))
+            {
+                yield return typeTier.Select(td => buffer.Take(ix).Concat(new[] { new TypeAccessExpression(td.Returns) }).Concat(buffer.Skip(ix + td.Takes.Count)).ToList()).ToList();
+            }
+
+            // fn
+            var legalFunctions = Scope.Functions.Where(fn => IsMatch(buffer.Skip(ix).ToList(), fn.Takes)).ToList();
+            while (legalFunctions.Any())
+            {
+                yield return PopBestCandidates(legalFunctions).Select(fn=>buffer.Take(ix).Concat(new[]{new FunctionBindingExpression(fn, buffer.Skip(ix).Take(fn.Takes.Count).Where(p=>p.NodeType!= ExpressionNodeType.Identifier).ToList())}).Concat(buffer.Skip(ix+fn.Takes.Count)).ToList()).ToList();
+            }
+
+            // enums
+            if (buffer[ix].NodeType == ExpressionNodeType.Identifier)
+            {
+                var id = (buffer[ix] as IdentifierExpression).Identifier;
+                var valueCandidates = Scope.Types.Where(td => td.Returns.ImplementationType == KindOfType.Enum && ((EnumType)td.Returns).Values.Select(v => v.Value).Contains(id.Value)).Select(td=>td.Returns).Cast<EnumType>().Select(enumtype=>enumtype.SingleValueTypeFor(id)).ToList();
+                if (valueCandidates.Any())
+                {
+                    yield return valueCandidates.Select(svt => buffer.Take(ix).Concat(new[] { new EnumValueAccessExpression(svt) }.Concat(buffer.Skip(ix + 1))).ToList()).ToList();
+                }
+            }
+
+            // **Coersions.**
+            // Enum constant -> Enum type
+            if (buffer[ix].NodeType == ExpressionNodeType.EnumValueAccess)
+            {
+                yield return new List<List<Expression>>() { buffer.Take(ix).Concat(new[] { new EnumWideningExpression(buffer[ix] as EnumValueAccessExpression) }).Concat(buffer.Skip(ix + 1)).ToList() };
+            }
+
+            // Bound function -> function invocation.
+            if (buffer[ix].NodeType == ExpressionNodeType.FunctionBinding)
+            {
+                yield return new List<List<Expression>>() { buffer.Take(ix).Concat(new[] { new FunctionInvocationExpression(buffer[ix] as FunctionBindingExpression) }).Concat(buffer.Skip(ix + 1)).ToList() };
+            }
+
+            // Param accessed delegate -> delegate invocation.
+            if (buffer[ix].NodeType == ExpressionNodeType.ParameterAccess)
+            {
+                var paramAccess = (ParameterAccessExpression)buffer[ix];
+                if (paramAccess.Parameter.Returns.ImplementationType == KindOfType.Lazy)
+                {
+                    yield return new List<List<Expression>>() { buffer.Take(ix).Concat(new[] { new DelegateInvocationExpression(paramAccess) }).Concat(buffer.Skip(ix + 1)).ToList() };
+                }
+            }
         }
 
-        private TangentType GetEffectiveTypeIfPossible(Expression expr)
+        public static bool IsMatch(List<Expression> input, List<PhrasePart> rule)
         {
-            switch (expr.NodeType) {
+            if (input.Count < rule.Count) { return false; }
+            var inputEnum = input.GetEnumerator();
+            foreach (var entry in rule)
+            {
+                inputEnum.MoveNext();
+                if (entry.IsIdentifier)
+                {
+                    if ((inputEnum.Current.NodeType != ExpressionNodeType.Identifier) ||
+                        ((IdentifierExpression)inputEnum.Current).Identifier.Value != entry.Identifier.Value)
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    var inType = GetEffectiveTypeIfPossible(inputEnum.Current);
+                    if (inType == null || inType != entry.Parameter.Returns)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+        
+        private static TangentType GetEffectiveTypeIfPossible(Expression expr)
+        {
+            switch (expr.NodeType)
+            {
                 case ExpressionNodeType.FunctionInvocation:
                     var invoke = (FunctionInvocationExpression)expr;
                     return invoke.EffectiveType;
@@ -162,14 +168,6 @@ namespace Tangent.Parsing
                 case ExpressionNodeType.FunctionBinding:
                     var binding = expr as FunctionBindingExpression;
                     return binding.EffectiveType;
-
-                case ExpressionNodeType.HalfBoundExpression:
-                    var halfBinding = expr as HalfBoundExpression;
-                    if (!halfBinding.IsDone) {
-                        return null;
-                    }
-
-                    return halfBinding.EffectiveType;
 
                 case ExpressionNodeType.DelegateInvocation:
                     var delegateInvoke = expr as DelegateInvocationExpression;
@@ -183,6 +181,10 @@ namespace Tangent.Parsing
                     var valueAccess = expr as EnumValueAccessExpression;
                     return valueAccess.EnumValue;
 
+                case ExpressionNodeType.EnumWidening:
+                    var widening = expr as EnumWideningExpression;
+                    return widening.EnumAccess.EnumValue.ValueType;
+
                 case ExpressionNodeType.TypeAccess:
                 case ExpressionNodeType.Identifier:
                 case ExpressionNodeType.Unknown:
@@ -192,186 +194,42 @@ namespace Tangent.Parsing
             }
         }
 
-        private IEnumerable<List<HalfBoundExpression>> CandidatesInPriorityOrder(IEnumerable<Expression> tokenStream)
+        private List<ReductionDeclaration> PopBestCandidates(List<ReductionDeclaration> candidates)
         {
-            // Return first.
-            if (tokenStream.First().NodeType == ExpressionNodeType.Identifier && ((IdentifierExpression)tokenStream.First()).Identifier.Value == "return") {
-                if (Scope.ReturnType == TangentType.Void) {
-                    yield return new List<HalfBoundExpression>() { new HalfBoundExpression(new ReductionDeclaration("return", BuiltinFunctions.Return)) };
-                } else {
-                    yield return new List<HalfBoundExpression>() { new HalfBoundExpression(new ReductionDeclaration(new[] { new PhrasePart("return"), new PhrasePart(new ParameterDeclaration("value", Scope.ReturnType)) }, BuiltinFunctions.Return)) };
-                }
-            }
-
-            // Then parameters.
-            var parameterCandidates = Scope.Parameters.Where(pd => HasTerminalsInOrder(pd.Takes.Select(id => new PhrasePart(id)), tokenStream)).Select(c => new HalfBoundExpression(c)).ToList();
-            while (parameterCandidates.Any()) {
-                yield return PopBestCandidates(parameterCandidates);
-            }
-
-            // Then type constants.
-            var typeCandidates = Scope.Types.Where(td => HasTerminalsInOrder(td.Takes.Select(id => new PhrasePart(id)), tokenStream)).Select(c => new HalfBoundExpression(c)).ToList();
-            while (typeCandidates.Any()) {
-                yield return PopBestCandidates(typeCandidates);
-            }
-
-            // Then functions.
-            var functionCandidates = Scope.Functions.Where(fd => !conversionsTaken.Contains(fd) && HasTerminalsInOrder(fd.Takes, tokenStream)).Select(c => new HalfBoundExpression(c)).ToList();
-            while (functionCandidates.Any()) {
-                yield return PopBestCandidates(functionCandidates);
-            }
-
-            // Then enum values.
-            if (tokenStream.First().NodeType == ExpressionNodeType.Identifier) {
-                var id = tokenStream.First() as IdentifierExpression;
-                var valueCandidates = Scope.Types.Where(td => td.Returns.ImplementationType == KindOfType.Enum && ((EnumType)td.Returns).Values.Select(v => v.Value).Contains(id.Identifier.Value)).ToList();
-                if (valueCandidates.Any()) {
-                    yield return valueCandidates.Select(td => new HalfBoundExpression(new EnumValueAccessRule((EnumType)td.Returns, id.Identifier))).ToList();
-                }
-            }
-        }
-
-        private bool HasTerminalsInOrder(IEnumerable<PhrasePart> reductionTerminals, IEnumerable<Expression> tokenStream)
-        {
-            var terminalEnumerator = reductionTerminals.GetEnumerator();
-            var bufferEnumerator = tokenStream.GetEnumerator();
-            bufferEnumerator.MoveNext();
-            terminalEnumerator.MoveNext();
-            bool canSkip = false;
-            bool first = true;
-            while (true) {
-                if (terminalEnumerator.Current.IsIdentifier) {
-                    if (!(bufferEnumerator.Current is IdentifierExpression) || ((IdentifierExpression)bufferEnumerator.Current).Identifier.Value != terminalEnumerator.Current.Identifier.Value) {
-                        if (canSkip) {
-                            if (!bufferEnumerator.MoveNext()) {
-                                return false;
-                            } else {
-                                // loop.
-                            }
-                        } else {
-                            // We need some non-terminal, but did not find it.
-                            return false;
-                        }
-
-                    } else {
-                        if (!terminalEnumerator.MoveNext()) {
-                            // No more reductions? Cool.
-                            return true;
-                        }
-
-                        if (!bufferEnumerator.MoveNext()) {
-                            // There's more reduction rules, but no tokens.
-                            return false;
-                        }
-
-                        canSkip = false;
-                    }
-                } else {
-                    if (first) {
-
-                        switch (bufferEnumerator.Current.NodeType) {
-                            case ExpressionNodeType.ParameterAccess:
-                                if (((ParameterAccessExpression)bufferEnumerator.Current).Parameter.Returns != terminalEnumerator.Current.Parameter.Returns) {
-                                    return false;
-                                }
-
-                                // else good.
-                                break;
-
-                            case ExpressionNodeType.FunctionInvocation:
-                                if (((FunctionInvocationExpression)bufferEnumerator.Current).EffectiveType != terminalEnumerator.Current.Parameter.Returns) {
-                                    return false;
-                                }
-
-                                // else good.
-                                break;
-
-                            case ExpressionNodeType.DelegateInvocation:
-                                if (((DelegateInvocationExpression)bufferEnumerator.Current).EffectiveType != terminalEnumerator.Current.Parameter.Returns) {
-                                    return false;
-                                }
-                                // else good.
-                                break;
-
-                            case ExpressionNodeType.Constant:
-                                if (((ConstantExpression)bufferEnumerator.Current).EffectiveType != terminalEnumerator.Current.Parameter.Returns) {
-                                    return false;
-                                }
-                                // else good.
-                                break;
-
-                            case ExpressionNodeType.EnumValueAccess:
-                                if (terminalEnumerator.Current.Parameter.Returns.ImplementationType == KindOfType.SingleValue) {
-                                    if (((EnumValueAccessExpression)bufferEnumerator.Current).EnumValue.ValueType != ((SingleValueType)terminalEnumerator.Current.Parameter.Returns).ValueType ||
-                                        ((EnumValueAccessExpression)bufferEnumerator.Current).EnumValue.Value != ((SingleValueType)terminalEnumerator.Current.Parameter.Returns).Value) {
-                                        return false;
-                                    }
-                                } else if (terminalEnumerator.Current.Parameter.Returns.ImplementationType == KindOfType.Enum) {
-                                    // Enum value into a parameter wanting the enum.
-                                    if (((EnumValueAccessExpression)bufferEnumerator.Current).EnumValue.ValueType != terminalEnumerator.Current.Parameter.Returns) {
-                                        return false;
-                                    }
-                                } else {
-                                    return false;
-                                }
-
-                                // else good.
-                                break;
-
-                            case ExpressionNodeType.HalfBoundExpression:
-                            case ExpressionNodeType.FunctionBinding:
-                            case ExpressionNodeType.Identifier:
-                            case ExpressionNodeType.TypeAccess:
-                                return false;
-                            default:
-                                throw new NotImplementedException();
-                        }
-                    }
-
-                    canSkip = true;
-                    // and loop.
-
-                    if (!terminalEnumerator.MoveNext()) {
-                        // We need some non-terminal at the end of the reduction rule, and there's
-                        //  at least one token there. Assume that token satisfies our need.
-                        return true;
-                    }
-
-                    if (!bufferEnumerator.MoveNext()) {
-                        // We've got a rule, but no tokens. Fail.
-                        return false;
-                    }
-                }
-
-                first = false;
-            }
-        }
-
-        private List<HalfBoundExpression> PopBestCandidates(List<HalfBoundExpression> candidates)
-        {
-            var best = new List<HalfBoundExpression>();
-            foreach (var entry in candidates) {
-                if (!best.Any()) {
+            var best = new List<ReductionDeclaration>();
+            foreach (var entry in candidates)
+            {
+                if (!best.Any())
+                {
                     best.Add(entry);
-                } else if (best.First().Rule.Takes.Count == entry.Rule.Takes.Count) {
-                    var bestEnum = best.First().Rule.Takes.GetEnumerator();
-                    var entryEnum = entry.Rule.Takes.GetEnumerator();
+                }
+                else if (best.First().Takes.Count == entry.Takes.Count)
+                {
+                    var bestEnum = best.First().Takes.GetEnumerator();
+                    var entryEnum = entry.Takes.GetEnumerator();
                     bool go = true;
-                    while (go && bestEnum.MoveNext() && entryEnum.MoveNext()) {
+                    while (go && bestEnum.MoveNext() && entryEnum.MoveNext())
+                    {
                         int cmp = Compare(bestEnum.Current, entryEnum.Current);
-                        if (cmp == -1) {
+                        if (cmp == -1)
+                        {
                             go = false;
-                        } else if (cmp == 1) {
+                        }
+                        else if (cmp == 1)
+                        {
                             best.Clear();
                             best.Add(entry);
                             go = false;
                         }
                     }
 
-                    if (go) {
+                    if (go)
+                    {
                         best.Add(entry);
                     }
-                } else {
+                }
+                else
+                {
                     candidates.RemoveAll(r => best.Contains(r));
                     return best;
                 }
@@ -389,31 +247,44 @@ namespace Tangent.Parsing
             var idA = phraseA ? a.IsIdentifier : true;
             var idB = phraseB ? b.IsIdentifier : true;
 
-            if (idA && !idB) {
+            if (idA && !idB)
+            {
                 return -1;
             }
 
-            if (idB && !idA) {
+            if (idB && !idA)
+            {
                 return 1;
             }
 
-            if (phraseA) {
+            if (phraseA)
+            {
                 var ppa = ((PhrasePart)a);
-                if (!ppa.IsIdentifier) {
-                    if (ppa.Parameter.Returns.ImplementationType == KindOfType.SingleValue) {
-                        if (phraseB) {
+                if (!ppa.IsIdentifier)
+                {
+                    if (ppa.Parameter.Returns.ImplementationType == KindOfType.SingleValue)
+                    {
+                        if (phraseB)
+                        {
                             var ppb = ((PhrasePart)b);
-                            if (!ppb.IsIdentifier && ppb.Parameter.Returns.ImplementationType == KindOfType.Enum) {
-                                if (((SingleValueType)a.Parameter.Returns).ValueType == b.Parameter.Returns) {
+                            if (!ppb.IsIdentifier && ppb.Parameter.Returns.ImplementationType == KindOfType.Enum)
+                            {
+                                if (((SingleValueType)a.Parameter.Returns).ValueType == b.Parameter.Returns)
+                                {
                                     return -1;
                                 }
                             }
                         }
-                    } else if (ppa.Parameter.Returns.ImplementationType == KindOfType.Enum) {
-                        if (phraseB) {
+                    }
+                    else if (ppa.Parameter.Returns.ImplementationType == KindOfType.Enum)
+                    {
+                        if (phraseB)
+                        {
                             var ppb = ((PhrasePart)b);
-                            if (!ppb.IsIdentifier && ppb.Parameter.Returns.ImplementationType == KindOfType.SingleValue) {
-                                if (a.Parameter.Returns == ((SingleValueType)b.Parameter.Returns).ValueType) {
+                            if (!ppb.IsIdentifier && ppb.Parameter.Returns.ImplementationType == KindOfType.SingleValue)
+                            {
+                                if (a.Parameter.Returns == ((SingleValueType)b.Parameter.Returns).ValueType)
+                                {
                                     return 1;
                                 }
                             }

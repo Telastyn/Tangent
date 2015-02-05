@@ -131,9 +131,6 @@ namespace Tangent.CilGeneration
 
                     return;
 
-                case ExpressionNodeType.HalfBoundExpression:
-                    throw new NotImplementedException("Half bound expression in compilation?");
-
                 case ExpressionNodeType.Identifier:
                     throw new NotImplementedException("Bare identifier in compilation?");
 
@@ -165,6 +162,11 @@ namespace Tangent.CilGeneration
                     gen.Emit(OpCodes.Ldc_I4, eva.EnumValue.NumericEquivalent);
                     return;
 
+                case ExpressionNodeType.EnumWidening:
+                    var widening = (EnumWideningExpression)expr;
+                    AddExpression(widening.EnumAccess, gen, fnLookup, typeLookup, closureScope, parameterCodes, returnVariable, returnLabel);
+                    return;
+
                 default:
                     throw new NotImplementedException();
             }
@@ -188,7 +190,7 @@ namespace Tangent.CilGeneration
             foreach (var parameter in parameterCodes)
             {
                 gen.Emit(OpCodes.Ldloc, obj);
-                var fld = closure.DefineField(CilScope.GetNameFor(parameter.Key), typeLookup[parameter.Key.Returns], System.Reflection.FieldAttributes.Public);
+                var fld = closure.DefineField(CilScope.GetNameFor(parameter.Key, typeLookup), typeLookup[parameter.Key.Returns], System.Reflection.FieldAttributes.Public);
                 parameter.Value(gen);
                 gen.Emit(OpCodes.Stfld, fld);
 

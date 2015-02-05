@@ -29,10 +29,10 @@ namespace Tangent.CilGeneration
                         typeLookup[((SingleValueType)t.Parameter.Returns).ValueType] :
                         typeLookup[t.Parameter.Returns]).ToArray()));
 
-            var specializations = functions.Where(fn => fn.Takes.Any(pp => !pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.SingleValue)).ToList();
+            var specializationFunctions = functions.Where(fn => fn.Takes.Any(pp => !pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.SingleValue)).ToList();
             foreach (var fn in functionStubs.Keys.ToList())
             {
-                var fnSpecializations = specializations.Where(fnsp => fnsp.IsSpecializationOf(fn)).ToList();
+                var fnSpecializations = specializationFunctions.Where(fnsp => fnsp.IsSpecializationOf(fn)).ToList();
                 this.specializations.Add(fn, fnSpecializations);
             }
 
@@ -47,7 +47,7 @@ namespace Tangent.CilGeneration
             }
         }
 
-        public static string GetNameFor(ReductionDeclaration rule)
+        public string GetNameFor(ReductionDeclaration rule)
         {
             var sb = new StringBuilder();
             bool first = true;
@@ -72,16 +72,31 @@ namespace Tangent.CilGeneration
                 }
             }
 
-            // TODO: append result name since functions can vary by return type only.
+            sb.AppendFormat(" => {0}", typeLookup[rule.Returns.EffectiveType].Name);
 
             return sb.ToString();
         }
 
 
-        public static string GetNameFor(ParameterDeclaration rule)
+        public string GetNameFor(ParameterDeclaration rule)
         {
-            // TODO: append result name since parameters can vary by return type only?
-            string result = string.Join(" ", rule.Takes.Select(id => id.Value));
+            return GetNameFor(rule, this.typeLookup);
+        }
+
+        public static string GetNameFor(ParameterDeclaration rule, ITypeLookup typeLookup)
+        {
+            string paramTypeName;
+            if (rule.Returns.ImplementationType == KindOfType.SingleValue)
+            {
+                var svt = ((SingleValueType) rule.Returns);
+                paramTypeName = typeLookup[svt.ValueType].Name + "." + svt.Value.Value;
+            }
+            else
+            {
+                paramTypeName = typeLookup[rule.Returns].Name;
+            }
+
+            string result = string.Join(" ", rule.Takes.Select(id => id.Value)) + ": " + paramTypeName;
             return result;
         }
 

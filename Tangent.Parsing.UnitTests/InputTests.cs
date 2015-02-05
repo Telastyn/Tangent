@@ -63,7 +63,7 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
-            Assert.AreEqual(scope.Functions.First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
+            Assert.AreEqual(scope.Functions.Skip(1).First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
         }
 
         [TestMethod]
@@ -81,7 +81,7 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
-            Assert.AreEqual(scope.Functions.First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
+            Assert.AreEqual(scope.Functions.Skip(1).First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
         }
 
         [TestMethod]
@@ -105,7 +105,9 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
             var invoke = ((FunctionInvocationExpression)result.First());
-            Assert.AreEqual(scope.Functions.First(), invoke.Bindings.FunctionDefinition);
+            
+            // Skip for return fn.
+            Assert.AreEqual(scope.Functions.Skip(1).First(), invoke.Bindings.FunctionDefinition);
             Assert.AreEqual(1, invoke.Bindings.Parameters.Count());
             Assert.AreEqual(ExpressionNodeType.ParameterAccess, invoke.Bindings.Parameters.First().NodeType);
             Assert.AreEqual(scope.Parameters.First(), ((ParameterAccessExpression)invoke.Bindings.Parameters.First()).Parameter);
@@ -132,7 +134,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
             var invoke = ((FunctionInvocationExpression)result.First());
-            Assert.AreEqual(scope.Functions.First(), invoke.Bindings.FunctionDefinition);
+            Assert.AreEqual(scope.Functions.Skip(1).First(), invoke.Bindings.FunctionDefinition);
             Assert.AreEqual(1, invoke.Bindings.Parameters.Count());
             Assert.AreEqual(ExpressionNodeType.ParameterAccess, invoke.Bindings.Parameters.First().NodeType);
             Assert.AreEqual(scope.Parameters.First(), ((ParameterAccessExpression)invoke.Bindings.Parameters.First()).Parameter);
@@ -159,7 +161,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
             var invoke = ((FunctionInvocationExpression)result.First());
-            Assert.AreEqual(scope.Functions.First(), invoke.Bindings.FunctionDefinition);
+            Assert.AreEqual(scope.Functions.Skip(1).First(), invoke.Bindings.FunctionDefinition);
             Assert.AreEqual(2, invoke.Bindings.Parameters.Count());
             Assert.AreEqual(ExpressionNodeType.ParameterAccess, invoke.Bindings.Parameters.First().NodeType);
             Assert.AreEqual(scope.Parameters.First(), ((ParameterAccessExpression)invoke.Bindings.Parameters.First()).Parameter);
@@ -217,7 +219,7 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
-            Assert.AreEqual(scope.Functions.First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
+            Assert.AreEqual(scope.Functions.Skip(1).First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
         }
 
         [TestMethod]
@@ -238,7 +240,7 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
-            Assert.AreEqual(ExpressionNodeType.HalfBoundExpression, ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First().NodeType);
+            Assert.AreEqual(ExpressionNodeType.FunctionBinding, ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First().NodeType);
         }
 
         [TestMethod]
@@ -256,12 +258,7 @@ namespace Tangent.Parsing.UnitTests
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
-            Assert.AreEqual(1, result.Count);
-            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
-            Assert.AreEqual(ExpressionNodeType.HalfBoundExpression, ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First().NodeType);
-            var hbe = ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First() as HalfBoundExpression;
-            dynamic decl = new PrivateObject(hbe).GetField("Declaration");
-            Assert.IsTrue(scope.Parameters.First() == decl);
+            Assert.Fail("TODO: Refactor this.");
         }
 
         [TestMethod]

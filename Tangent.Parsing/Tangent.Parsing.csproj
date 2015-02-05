@@ -47,7 +47,6 @@
     <Compile Include="Errors\ExpectedLiteralParseError.cs" />
     <Compile Include="Errors\ExpectedTokenParseError.cs" />
     <Compile Include="Errors\IncomprehensibleStatementError.cs" />
-    <Compile Include="HalfBoundExpression.cs" />
     <Compile Include="Input.cs" />
     <Compile Include="Parse.cs" />
     <Compile Include="Errors\ParseError.cs" />

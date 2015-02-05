@@ -115,7 +115,7 @@ namespace Tangent.CilGeneration.UnitTests
 
             t.CreateType();
 
-            var test = t.GetMethod("test");
+            var test = t.GetMethods().First();
 
             // And should not blow up. It *should* also print moo. to the console, but the unit test can't verify that.
             //  You the human can.

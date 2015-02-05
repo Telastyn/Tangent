@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,7 @@ namespace Tangent.Cli
         
         static void Main(string[] args)
         {
+            var timer = Stopwatch.StartNew();
             if(args.Length == 0){
                 Console.Error.WriteLine(Usage);
             }
@@ -36,6 +38,7 @@ namespace Tangent.Cli
 
             var compiler = new CilCompiler();
             compiler.Compile(intermediateProgram.Result, dest);
+            Debug.WriteLine("Compile Duration: " + timer.Elapsed);
         }
     }
 }

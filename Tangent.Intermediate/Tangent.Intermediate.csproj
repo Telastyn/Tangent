@@ -47,6 +47,7 @@
     <Compile Include="ConstantExpression.cs" />
     <Compile Include="DelegateInvocationExpression.cs" />
     <Compile Include="EnumType.cs" />
+    <Compile Include="EnumWideningExpression.cs" />
     <Compile Include="Expression.cs" />
     <Compile Include="Function.cs" />
     <Compile Include="FunctionBindingExpression.cs" />
