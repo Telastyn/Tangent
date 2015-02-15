@@ -249,16 +249,18 @@ namespace Tangent.Parsing.UnitTests
             var scope = new Scope(
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
-                new[] { new ParameterDeclaration("g", TangentType.Void) },
+                new[] { new ParameterDeclaration("g", TangentType.String) },
                 new[] { 
-                    new ReductionDeclaration(new PhrasePart[] { new PhrasePart("f"), new ParameterDeclaration("x", TangentType.Void.Lazy) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())))
+                    new ReductionDeclaration(new PhrasePart[] { new PhrasePart("f"), new ParameterDeclaration("x", TangentType.String.Lazy) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())))
                 });
 
             var tokens = Tokenize.ProgramFile("f g").Select(t => new Identifier(t.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
-            Assert.Fail("TODO: Refactor this.");
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
+            Assert.AreEqual(ExpressionNodeType.FunctionBinding, ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First().NodeType);
         }
 
         [TestMethod]

@@ -122,6 +122,29 @@ namespace Tangent.Parsing
                 {
                     yield return new List<List<Expression>>() { buffer.Take(ix).Concat(new[] { new DelegateInvocationExpression(paramAccess) }).Concat(buffer.Skip(ix + 1)).ToList() };
                 }
+
+                // Param accessed delegate -> lazy access.
+                if(paramAccess.Parameter.Returns == TangentType.Void){
+                    throw new NotImplementedException("Attempting to work with a void parameter. wtf.");
+                }else{
+                    yield return new List<List<Expression>>(){ 
+                        buffer.Take(ix).Concat(new Expression[]{ 
+                            new FunctionBindingExpression(
+                                new ReductionDeclaration(
+                                    Enumerable.Empty<PhrasePart>(), 
+                                    new Function(
+                                        paramAccess.Parameter.Returns, 
+                                        new Block(
+                                            new[]{ 
+                                                new FunctionInvocationExpression(
+                                                    new FunctionBindingExpression(
+                                                        new ReductionDeclaration(
+                                                            new[] { 
+                                                                new PhrasePart("return"), 
+                                                                new PhrasePart(new ParameterDeclaration("value", paramAccess.Parameter.Returns)) }, 
+                                                            BuiltinFunctions.Return), 
+                                                        new Expression[]{ paramAccess }))}))),Enumerable.Empty<Expression>())}).ToList()};
+                }
             }
         }
 
