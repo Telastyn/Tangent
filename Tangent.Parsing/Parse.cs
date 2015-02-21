@@ -124,26 +124,27 @@ namespace Tangent.Parsing
 
         private static Function BuildBlock(Scope scope, TangentType effectiveType, PartialBlock partialBlock, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
         {
+            var block = BuildBlock(scope, partialBlock.Statements, bad, ambiguous);
+
+            return new Function(effectiveType, block);
+        }
+
+        private static Block BuildBlock(Scope scope, IEnumerable<PartialStatement> elements, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
+        {
             List<Expression> statements = new List<Expression>();
-            foreach (var line in partialBlock.Statements)
-            {
+            foreach (var line in elements) {
                 var statementBits = line.FlatTokens.Select(t => ElementToExpression(scope, t, bad, ambiguous));
                 var statement = new Input(statementBits, scope).InterpretAsStatement();
-                if (statement.Count == 0)
-                {
+                if (statement.Count == 0) {
                     bad.Add(new IncomprehensibleStatementError(statementBits));
-                }
-                else if (statement.Count > 1)
-                {
+                } else if (statement.Count > 1) {
                     ambiguous.Add(new AmbiguousStatementError(statementBits, statement));
-                }
-                else
-                {
+                } else {
                     statements.Add(statement.First());
                 }
             }
 
-            return new Function(effectiveType, new Block(statements));
+            return new Block(statements);
         }
 
         private static Expression ElementToExpression(Scope scope, PartialElement element, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
@@ -155,7 +156,10 @@ namespace Tangent.Parsing
                 case ElementType.Parens:
                     throw new NotImplementedException("Parens expressions not yet supported.");
                 case ElementType.Block:
-                    return new FunctionBindingExpression(new ReductionDeclaration(Enumerable.Empty<PhrasePart>(), BuildBlock(scope, TangentType.Void, ((BlockElement)element).Block, bad, ambiguous)), new Expression[] { });
+                    var stmts = ((BlockElement)element).Block.Statements.ToList();
+                    var last = stmts.Last();
+                    stmts.RemoveAt(stmts.Count-1);
+                    return new ParenExpression(BuildBlock(scope, stmts, bad, ambiguous), last.FlatTokens.Select(e => ElementToExpression(scope, e, bad, ambiguous)).ToList()); 
                 case ElementType.Constant:
                     return ((ConstantElement)element).TypelessExpression;
                 default:
@@ -329,13 +333,19 @@ namespace Tangent.Parsing
         internal static ResultOrParseError<PartialBlock> PartialBlock(List<Token> tokens)
         {
             List<IEnumerable<PartialElement>> result = new List<IEnumerable<PartialElement>>();
+            string closeTarget;
 
-            if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens))
-            {
-                return new ResultOrParseError<PartialBlock>(new ExpectedLiteralParseError("{", tokens.FirstOrDefault()));
+            if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens)) {
+                if (!MatchAndDiscard(TokenIdentifier.Symbol, "(", tokens)) {
+                    return new ResultOrParseError<PartialBlock>(new ExpectedLiteralParseError("{", tokens.FirstOrDefault()));
+                } else {
+                    closeTarget = ")";
+                }
+            } else {
+                closeTarget = "}";
             }
 
-            while (tokens.Any() && tokens.First().Value != "}")
+            while (tokens.Any() && tokens.First().Value != closeTarget)
             {
                 var statement = PartialStatement(tokens);
                 if (!statement.Success)
@@ -346,9 +356,9 @@ namespace Tangent.Parsing
                 result.Add(statement.Result);
             }
 
-            if (!MatchAndDiscard(TokenIdentifier.Symbol, "}", tokens))
+            if (!MatchAndDiscard(TokenIdentifier.Symbol, closeTarget, tokens))
             {
-                return new ResultOrParseError<PartialBlock>(new ExpectedLiteralParseError("}", tokens.FirstOrDefault()));
+                return new ResultOrParseError<PartialBlock>(new ExpectedLiteralParseError(closeTarget, tokens.FirstOrDefault()));
             }
 
             return new ResultOrParseError<PartialBlock>(new PartialBlock(result.Select(stmt => new PartialStatement(stmt))));
@@ -371,8 +381,6 @@ namespace Tangent.Parsing
                 } else if (first.Identifier == TokenIdentifier.StringConstant) {
                     tokens.RemoveAt(0);
                     result.Add(new ConstantElement<string>(new ConstantExpression<string>(TangentType.String, first.Value.Substring(1, first.Value.Length - 2))));
-                } else if (first.Value == "(") {
-                    throw new NotImplementedException("Paren expressions are not yet supported.");
                 } else if (first.Value == ";") {
                     if (result.Any()) {
                         tokens.RemoveAt(0);
@@ -380,13 +388,16 @@ namespace Tangent.Parsing
                     } else {
                         return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
                     }
-                } else if (first.Value == "{") {
+                } else if (first.Value == "{" || first.Value == "(") {
                     var block = PartialBlock(tokens);
                     if (block.Success) {
                         result.Add(new BlockElement(block.Result));
                     } else {
                         return new ResultOrParseError<IEnumerable<PartialElement>>(block.Error);
                     }
+                }else if(first.Value == "}" || first.Value == ")"){
+                    // we're at end of block. Return statement for optional semi-colon.
+                    return result;
                 } else {
                     return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
                 }

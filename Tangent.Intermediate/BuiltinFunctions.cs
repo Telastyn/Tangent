@@ -11,7 +11,6 @@ namespace Tangent.Intermediate
     public static class BuiltinFunctions
     {
         public static ReductionDeclaration PrintString = new ReductionDeclaration(new PhrasePart[] { new Identifier("print"), new ParameterDeclaration("s", TangentType.String) }, new Function(TangentType.Void, null));
-        public static Function Return = new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()));
 
         private static readonly Dictionary<ReductionDeclaration, MethodInfo> lookup = new Dictionary<ReductionDeclaration, MethodInfo>(){
             {PrintString, typeof(Console).GetMethod("WriteLine", new[]{typeof(string)})}

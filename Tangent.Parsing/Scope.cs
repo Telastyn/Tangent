@@ -19,10 +19,7 @@ namespace Tangent.Parsing
             ReturnType = returnType;
             Parameters = parameters.OrderByDescending(p => p.Takes.Count()).ToList();
             Types = types.OrderByDescending(t => t.Takes.Count()).ToList();
-            Functions = new[]{ (ReturnType == TangentType.Void) ?
-                    new ReductionDeclaration("return", BuiltinFunctions.Return) :
-                    new ReductionDeclaration(new[] { new PhrasePart("return"), new PhrasePart(new ParameterDeclaration("value", ReturnType)) }, BuiltinFunctions.Return)}
-                .Concat(functions.OrderByDescending(f => f.Takes.Count())).ToList();
+            Functions = (functions.OrderByDescending(f => f.Takes.Count())).ToList();
 
         }
     }

@@ -17,7 +17,8 @@ namespace Tangent.Intermediate
         DelegateInvocation = 7,
         Constant = 8,
         EnumValueAccess = 9,
-        EnumWidening = 10
+        EnumWidening = 10,
+        ParenExpr = 11
     }
 
     public abstract class Expression

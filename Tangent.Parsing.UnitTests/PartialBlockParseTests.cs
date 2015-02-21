@@ -51,5 +51,75 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.IsTrue(result.Success);
         }
+
+        [TestMethod]
+        public void LastSemiIsOptional()
+        {
+            var test = Tokenize.ProgramFile("{x}");
+
+            var result = Parse.PartialBlock(test.ToList());
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public void LastSemiIsOptional2()
+        {
+            var test = Tokenize.ProgramFile("{a; b; c d e f; x}");
+
+            var result = Parse.PartialBlock(test.ToList());
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public void ParenMissingCloseDoesNotMatch()
+        {
+            var test = Tokenize.ProgramFile("(x;");
+
+            var result = Parse.PartialBlock(test.ToList());
+
+            Assert.IsFalse(result.Success);
+        }
+
+        [TestMethod]
+        public void ParenEmptyBlocksAreFine()
+        {
+            var test = Tokenize.ProgramFile("()");
+
+            var result = Parse.PartialBlock(test.ToList());
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public void ParenBlocksAreFine()
+        {
+            var test = Tokenize.ProgramFile("(x;)");
+
+            var result = Parse.PartialBlock(test.ToList());
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public void ParenLastSemiIsOptional()
+        {
+            var test = Tokenize.ProgramFile("(x)");
+
+            var result = Parse.PartialBlock(test.ToList());
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public void ParenLastSemiIsOptional2()
+        {
+            var test = Tokenize.ProgramFile("(a; b; c d e f; x)");
+
+            var result = Parse.PartialBlock(test.ToList());
+
+            Assert.IsTrue(result.Success);
+        }
     }
 }

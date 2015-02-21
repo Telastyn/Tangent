@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tangent.Intermediate;
@@ -63,7 +64,7 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
-            Assert.AreEqual(scope.Functions.Skip(1).First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
+            Assert.AreEqual(scope.Functions.First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
         }
 
         [TestMethod]
@@ -81,7 +82,7 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
-            Assert.AreEqual(scope.Functions.Skip(1).First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
+            Assert.AreEqual(scope.Functions.First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
         }
 
         [TestMethod]
@@ -105,9 +106,8 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
             var invoke = ((FunctionInvocationExpression)result.First());
-            
-            // Skip for return fn.
-            Assert.AreEqual(scope.Functions.Skip(1).First(), invoke.Bindings.FunctionDefinition);
+           
+            Assert.AreEqual(scope.Functions.First(), invoke.Bindings.FunctionDefinition);
             Assert.AreEqual(1, invoke.Bindings.Parameters.Count());
             Assert.AreEqual(ExpressionNodeType.ParameterAccess, invoke.Bindings.Parameters.First().NodeType);
             Assert.AreEqual(scope.Parameters.First(), ((ParameterAccessExpression)invoke.Bindings.Parameters.First()).Parameter);
@@ -134,7 +134,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
             var invoke = ((FunctionInvocationExpression)result.First());
-            Assert.AreEqual(scope.Functions.Skip(1).First(), invoke.Bindings.FunctionDefinition);
+            Assert.AreEqual(scope.Functions.First(), invoke.Bindings.FunctionDefinition);
             Assert.AreEqual(1, invoke.Bindings.Parameters.Count());
             Assert.AreEqual(ExpressionNodeType.ParameterAccess, invoke.Bindings.Parameters.First().NodeType);
             Assert.AreEqual(scope.Parameters.First(), ((ParameterAccessExpression)invoke.Bindings.Parameters.First()).Parameter);
@@ -161,7 +161,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
             var invoke = ((FunctionInvocationExpression)result.First());
-            Assert.AreEqual(scope.Functions.Skip(1).First(), invoke.Bindings.FunctionDefinition);
+            Assert.AreEqual(scope.Functions.First(), invoke.Bindings.FunctionDefinition);
             Assert.AreEqual(2, invoke.Bindings.Parameters.Count());
             Assert.AreEqual(ExpressionNodeType.ParameterAccess, invoke.Bindings.Parameters.First().NodeType);
             Assert.AreEqual(scope.Parameters.First(), ((ParameterAccessExpression)invoke.Bindings.Parameters.First()).Parameter);
@@ -219,7 +219,7 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
-            Assert.AreEqual(scope.Functions.Skip(1).First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
+            Assert.AreEqual(scope.Functions.First(), ((FunctionInvocationExpression)result.First()).Bindings.FunctionDefinition);
         }
 
         [TestMethod]
@@ -409,6 +409,60 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count);
+        }
+
+        [TestMethod]
+        public void ParenExprInterpretsCorrectly()
+        {
+            // foo (x: t) => void;
+            // (bar: t) => * {
+            //    foo (bar);
+            // }
+            var t = new EnumType(Enumerable.Empty<Identifier>());
+            var scope = new Scope(
+                TangentType.Void,
+                Enumerable.Empty<TypeDeclaration>(),
+                new[] { new ParameterDeclaration("bar", t) },
+                new[] { new ReductionDeclaration(new[] { new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("x", t)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
+
+            var tokens = new List<Expression>() { new IdentifierExpression("foo"), new ParenExpression(new Block(Enumerable.Empty<Expression>()), new List<Expression>() { new IdentifierExpression("bar") }) };
+
+            var result = new Input(tokens, scope).InterpretAsStatement();
+
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
+            var invoke = ((FunctionInvocationExpression)result.First());
+
+            Assert.AreEqual(scope.Functions.First(), invoke.Bindings.FunctionDefinition);
+            Assert.AreEqual(1, invoke.Bindings.Parameters.Count());
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, invoke.Bindings.Parameters.First().NodeType);
+        }
+
+        [TestMethod]
+        public void ParenExprInvokesWhenLazyCorrectly()
+        {
+            // foo (x: ~>t) => void;
+            // (bar: ~>t) => * {
+            //    foo (bar);
+            // }
+            var t = new EnumType(Enumerable.Empty<Identifier>());
+            var scope = new Scope(
+                TangentType.Void,
+                Enumerable.Empty<TypeDeclaration>(),
+                new[] { new ParameterDeclaration("bar", t.Lazy) },
+                new[] { new ReductionDeclaration(new[] { new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("x", t.Lazy)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
+
+            var tokens = new List<Expression>() { new IdentifierExpression("foo"), new ParenExpression(new Block(Enumerable.Empty<Expression>()), new List<Expression>() { new IdentifierExpression("bar") }) };
+
+            var result = new Input(tokens, scope).InterpretAsStatement();
+
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
+            var invoke = ((FunctionInvocationExpression)result.First());
+
+            Assert.AreEqual(scope.Functions.First(), invoke.Bindings.FunctionDefinition);
+            Assert.AreEqual(1, invoke.Bindings.Parameters.Count());
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, invoke.Bindings.Parameters.First().NodeType);
         }
     }
 }

@@ -115,19 +115,7 @@ namespace Tangent.CilGeneration
                         AddExpression(p, gen, fnLookup, typeLookup, closureScope, parameterCodes, returnVariable, returnLabel);
                     }
 
-                    if (invoke.Bindings.FunctionDefinition.Returns == BuiltinFunctions.Return)
-                    {
-                        if (invoke.Bindings.Parameters.Any())
-                        {
-                            gen.Emit(OpCodes.Stloc, returnVariable);
-                        }
-
-                        gen.Emit(OpCodes.Br, returnLabel.Value);
-                    }
-                    else
-                    {
-                        gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
-                    }
+                    gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
 
                     return;
 

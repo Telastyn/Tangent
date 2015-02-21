@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Tangent.Parsing.Partial
 {
-    public class BlockElement: PartialElement
+    public class BlockElement : PartialElement
     {
         public readonly PartialBlock Block;
         public BlockElement(PartialBlock block)
