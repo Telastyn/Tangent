@@ -194,7 +194,7 @@ namespace Tangent.CilGeneration
                 parameter.Value(gen);
                 gen.Emit(OpCodes.Stfld, fld);
 
-                closureReferences.Add(parameter.Key, g => { g.Emit(OpCodes.Ldloc, obj); g.Emit(OpCodes.Ldfld, fld); });
+                closureReferences.Add(parameter.Key, g => { g.Emit(OpCodes.Ldarg_0); g.Emit(OpCodes.Ldfld, fld); });
             }
 
             // Build actual function in anonymous type.
