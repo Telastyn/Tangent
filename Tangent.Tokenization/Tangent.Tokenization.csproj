@@ -42,10 +42,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="LineColumnPosition.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Token.cs" />
     <Compile Include="Tokenize.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Tangent.Common\Tangent.Common.csproj">
+      <Project>{a446fc42-b937-44ff-9d21-8a1552dd86df}</Project>
+      <Name>Tangent.Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

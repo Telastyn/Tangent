@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection.Emit;
 using Moq;
 using System.Reflection;
+using System.Diagnostics.SymbolStore;
 
 namespace Tangent.CilGeneration.UnitTests
 {
@@ -13,6 +14,7 @@ namespace Tangent.CilGeneration.UnitTests
     public class CilScopeTests
     {
         private static ITypeLookup emptyTypeLookup;
+        private static Dictionary<string, ISymbolDocumentWriter> emptyDebuggingDocWriter = new Dictionary<string, ISymbolDocumentWriter>();
 
         static CilScopeTests()
         {
@@ -31,7 +33,7 @@ namespace Tangent.CilGeneration.UnitTests
             var fn = new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
             var scope = new CilScope(t, new[] { fn }, emptyTypeLookup);
 
-            scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common));
+            scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common, emptyDebuggingDocWriter));
             t.CreateType();
 
             var stub = scope[fn];
@@ -54,7 +56,7 @@ namespace Tangent.CilGeneration.UnitTests
             var fn = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
             var scope = new CilScope(t, new[] { fn }, mockLookup.Object);
 
-            scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common));
+            scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common, emptyDebuggingDocWriter));
             t.CreateType();
 
             var stub = scope[fn];
@@ -79,7 +81,7 @@ namespace Tangent.CilGeneration.UnitTests
             var fn2 = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT.SingleValueTypeFor("b"))) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
             var scope = new CilScope(t, new[] { fn, fn2 }, mockLookup.Object);
 
-            scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common));
+            scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common, emptyDebuggingDocWriter));
             t.CreateType();
 
             var realfns = t.GetMethods().Where(mi => mi.Name.StartsWith("foo"));
@@ -107,11 +109,11 @@ namespace Tangent.CilGeneration.UnitTests
                 new FunctionInvocationExpression(
                     new FunctionBindingExpression( 
                         BuiltinFunctions.PrintString, 
-                        new[]{new ConstantExpression<string>(TangentType.String, "moo.")}))})));
+                        new[]{new ConstantExpression<string>(TangentType.String, "moo.", null)}, null))})));
 
             var scope = new CilScope(t, new[] { fn }, emptyTypeLookup);
 
-            scope.Compile(new CilFunctionCompiler(BuiltinFunctionLookup.Common));
+            scope.Compile(new CilFunctionCompiler(BuiltinFunctionLookup.Common, emptyDebuggingDocWriter));
 
             t.CreateType();
 

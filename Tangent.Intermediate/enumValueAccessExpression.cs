@@ -14,7 +14,8 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.EnumValueAccess; }
         }
 
-        public EnumValueAccessExpression(SingleValueType svt)
+        public EnumValueAccessExpression(SingleValueType svt, LineColumnRange sourceInfo)
+            : base(sourceInfo)
         {
             EnumValue = svt;
         }

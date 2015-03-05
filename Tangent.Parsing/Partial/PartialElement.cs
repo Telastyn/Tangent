@@ -17,9 +17,11 @@ namespace Tangent.Parsing.Partial
     public abstract class PartialElement
     {
         public readonly ElementType Type;
-        public PartialElement(ElementType type)
+        public readonly LineColumnRange SourceInfo;
+        public PartialElement(ElementType type, LineColumnRange sourceInfo)
         {
             Type = type;
+            SourceInfo = sourceInfo;
         }
     }
 }

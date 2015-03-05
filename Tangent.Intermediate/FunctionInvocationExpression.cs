@@ -23,6 +23,7 @@ namespace Tangent.Intermediate
         }
 
         public FunctionInvocationExpression(FunctionBindingExpression binding)
+            : base(binding.SourceInfo)
         {
             Bindings = binding;
         }

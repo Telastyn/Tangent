@@ -24,6 +24,13 @@ namespace Tangent.Intermediate
     public abstract class Expression
     {
         public abstract ExpressionNodeType NodeType { get; }
+        public readonly LineColumnRange SourceInfo;
+
+        protected Expression(LineColumnRange sourceInfo)
+        {
+            SourceInfo = sourceInfo;
+        }
+
         internal virtual void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
         {
         }

@@ -29,7 +29,7 @@ namespace Tangent.Cli
                 dest = args[1];
             }
 
-            var tokenization = Tokenize.ProgramFile(File.ReadAllText(args[0]));
+            var tokenization = Tokenize.ProgramFile(File.ReadAllText(args[0]), args[0]);
             var intermediateProgram = Parse.TangentProgram(tokenization);
             if (!intermediateProgram.Success) {
                 Console.Error.WriteLine(intermediateProgram.Error); // TODO: make better.

@@ -7,7 +7,7 @@ namespace Tangent.Tokenization
 {
     public static class Tokenize
     {
-        public static IEnumerable<Token> ProgramFile(string input)
+        public static IEnumerable<Token> ProgramFile(string input, string inputLabel)
         {
             int ix = 0;
 
@@ -17,12 +17,12 @@ namespace Tangent.Tokenization
                     yield break;
                 }
 
-                var token = Match("=>", TokenIdentifier.ReductionDeclSeparator, input, ix) ??
-                    Match(":>", TokenIdentifier.TypeDeclSeparator, input, ix) ??
-                    Match("~>", TokenIdentifier.LazyOperator, input, ix) ??
-                    Identifier(input, ix) ??
-                    String(input, ix) ??
-                    Symbol(input, ix);
+                var token = Match("=>", TokenIdentifier.ReductionDeclSeparator, input, ix, inputLabel) ??
+                    Match(":>", TokenIdentifier.TypeDeclSeparator, input, ix, inputLabel) ??
+                    Match("~>", TokenIdentifier.LazyOperator, input, ix, inputLabel) ??
+                    Identifier(inputLabel, input, ix) ??
+                    String(inputLabel, input, ix) ??
+                    Symbol(inputLabel, input, ix);
 
                 yield return token;
 
@@ -52,7 +52,7 @@ namespace Tangent.Tokenization
             return index;
         }
 
-        public static Token Identifier(string input, int index)
+        public static Token Identifier(string inputLabel, string input, int index)
         {
             if (index >= input.Length) { return null; }
 
@@ -67,10 +67,10 @@ namespace Tangent.Tokenization
                 return null;
             }
 
-            return new Token(TokenIdentifier.Identifier, input, index, endIx);
+            return new Token(TokenIdentifier.Identifier, input, index, endIx, inputLabel);
         }
 
-        public static Token String(string input, int index)
+        public static Token String(string inputLabel, string input, int index)
         {
             // Starting with the basics.
             if (index >= input.Length) { return null; }
@@ -82,28 +82,28 @@ namespace Tangent.Tokenization
                     return null;
                 }
 
-                return new Token(TokenIdentifier.StringConstant, input, index, endIx + 1);
+                return new Token(TokenIdentifier.StringConstant, input, index, endIx + 1, inputLabel);
             } else {
                 return null;
             }
         }
 
-        public static Token Symbol(string input, int index)
+        public static Token Symbol(string inputLabel, string input, int index)
         {
             if (index >= input.Length) { return null; }
 
             // For now, everything is cool.
-            return new Token(TokenIdentifier.Symbol, input, index, index + 1);
+            return new Token(TokenIdentifier.Symbol, input, index, index + 1, inputLabel);
         }
 
-        private static Token Match(string target, TokenIdentifier id, string input, int index)
+        private static Token Match(string target, TokenIdentifier id, string input, int index, string inputLabel)
         {
             if (index > input.Length - target.Length) {
                 return null;
             }
 
             if (input.Substring(index, target.Length) == target) {
-                return new Token(id, input, index, index + target.Length);
+                return new Token(id, input, index, index + target.Length, inputLabel);
             }
 
             return null;

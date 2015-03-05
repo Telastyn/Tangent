@@ -21,7 +21,7 @@ namespace Tangent.Parsing.UnitTests
                 new[] { new ParameterDeclaration("foo", TangentType.Void) },
                 Enumerable.Empty<ReductionDeclaration>());
 
-            var tokens = Tokenize.ProgramFile("foo").Select(t => new Identifier(t.Value));
+            var tokens = Tokenize.ProgramFile("foo", "test.tan").Select(t => new Identifier(t.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -40,7 +40,7 @@ namespace Tangent.Parsing.UnitTests
                 new[] { new ParameterDeclaration(new Identifier[] { "foo", "bar" }, TangentType.Void) },
                 Enumerable.Empty<ReductionDeclaration>());
 
-            var tokens = Tokenize.ProgramFile("foo bar").Select(t => new Identifier(t.Value));
+            var tokens = Tokenize.ProgramFile("foo bar", "test.tan").Select(t => new Identifier(t.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -58,7 +58,7 @@ namespace Tangent.Parsing.UnitTests
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
-            var tokens = Tokenize.ProgramFile("foo").Select(t => new Identifier(t.Value));
+            var tokens = Tokenize.ProgramFile("foo", "test.tan").Select(t => new Identifier(t.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -76,7 +76,7 @@ namespace Tangent.Parsing.UnitTests
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart("bar") }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
-            var tokens = Tokenize.ProgramFile("foo bar").Select(t => new Identifier(t.Value));
+            var tokens = Tokenize.ProgramFile("foo bar", "test.tan").Select(t => new Identifier(t.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -99,14 +99,14 @@ namespace Tangent.Parsing.UnitTests
                 new[] { new ParameterDeclaration("bar", t) },
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("x", t)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
-            var tokens = Tokenize.ProgramFile("foo bar").Select(token => new Identifier(token.Value));
+            var tokens = Tokenize.ProgramFile("foo bar", "test.tan").Select(token => new Identifier(token.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
             var invoke = ((FunctionInvocationExpression)result.First());
-           
+
             Assert.AreEqual(scope.Functions.First(), invoke.Bindings.FunctionDefinition);
             Assert.AreEqual(1, invoke.Bindings.Parameters.Count());
             Assert.AreEqual(ExpressionNodeType.ParameterAccess, invoke.Bindings.Parameters.First().NodeType);
@@ -127,7 +127,7 @@ namespace Tangent.Parsing.UnitTests
                 new[] { new ParameterDeclaration("bar", t) },
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("x", t)), new PhrasePart(new Identifier("foo")) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
-            var tokens = Tokenize.ProgramFile("bar foo").Select(token => new Identifier(token.Value));
+            var tokens = Tokenize.ProgramFile("bar foo", "test.tan").Select(token => new Identifier(token.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -154,7 +154,7 @@ namespace Tangent.Parsing.UnitTests
                 new[] { new ParameterDeclaration("bar", t) },
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("x", t)), new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("y", t)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
-            var tokens = Tokenize.ProgramFile("bar foo bar").Select(token => new Identifier(token.Value));
+            var tokens = Tokenize.ProgramFile("bar foo bar", "test.tan").Select(token => new Identifier(token.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -178,7 +178,7 @@ namespace Tangent.Parsing.UnitTests
                 Enumerable.Empty<ParameterDeclaration>(),
                 Enumerable.Empty<ReductionDeclaration>());
 
-            var tokens = Tokenize.ProgramFile("foo").Select(t => new Identifier(t.Value));
+            var tokens = Tokenize.ProgramFile("foo", "test.tan").Select(t => new Identifier(t.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -194,7 +194,7 @@ namespace Tangent.Parsing.UnitTests
                 new[] { new ParameterDeclaration("foo", TangentType.Void) },
                 new[] { new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
-            var tokens = Tokenize.ProgramFile("foo").Select(t => new Identifier(t.Value));
+            var tokens = Tokenize.ProgramFile("foo", "test.tan").Select(t => new Identifier(t.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -213,7 +213,7 @@ namespace Tangent.Parsing.UnitTests
                 new[] { new ParameterDeclaration("foo", t) },
                 new[] { new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
-            var tokens = Tokenize.ProgramFile("foo").Select(token => new Identifier(token.Value));
+            var tokens = Tokenize.ProgramFile("foo", "test.tan").Select(token => new Identifier(token.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -234,7 +234,7 @@ namespace Tangent.Parsing.UnitTests
                     new ReductionDeclaration(new PhrasePart[]{ new PhrasePart("g")}, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())))
                 });
 
-            var tokens = Tokenize.ProgramFile("f g").Select(t => new Identifier(t.Value));
+            var tokens = Tokenize.ProgramFile("f g", "test.tan").Select(t => new Identifier(t.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -254,7 +254,7 @@ namespace Tangent.Parsing.UnitTests
                     new ReductionDeclaration(new PhrasePart[] { new PhrasePart("f"), new ParameterDeclaration("x", TangentType.String.Lazy) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())))
                 });
 
-            var tokens = Tokenize.ProgramFile("f g").Select(t => new Identifier(t.Value));
+            var tokens = Tokenize.ProgramFile("f g", "test.tan").Select(t => new Identifier(t.Value));
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -272,7 +272,7 @@ namespace Tangent.Parsing.UnitTests
                 Enumerable.Empty<ParameterDeclaration>(),
                 BuiltinFunctions.All);
 
-            var result = new Input(new Expression[] { new IdentifierExpression("print"), new ConstantExpression<string>(TangentType.String, "foo") }, scope).InterpretAsStatement();
+            var result = new Input(new Expression[] { new IdentifierExpression("print", null), new ConstantExpression<string>(TangentType.String, "foo", null) }, scope).InterpretAsStatement();
 
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count);
@@ -294,7 +294,7 @@ namespace Tangent.Parsing.UnitTests
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo.SingleValueTypeFor(bar))), new Function(TangentType.Void, null)) });
 
-            var result = new Input(new Expression[] { new IdentifierExpression("bar") }, scope).InterpretAsStatement();
+            var result = new Input(new Expression[] { new IdentifierExpression("bar", null) }, scope).InterpretAsStatement();
 
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count);
@@ -315,7 +315,7 @@ namespace Tangent.Parsing.UnitTests
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { special, generic });
 
-            var result = new Input(new Expression[] { new IdentifierExpression("bar") }, scope).InterpretAsStatement();
+            var result = new Input(new Expression[] { new IdentifierExpression("bar", null) }, scope).InterpretAsStatement();
 
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count);
@@ -337,7 +337,7 @@ namespace Tangent.Parsing.UnitTests
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { generic });
 
-            var result = new Input(new Expression[] { new IdentifierExpression("bar") }, scope).InterpretAsStatement();
+            var result = new Input(new Expression[] { new IdentifierExpression("bar", null) }, scope).InterpretAsStatement();
 
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count);
@@ -372,7 +372,7 @@ namespace Tangent.Parsing.UnitTests
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { ifTrue, ifFalse });
 
-            var result = new Input(new Expression[] { new IdentifierExpression("if"), new IdentifierExpression("true"), new FunctionBindingExpression(new ReductionDeclaration(Enumerable.Empty<PhrasePart>(), new Function(TangentType.Void, null)), new Expression[] { }) }, scope).InterpretAsStatement();
+            var result = new Input(new Expression[] { new IdentifierExpression("if", null), new IdentifierExpression("true", null), new FunctionBindingExpression(new ReductionDeclaration(Enumerable.Empty<PhrasePart>(), new Function(TangentType.Void, null)), new Expression[] { }, null) }, scope).InterpretAsStatement();
 
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count);
@@ -405,7 +405,7 @@ namespace Tangent.Parsing.UnitTests
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { ifTrue, ifFalse });
 
-            var result = new Input(new Expression[] { new IdentifierExpression("if"), new IdentifierExpression("false"), new FunctionBindingExpression(new ReductionDeclaration(Enumerable.Empty<PhrasePart>(), new Function(TangentType.Void, null)), new Expression[] { }) }, scope).InterpretAsStatement();
+            var result = new Input(new Expression[] { new IdentifierExpression("if", null), new IdentifierExpression("false", null), new FunctionBindingExpression(new ReductionDeclaration(Enumerable.Empty<PhrasePart>(), new Function(TangentType.Void, null)), new Expression[] { }, null) }, scope).InterpretAsStatement();
 
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count);
@@ -425,7 +425,7 @@ namespace Tangent.Parsing.UnitTests
                 new[] { new ParameterDeclaration("bar", t) },
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("x", t)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
-            var tokens = new List<Expression>() { new IdentifierExpression("foo"), new ParenExpression(new Block(Enumerable.Empty<Expression>()), new List<Expression>() { new IdentifierExpression("bar") }) };
+            var tokens = new List<Expression>() { new IdentifierExpression("foo", null), new ParenExpression(new Block(Enumerable.Empty<Expression>()), new List<Expression>() { new IdentifierExpression("bar", null) }, null) };
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -452,7 +452,7 @@ namespace Tangent.Parsing.UnitTests
                 new[] { new ParameterDeclaration("bar", t.Lazy) },
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("x", t.Lazy)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
-            var tokens = new List<Expression>() { new IdentifierExpression("foo"), new ParenExpression(new Block(Enumerable.Empty<Expression>()), new List<Expression>() { new IdentifierExpression("bar") }) };
+            var tokens = new List<Expression>() { new IdentifierExpression("foo", null), new ParenExpression(new Block(Enumerable.Empty<Expression>()), new List<Expression>() { new IdentifierExpression("bar", null) }, null) };
 
             var result = new Input(tokens, scope).InterpretAsStatement();
 
@@ -462,7 +462,7 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.AreEqual(scope.Functions.First(), invoke.Bindings.FunctionDefinition);
             Assert.AreEqual(1, invoke.Bindings.Parameters.Count());
-            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, invoke.Bindings.Parameters.First().NodeType);
+            Assert.AreEqual(ExpressionNodeType.FunctionBinding, invoke.Bindings.Parameters.First().NodeType);
         }
     }
 }

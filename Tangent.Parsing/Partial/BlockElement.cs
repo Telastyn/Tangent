@@ -10,7 +10,7 @@ namespace Tangent.Parsing.Partial
     {
         public readonly PartialBlock Block;
         public BlockElement(PartialBlock block)
-            : base(ElementType.Block)
+            : base(ElementType.Block, null)
         {
             Block = block;
         }

@@ -70,7 +70,7 @@ bar";
         public void ReductionMatches()
         {
             var test = "=>";
-            var result = Tokenize.ProgramFile(test);
+            var result = Tokenize.ProgramFile(test, "test.tan");
 
             Assert.AreEqual(1, result.Count());
             Assert.AreEqual(TokenIdentifier.ReductionDeclSeparator, result.First().Identifier);
@@ -80,7 +80,7 @@ bar";
         public void TypeDeclarationSeparatorMatches()
         {
             var test = ":>";
-            var result = Tokenize.ProgramFile(test);
+            var result = Tokenize.ProgramFile(test, "test.tan");
 
             Assert.AreEqual(1, result.Count());
             Assert.AreEqual(TokenIdentifier.TypeDeclSeparator, result.First().Identifier);
@@ -90,7 +90,7 @@ bar";
         public void IdentifierHappyPath1()
         {
             var test = "foo";
-            var result = Tokenize.Identifier(test, 0);
+            var result = Tokenize.Identifier("test.tan", test, 0);
 
             Assert.IsNotNull(result);
             Assert.AreEqual(TokenIdentifier.Identifier, result.Identifier);
@@ -101,7 +101,7 @@ bar";
         public void IdentifierHappyPath2()
         {
             var test = "foo-";
-            var result = Tokenize.Identifier(test, 0);
+            var result = Tokenize.Identifier("test.tan", test, 0);
 
             Assert.IsNotNull(result);
             Assert.AreEqual(TokenIdentifier.Identifier, result.Identifier);
@@ -112,7 +112,7 @@ bar";
         public void IdentifierHappyPath3()
         {
             var test = "foo ";
-            var result = Tokenize.Identifier(test, 0);
+            var result = Tokenize.Identifier("test.tan", test, 0);
 
             Assert.IsNotNull(result);
             Assert.AreEqual(TokenIdentifier.Identifier, result.Identifier);
@@ -123,7 +123,7 @@ bar";
         public void IdentifierHappyPath4()
         {
             var test = "fooあ";
-            var result = Tokenize.Identifier(test, 0);
+            var result = Tokenize.Identifier("test.tan", test, 0);
 
             Assert.IsNotNull(result);
             Assert.AreEqual(TokenIdentifier.Identifier, result.Identifier);
@@ -134,7 +134,7 @@ bar";
         public void SymbolHappyPath1()
         {
             var test = "あ";
-            var result = Tokenize.Symbol(test, 0);
+            var result = Tokenize.Symbol("test.tan", test, 0);
 
             Assert.IsNotNull(result);
             Assert.AreEqual(TokenIdentifier.Symbol, result.Identifier);
@@ -145,7 +145,7 @@ bar";
         public void SymbolHappyPath2()
         {
             var test = "+";
-            var result = Tokenize.Symbol(test, 0);
+            var result = Tokenize.Symbol("test.tan", test, 0);
 
             Assert.IsNotNull(result);
             Assert.AreEqual(TokenIdentifier.Symbol, result.Identifier);
@@ -156,7 +156,7 @@ bar";
         public void SymbolHappyPath3()
         {
             var test = "++";
-            var result = Tokenize.Symbol(test, 0);
+            var result = Tokenize.Symbol("test.tan", test, 0);
 
             Assert.IsNotNull(result);
             Assert.AreEqual(TokenIdentifier.Symbol, result.Identifier);
@@ -167,7 +167,7 @@ bar";
         public void SymbolHappyPath4()
         {
             var test = "+ ";
-            var result = Tokenize.Symbol(test, 0);
+            var result = Tokenize.Symbol("test.tan", test, 0);
 
             Assert.IsNotNull(result);
             Assert.AreEqual(TokenIdentifier.Symbol, result.Identifier);
@@ -178,7 +178,7 @@ bar";
         public void SymbolHappyPath5()
         {
             var test = "+foo";
-            var result = Tokenize.Symbol(test, 0);
+            var result = Tokenize.Symbol("test.tan", test, 0);
 
             Assert.IsNotNull(result);
             Assert.AreEqual(TokenIdentifier.Symbol, result.Identifier);
@@ -189,12 +189,12 @@ bar";
         public void StringConstantHappyPath()
         {
             var test = "\"foo\"";
-            var result = Tokenize.String(test, 0);
+            var result = Tokenize.String("test.tan", test, 0);
 
             Assert.IsNotNull(result);
             Assert.AreEqual(TokenIdentifier.StringConstant, result.Identifier);
-            Assert.AreEqual(1, result.StartPosition.Column);
-            Assert.AreEqual(6, result.EndPosition.Column);
+            Assert.AreEqual(1, result.SourceInfo.StartPosition.Column);
+            Assert.AreEqual(6, result.SourceInfo.EndPosition.Column);
             Assert.AreEqual("\"foo\"", result.Value);
         }
 
@@ -202,7 +202,7 @@ bar";
         public void MalformedStringIsNull()
         {
             var test = "\"foo";
-            var result = Tokenize.String(test, 0);
+            var result = Tokenize.String("test.tan", test, 0);
 
             Assert.IsNull(result);
         }

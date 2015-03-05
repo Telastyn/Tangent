@@ -4,14 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{91B94F1E-2F60-4392-BB46-EC5F65A44B59}</ProjectGuid>
+    <ProjectGuid>{A446FC42-B937-44FF-9D21-8A1552DD86DF}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Tangent.Intermediate</RootNamespace>
-    <AssemblyName>Tangent.Intermediate</AssemblyName>
+    <RootNamespace>Tangent</RootNamespace>
+    <AssemblyName>Tangent.Common</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -21,7 +20,6 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -30,7 +28,6 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -42,38 +39,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Block.cs" />
-    <Compile Include="BuiltinFunctions.cs" />
-    <Compile Include="ConstantExpression.cs" />
-    <Compile Include="DelegateInvocationExpression.cs" />
-    <Compile Include="EnumType.cs" />
-    <Compile Include="EnumWideningExpression.cs" />
-    <Compile Include="Expression.cs" />
-    <Compile Include="Function.cs" />
-    <Compile Include="FunctionBindingExpression.cs" />
-    <Compile Include="FunctionInvocationExpression.cs" />
-    <Compile Include="Identifier.cs" />
-    <Compile Include="IdentifierExpression.cs" />
-    <Compile Include="LazyType.cs" />
-    <Compile Include="ParameterAccessExpression.cs" />
-    <Compile Include="ParameterDeclaration.cs" />
-    <Compile Include="PhrasePart.cs" />
+    <Compile Include="LineColumnPosition.cs" />
+    <Compile Include="LineColumnRange.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ReductionDeclaration.cs" />
-    <Compile Include="ReductionRule.cs" />
-    <Compile Include="SingleValueType.cs" />
-    <Compile Include="TangentProgram.cs" />
-    <Compile Include="TangentType.cs" />
-    <Compile Include="TypeAccessExpression.cs" />
-    <Compile Include="TypeDeclaration.cs" />
-    <Compile Include="EnumValueAccessExpression.cs" />
-    <Compile Include="EnumValueAccessRule.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Tangent.Common\Tangent.Common.csproj">
-      <Project>{a446fc42-b937-44ff-9d21-8a1552dd86df}</Project>
-      <Name>Tangent.Common</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

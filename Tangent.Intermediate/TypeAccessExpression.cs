@@ -14,7 +14,8 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.TypeAccess; }
         }
 
-        public TypeAccessExpression(TangentType type)
+        public TypeAccessExpression(TangentType type, LineColumnRange sourceInfo)
+            : base(sourceInfo)
         {
             TypeConstant = type;
         }

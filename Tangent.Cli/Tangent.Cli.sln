@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.CilGeneration", "..
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.CilGeneration.UnitTests", "..\Tangent.CilGeneration.UnitTests\Tangent.CilGeneration.UnitTests.csproj", "{7AC7335C-D096-44CE-A852-8157BB04F6BE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tangent.Common", "..\Tangent.Common\Tangent.Common.csproj", "{A446FC42-B937-44FF-9D21-8A1552DD86DF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{7AC7335C-D096-44CE-A852-8157BB04F6BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7AC7335C-D096-44CE-A852-8157BB04F6BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7AC7335C-D096-44CE-A852-8157BB04F6BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A446FC42-B937-44FF-9D21-8A1552DD86DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A446FC42-B937-44FF-9D21-8A1552DD86DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A446FC42-B937-44FF-9D21-8A1552DD86DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A446FC42-B937-44FF-9D21-8A1552DD86DF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

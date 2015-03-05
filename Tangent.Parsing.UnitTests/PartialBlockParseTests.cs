@@ -15,7 +15,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void MissingOpenDoesNotMatch()
         {
-            var test = Tokenize.ProgramFile("x");
+            var test = Tokenize.ProgramFile("x", "test.tan");
 
             var result = Parse.PartialBlock(test.ToList());
 
@@ -25,7 +25,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void MissingCloseDoesNotMatch()
         {
-            var test = Tokenize.ProgramFile("{x;");
+            var test = Tokenize.ProgramFile("{x;", "test.tan");
 
             var result = Parse.PartialBlock(test.ToList());
 
@@ -35,7 +35,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void EmptyBlocksAreFine()
         {
-            var test = Tokenize.ProgramFile("{}");
+            var test = Tokenize.ProgramFile("{}", "test.tan");
 
             var result = Parse.PartialBlock(test.ToList());
 
@@ -45,7 +45,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void BlocksAreFine()
         {
-            var test = Tokenize.ProgramFile("{x;}");
+            var test = Tokenize.ProgramFile("{x;}", "test.tan");
 
             var result = Parse.PartialBlock(test.ToList());
 
@@ -55,7 +55,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void LastSemiIsOptional()
         {
-            var test = Tokenize.ProgramFile("{x}");
+            var test = Tokenize.ProgramFile("{x}", "test.tan");
 
             var result = Parse.PartialBlock(test.ToList());
 
@@ -65,7 +65,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void LastSemiIsOptional2()
         {
-            var test = Tokenize.ProgramFile("{a; b; c d e f; x}");
+            var test = Tokenize.ProgramFile("{a; b; c d e f; x}", "test.tan");
 
             var result = Parse.PartialBlock(test.ToList());
 
@@ -75,7 +75,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void ParenMissingCloseDoesNotMatch()
         {
-            var test = Tokenize.ProgramFile("(x;");
+            var test = Tokenize.ProgramFile("(x;", "test.tan");
 
             var result = Parse.PartialBlock(test.ToList());
 
@@ -85,7 +85,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void ParenEmptyBlocksAreFine()
         {
-            var test = Tokenize.ProgramFile("()");
+            var test = Tokenize.ProgramFile("()", "test.tan");
 
             var result = Parse.PartialBlock(test.ToList());
 
@@ -95,7 +95,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void ParenBlocksAreFine()
         {
-            var test = Tokenize.ProgramFile("(x;)");
+            var test = Tokenize.ProgramFile("(x;)", "test.tan");
 
             var result = Parse.PartialBlock(test.ToList());
 
@@ -105,7 +105,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void ParenLastSemiIsOptional()
         {
-            var test = Tokenize.ProgramFile("(x)");
+            var test = Tokenize.ProgramFile("(x)", "test.tan");
 
             var result = Parse.PartialBlock(test.ToList());
 
@@ -115,7 +115,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void ParenLastSemiIsOptional2()
         {
-            var test = Tokenize.ProgramFile("(a; b; c d e f; x)");
+            var test = Tokenize.ProgramFile("(a; b; c d e f; x)", "test.tan");
 
             var result = Parse.PartialBlock(test.ToList());
 

@@ -15,7 +15,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void HappyPath()
         {
-            var test = Tokenize.ProgramFile("a b c;");
+            var test = Tokenize.ProgramFile("a b c;", "test.tan");
 
             var result = Parse.PartialStatement(test.ToList());
 
@@ -28,7 +28,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void BlocksWork()
         {
-            var test = Tokenize.ProgramFile("a {b;} c;");
+            var test = Tokenize.ProgramFile("a {b;} c;", "test.tan");
 
             var result = Parse.PartialStatement(test.ToList());
 
@@ -49,7 +49,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void UnexpectedSymbol()
         {
-            var test = Tokenize.ProgramFile("a + c;");
+            var test = Tokenize.ProgramFile("a + c;", "test.tan");
 
             var result = Parse.PartialStatement(test.ToList());
 
@@ -59,7 +59,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void StopAtSemi()
         {
-            var test = Tokenize.ProgramFile("a b c; +");
+            var test = Tokenize.ProgramFile("a b c; +", "test.tan");
 
             var result = Parse.PartialStatement(test.ToList());
 
@@ -69,7 +69,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void MissingSemiErrors()
         {
-            var test = Tokenize.ProgramFile("a b c");
+            var test = Tokenize.ProgramFile("a b c", "test.tan");
 
             var result = Parse.PartialStatement(test.ToList());
 

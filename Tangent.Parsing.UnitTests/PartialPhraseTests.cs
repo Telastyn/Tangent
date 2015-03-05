@@ -13,7 +13,7 @@ namespace Tangent.Parsing.UnitTests
         public void BasicPath()
         {
             var test = "(x: int) plus (y: int)";
-            var tokens = Tokenize.ProgramFile(test).ToList();
+            var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
 
             var result = Parse.PartialPhrase(tokens);
 
@@ -40,7 +40,7 @@ namespace Tangent.Parsing.UnitTests
         public void BasicPathAvoidsRemainingTokens()
         {
             var test = "(x: int) plus (y: int) :>";
-            var tokens = Tokenize.ProgramFile(test).ToList();
+            var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
 
             var result = Parse.PartialPhrase(tokens);
 
@@ -52,7 +52,7 @@ namespace Tangent.Parsing.UnitTests
         public void MissingParensIsFailure()
         {
             var test = "(x: int) plus (y: int :>";
-            var tokens = Tokenize.ProgramFile(test).ToList();
+            var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
 
             var result = Parse.PartialPhrase(tokens);
 
@@ -63,7 +63,7 @@ namespace Tangent.Parsing.UnitTests
         public void BadInput()
         {
             var test = ":> (x: int) plus (y: int)";
-            var tokens = Tokenize.ProgramFile(test).ToList();
+            var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
 
             var result = Parse.PartialPhrase(tokens);
 
@@ -74,7 +74,7 @@ namespace Tangent.Parsing.UnitTests
         public void LongPhrasePart()
         {
             var test = "(x y z: unsigned int) plus (ab c: int)";
-            var tokens = Tokenize.ProgramFile(test).ToList();
+            var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
 
             var result = Parse.PartialPhrase(tokens);
 

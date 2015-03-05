@@ -12,7 +12,7 @@ namespace Tangent.Parsing.UnitTests
         public void HappyPath()
         {
             var test = "enum { a, b }";
-            var tokens = Tokenize.ProgramFile(test);
+            var tokens = Tokenize.ProgramFile(test, "test.tan");
 
             var result = Parse.Enum(tokens.ToList());
 
@@ -26,7 +26,7 @@ namespace Tangent.Parsing.UnitTests
         public void EnumFails()
         {
             var test = "num { a, b }";
-            var tokens = Tokenize.ProgramFile(test);
+            var tokens = Tokenize.ProgramFile(test, "test.tan");
 
             var result = Parse.Enum(tokens.ToList());
 
@@ -37,7 +37,7 @@ namespace Tangent.Parsing.UnitTests
         public void MissingOpenBracket()
         {
             var test = "enum a, b";
-            var tokens = Tokenize.ProgramFile(test);
+            var tokens = Tokenize.ProgramFile(test, "test.tan");
 
             var result = Parse.Enum(tokens.ToList());
 
@@ -48,7 +48,7 @@ namespace Tangent.Parsing.UnitTests
         public void MissingClose()
         {
             var test = "enum { a, b ";
-            var tokens = Tokenize.ProgramFile(test);
+            var tokens = Tokenize.ProgramFile(test, "test.tan");
 
             var result = Parse.Enum(tokens.ToList());
 
@@ -59,7 +59,7 @@ namespace Tangent.Parsing.UnitTests
         public void EnumCase()
         {
             var test = "ENUM { a, b }";
-            var tokens = Tokenize.ProgramFile(test);
+            var tokens = Tokenize.ProgramFile(test, "test.tan");
 
             var result = Parse.Enum(tokens.ToList());
 

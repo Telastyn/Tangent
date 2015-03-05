@@ -16,7 +16,8 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.Constant; }
         }
 
-        protected ConstantExpression(TangentType type, object value)
+        protected ConstantExpression(TangentType type, object value, LineColumnRange sourceInfo)
+            : base(sourceInfo)
         {
             this.EffectiveType = type;
             this.Value = value;
@@ -27,7 +28,8 @@ namespace Tangent.Intermediate
     {
         public T TypedValue { get { return (T)Value; } }
 
-        public ConstantExpression(TangentType type, T value): base (type, value)
+        public ConstantExpression(TangentType type, T value, LineColumnRange sourceInfo)
+            : base(type, value, sourceInfo)
         {
         }
     }

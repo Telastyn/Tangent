@@ -23,13 +23,15 @@ namespace Tangent.Tokenization
         private readonly string input;
         internal int StartIndex { get; private set; }
         internal int EndIndex { get; private set; }
+        public readonly LineColumnRange SourceInfo;
 
-        public Token(TokenIdentifier id, string input, int startIndex, int endIndex)
+        public Token(TokenIdentifier id, string input, int startIndex, int endIndex, string inputLabel)
         {
             this.Identifier = id;
             this.input = input;
             this.StartIndex = startIndex;
             this.EndIndex = endIndex;
+            this.SourceInfo = new LineColumnRange(inputLabel, input, startIndex, endIndex);
         }
 
         public TokenIdentifier Identifier
@@ -41,22 +43,6 @@ namespace Tangent.Tokenization
         public string Value
         {
             get { return input.Substring(StartIndex, EndIndex - StartIndex); }
-        }
-
-        public LineColumnPosition StartPosition
-        {
-            get
-            {
-                return LineColumnPosition.Create(input, StartIndex);
-            }
-        }
-
-        public LineColumnPosition EndPosition
-        {
-            get
-            {
-                return LineColumnPosition.Create(input, EndIndex);
-            }
         }
     }
 }

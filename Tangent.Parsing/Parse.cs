@@ -21,9 +21,10 @@ namespace Tangent.Parsing
         {
             if (!tokens.Any())
             {
-                return new TangentProgram(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>());
+                return new TangentProgram(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>(), Enumerable.Empty<string>());
             }
 
+            List<string> inputSources = tokens.Select(t => t.SourceInfo.Label).Distinct().ToList();
             List<TypeDeclaration> types = new List<TypeDeclaration>() { new TypeDeclaration("void", TangentType.Void) };
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
 
@@ -119,7 +120,7 @@ namespace Tangent.Parsing
                 {
                     return fn;
                 }
-            }).ToList());
+            }).ToList(), inputSources);
         }
 
         private static Function BuildBlock(Scope scope, TangentType effectiveType, PartialBlock partialBlock, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
@@ -166,14 +167,18 @@ namespace Tangent.Parsing
             switch (element.Type)
             {
                 case ElementType.Identifier:
-                    return new IdentifierExpression(((IdentifierElement)element).Identifier);
+                    return new IdentifierExpression(((IdentifierElement)element).Identifier, element.SourceInfo);
                 case ElementType.Parens:
                     throw new NotImplementedException("Parens expressions not yet supported.");
                 case ElementType.Block:
                     var stmts = ((BlockElement)element).Block.Statements.ToList();
                     var last = stmts.Last();
                     stmts.RemoveAt(stmts.Count - 1);
-                    return new ParenExpression(BuildBlock(scope, null, stmts, bad, ambiguous), last.FlatTokens.Select(e => ElementToExpression(scope, e, bad, ambiguous)).ToList());
+                    var notLast = BuildBlock(scope, null, stmts, bad, ambiguous);
+                    var lastExpr = last.FlatTokens.Select(e => ElementToExpression(scope, e, bad, ambiguous)).ToList();
+                    var info = lastExpr.Aggregate((LineColumnRange)null, (a, expr) => expr.SourceInfo.Combine(a));
+                    info = notLast.Statements.Any() ? notLast.Statements.Aggregate(info, (a, stmt) => a.Combine(stmt.SourceInfo)) : info;
+                    return new ParenExpression(notLast, lastExpr, info);
                 case ElementType.Constant:
                     return ((ConstantElement)element).TypelessExpression;
                 default:
@@ -397,12 +402,12 @@ namespace Tangent.Parsing
                 else if (first.Identifier == TokenIdentifier.Identifier)
                 {
                     tokens.RemoveAt(0);
-                    result.Add(new IdentifierElement(first.Value));
+                    result.Add(new IdentifierElement(first.Value, first.SourceInfo));
                 }
                 else if (first.Identifier == TokenIdentifier.StringConstant)
                 {
                     tokens.RemoveAt(0);
-                    result.Add(new ConstantElement<string>(new ConstantExpression<string>(TangentType.String, first.Value.Substring(1, first.Value.Length - 2))));
+                    result.Add(new ConstantElement<string>(new ConstantExpression<string>(TangentType.String, first.Value.Substring(1, first.Value.Length - 2), first.SourceInfo)));
                 }
                 else if (first.Value == ";")
                 {

@@ -9,11 +9,13 @@ namespace Tangent.Intermediate
     {
         public readonly IEnumerable<TypeDeclaration> TypeDeclarations;
         public readonly IEnumerable<ReductionDeclaration> Functions;
+        public readonly IEnumerable<string> InputLabels;
 
-        public TangentProgram(IEnumerable<TypeDeclaration> types, IEnumerable<ReductionDeclaration> functions)
+        public TangentProgram(IEnumerable<TypeDeclaration> types, IEnumerable<ReductionDeclaration> functions, IEnumerable<string> inputLabels)
         {
             this.TypeDeclarations = types;
             this.Functions = functions;
+            this.InputLabels = inputLabels;
         }
     }
 }

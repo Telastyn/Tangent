@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.SymbolStore;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
@@ -10,12 +11,13 @@ namespace Tangent.CilGeneration
 {
     public class CilFunctionCompiler : IFunctionCompiler
     {
-        // TODO: pdb info.
+        private readonly Dictionary<string, ISymbolDocumentWriter> debuggingDocWriter;
         private readonly IFunctionLookup builtins;
         private int closureCounter = 1;
-        public CilFunctionCompiler(IFunctionLookup builtins)
+        public CilFunctionCompiler(IFunctionLookup builtins, Dictionary<string, ISymbolDocumentWriter> debuggingDocWriter)
         {
             this.builtins = builtins;
+            this.debuggingDocWriter = debuggingDocWriter;
         }
 
         public void BuildFunctionImplementation(ReductionDeclaration fn, MethodBuilder target, IEnumerable<ReductionDeclaration> specializations, TypeBuilder closureScope, IFunctionLookup fnLookup, ITypeLookup typeLookup)
@@ -68,11 +70,20 @@ namespace Tangent.CilGeneration
             }
         }
 
+        private void AddDebuggingInfo(ILGenerator gen, Expression expr)
+        {
+            if (expr.SourceInfo != null)
+            {
+                System.Diagnostics.Debug.WriteLine(expr.SourceInfo);
+                gen.MarkSequencePoint(debuggingDocWriter[expr.SourceInfo.Label], expr.SourceInfo.StartPosition.Line, expr.SourceInfo.StartPosition.Column, expr.SourceInfo.EndPosition.Line, expr.SourceInfo.EndPosition.Column);
+            }
+        }
 
         private void AddFunctionCode(ILGenerator gen, Block impl, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, Action<ILGenerator>> parameterCodes)
         {
             foreach (var stmt in impl.Statements)
             {
+                AddDebuggingInfo(gen, stmt);
                 AddExpression(stmt, gen, fnLookup, typeLookup, closureScope, parameterCodes);
             }
         }
@@ -98,7 +109,7 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.FunctionInvocation:
                     var invoke = (FunctionInvocationExpression)expr;
-
+                    AddDebuggingInfo(gen, expr);
                     foreach (var p in invoke.Bindings.Parameters)
                     {
                         AddExpression(p, gen, fnLookup, typeLookup, closureScope, parameterCodes);

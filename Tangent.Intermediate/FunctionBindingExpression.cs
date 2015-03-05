@@ -23,7 +23,8 @@ namespace Tangent.Intermediate
             }
         }
 
-        public FunctionBindingExpression(ReductionDeclaration function, IEnumerable<Expression> parameters)
+        public FunctionBindingExpression(ReductionDeclaration function, IEnumerable<Expression> parameters, LineColumnRange sourceInfo)
+            : base(sourceInfo)
         {
             Parameters = parameters.ToList();
             FunctionDefinition = function;
@@ -36,13 +37,15 @@ namespace Tangent.Intermediate
             if (BuiltinFunctions.All.Contains(FunctionDefinition)) { return; }
 
             Function replacement = null;
-            if (replacements.TryGetValue(FunctionDefinition.Returns, out replacement)) {
+            if (replacements.TryGetValue(FunctionDefinition.Returns, out replacement))
+            {
                 FunctionDefinition.Returns = replacement;
             }
 
             FunctionDefinition.Returns.ReplaceTypeResolvedFunctions(replacements, workset);
 
-            foreach (var entry in Parameters) {
+            foreach (var entry in Parameters)
+            {
                 entry.ReplaceTypeResolvedFunctions(replacements, workset);
             }
         }

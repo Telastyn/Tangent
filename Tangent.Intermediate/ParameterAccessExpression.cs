@@ -14,7 +14,8 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.ParameterAccess; }
         }
 
-        public ParameterAccessExpression(ParameterDeclaration decl)
+        public ParameterAccessExpression(ParameterDeclaration decl, LineColumnRange sourceInfo)
+            : base(sourceInfo)
         {
             Parameter = decl;
         }

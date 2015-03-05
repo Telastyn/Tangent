@@ -61,6 +61,10 @@
     <Compile Include="LineColumnPositionTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Tangent.Common\Tangent.Common.csproj">
+      <Project>{a446fc42-b937-44ff-9d21-8a1552dd86df}</Project>
+      <Name>Tangent.Common</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Tangent.Tokenization\Tangent.Tokenization.csproj">
       <Project>{ae943962-7eb9-47d5-8436-821035ac0b74}</Project>
       <Name>Tangent.Tokenization</Name>

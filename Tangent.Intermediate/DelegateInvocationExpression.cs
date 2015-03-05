@@ -16,6 +16,7 @@ namespace Tangent.Intermediate
         }
 
         public DelegateInvocationExpression(Expression d)
+            : base(d.SourceInfo)
         {
             Delegate = d;
         }
@@ -24,7 +25,8 @@ namespace Tangent.Intermediate
         {
             get
             {
-                switch (Delegate.NodeType) {
+                switch (Delegate.NodeType)
+                {
                     case ExpressionNodeType.ParameterAccess:
                         var parameter = Delegate as ParameterAccessExpression;
                         var lazyType = parameter.Parameter.Returns as LazyType;

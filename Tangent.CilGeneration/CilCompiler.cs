@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.SymbolStore;
 using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
@@ -14,7 +15,6 @@ namespace Tangent.CilGeneration
     public class CilCompiler
     {
         private readonly Dictionary<object, string> names = new Dictionary<object, string>();
-        private readonly DebugInfoGenerator pdb = DebugInfoGenerator.CreatePdbGenerator();
 
         public void Compile(TangentProgram program, string targetPath)
         {
@@ -28,11 +28,12 @@ namespace Tangent.CilGeneration
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName(filename), AssemblyBuilderAccess.Save);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(filename + (entrypoint == null ? ".dll" : ".exe"), Path.GetFileName(targetPath) + (entrypoint == null ? ".dll" : ".exe"), true);
 
+            Dictionary<string, ISymbolDocumentWriter> debuggingSymbolLookup = program.InputLabels.ToDictionary(l => l, l => moduleBuilder.DefineDocument(l, Guid.Empty, Guid.Empty, Guid.Empty));
             ITypeLookup typeLookup = new DelegatingTypeLookup(new CilTypeCompiler(moduleBuilder), program.TypeDeclarations);
-
+            
             var rootClass = moduleBuilder.DefineType("_");
             var fnLookup = new CilScope(rootClass, program.Functions, typeLookup);
-            var compiler = new CilFunctionCompiler(BuiltinFunctionLookup.Common);
+            var compiler = new CilFunctionCompiler(BuiltinFunctionLookup.Common, debuggingSymbolLookup);
 
             fnLookup.Compile(compiler);
 

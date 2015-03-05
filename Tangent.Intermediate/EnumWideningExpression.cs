@@ -16,6 +16,7 @@ namespace Tangent.Intermediate
         }
 
         public EnumWideningExpression(EnumValueAccessExpression expr)
+            : base(expr.SourceInfo)
         {
             this.EnumAccess = expr;
         }

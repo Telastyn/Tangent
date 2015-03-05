@@ -10,8 +10,8 @@ namespace Tangent.Parsing.Partial
     public class IdentifierElement : PartialElement
     {
         public readonly Identifier Identifier;
-        public IdentifierElement(Identifier identifier)
-            : base(ElementType.Identifier)
+        public IdentifierElement(Identifier identifier, LineColumnRange sourceInfo)
+            : base(ElementType.Identifier, sourceInfo)
         {
             Identifier = identifier;
         }

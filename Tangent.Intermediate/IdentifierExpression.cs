@@ -14,7 +14,8 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.Identifier; }
         }
 
-        public IdentifierExpression(Identifier identifier)
+        public IdentifierExpression(Identifier identifier, LineColumnRange sourceInfo)
+            : base(sourceInfo)
         {
             Identifier = identifier;
         }
