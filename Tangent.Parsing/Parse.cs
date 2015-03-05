@@ -124,22 +124,36 @@ namespace Tangent.Parsing
 
         private static Function BuildBlock(Scope scope, TangentType effectiveType, PartialBlock partialBlock, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
         {
-            var block = BuildBlock(scope, partialBlock.Statements, bad, ambiguous);
+            var block = BuildBlock(scope, effectiveType, partialBlock.Statements, bad, ambiguous);
 
             return new Function(effectiveType, block);
         }
 
-        private static Block BuildBlock(Scope scope, IEnumerable<PartialStatement> elements, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
+        private static Block BuildBlock(Scope scope, TangentType effectiveType, IEnumerable<PartialStatement> elements, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
         {
             List<Expression> statements = new List<Expression>();
-            foreach (var line in elements) {
+            if (!elements.Any())
+            {
+                if (effectiveType != TangentType.Void) { bad.Add(new IncomprehensibleStatementError(Enumerable.Empty<Expression>())); }
+                return new Block(Enumerable.Empty<Expression>());
+            }
+
+            var allElements = elements.ToList();
+            for (int ix = 0; ix < allElements.Count; ++ix)
+            {
+                var line = allElements[ix];
                 var statementBits = line.FlatTokens.Select(t => ElementToExpression(scope, t, bad, ambiguous));
-                var statement = new Input(statementBits, scope).InterpretAsStatement();
-                if (statement.Count == 0) {
+                var statement = new Input(statementBits, scope).InterpretTowards((effectiveType != null && ix == allElements.Count - 1) ? effectiveType : TangentType.Void);
+                if (statement.Count == 0)
+                {
                     bad.Add(new IncomprehensibleStatementError(statementBits));
-                } else if (statement.Count > 1) {
+                }
+                else if (statement.Count > 1)
+                {
                     ambiguous.Add(new AmbiguousStatementError(statementBits, statement));
-                } else {
+                }
+                else
+                {
                     statements.Add(statement.First());
                 }
             }
@@ -158,8 +172,8 @@ namespace Tangent.Parsing
                 case ElementType.Block:
                     var stmts = ((BlockElement)element).Block.Statements.ToList();
                     var last = stmts.Last();
-                    stmts.RemoveAt(stmts.Count-1);
-                    return new ParenExpression(BuildBlock(scope, stmts, bad, ambiguous), last.FlatTokens.Select(e => ElementToExpression(scope, e, bad, ambiguous)).ToList()); 
+                    stmts.RemoveAt(stmts.Count - 1);
+                    return new ParenExpression(BuildBlock(scope, null, stmts, bad, ambiguous), last.FlatTokens.Select(e => ElementToExpression(scope, e, bad, ambiguous)).ToList());
                 case ElementType.Constant:
                     return ((ConstantElement)element).TypelessExpression;
                 default:
@@ -335,13 +349,19 @@ namespace Tangent.Parsing
             List<IEnumerable<PartialElement>> result = new List<IEnumerable<PartialElement>>();
             string closeTarget;
 
-            if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens)) {
-                if (!MatchAndDiscard(TokenIdentifier.Symbol, "(", tokens)) {
+            if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens))
+            {
+                if (!MatchAndDiscard(TokenIdentifier.Symbol, "(", tokens))
+                {
                     return new ResultOrParseError<PartialBlock>(new ExpectedLiteralParseError("{", tokens.FirstOrDefault()));
-                } else {
+                }
+                else
+                {
                     closeTarget = ")";
                 }
-            } else {
+            }
+            else
+            {
                 closeTarget = "}";
             }
 
@@ -378,27 +398,43 @@ namespace Tangent.Parsing
                 {
                     tokens.RemoveAt(0);
                     result.Add(new IdentifierElement(first.Value));
-                } else if (first.Identifier == TokenIdentifier.StringConstant) {
+                }
+                else if (first.Identifier == TokenIdentifier.StringConstant)
+                {
                     tokens.RemoveAt(0);
                     result.Add(new ConstantElement<string>(new ConstantExpression<string>(TangentType.String, first.Value.Substring(1, first.Value.Length - 2))));
-                } else if (first.Value == ";") {
-                    if (result.Any()) {
+                }
+                else if (first.Value == ";")
+                {
+                    if (result.Any())
+                    {
                         tokens.RemoveAt(0);
                         return result;
-                    } else {
+                    }
+                    else
+                    {
                         return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
                     }
-                } else if (first.Value == "{" || first.Value == "(") {
+                }
+                else if (first.Value == "{" || first.Value == "(")
+                {
                     var block = PartialBlock(tokens);
-                    if (block.Success) {
+                    if (block.Success)
+                    {
                         result.Add(new BlockElement(block.Result));
-                    } else {
+                    }
+                    else
+                    {
                         return new ResultOrParseError<IEnumerable<PartialElement>>(block.Error);
                     }
-                }else if(first.Value == "}" || first.Value == ")"){
+                }
+                else if (first.Value == "}" || first.Value == ")")
+                {
                     // we're at end of block. Return statement for optional semi-colon.
                     return result;
-                } else {
+                }
+                else
+                {
                     return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
                 }
             }

@@ -35,24 +35,24 @@ namespace Tangent.Parsing
         {
             var input = new Input(LastStatement, scope);
 
-            var result = input.InterpretTowards(towardsType);
-
-            // TODO: will this ever be called, or will the internals of the thing always be lazy?
-            if (!result.Any() && towardsType is LazyType) {
+            if (towardsType is LazyType) {
                 var targetType = ((LazyType)towardsType).Type;
-                result = input.InterpretTowards(targetType); 
+                var result = input.InterpretTowards(targetType);
 
-                return result.Select( interpretation =>
-                    new FunctionBindingExpression(
-                    new ReductionDeclaration(
-                        Enumerable.Empty<PhrasePart>(),
-                        new Function(
-                            targetType,
-                            new Block(VoidStatements.Statements.Concat(new[] { interpretation })))),
-                    Enumerable.Empty<Expression>()));
+                if (result.Any())
+                {
+                    return result.Select(interpretation =>
+                        new FunctionBindingExpression(
+                        new ReductionDeclaration(
+                            Enumerable.Empty<PhrasePart>(),
+                            new Function(
+                                targetType,
+                                new Block(VoidStatements.Statements.Concat(new[] { interpretation })))),
+                        Enumerable.Empty<Expression>()));
+                }
             }
             
-            return result.Select(interpretation =>
+            return input.InterpretTowards(towardsType).Select(interpretation =>
                 new FunctionInvocationExpression(
                     new FunctionBindingExpression(
                     new ReductionDeclaration(
