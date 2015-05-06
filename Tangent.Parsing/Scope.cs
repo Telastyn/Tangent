@@ -20,7 +20,6 @@ namespace Tangent.Parsing
             Parameters = parameters.OrderByDescending(p => p.Takes.Count()).ToList();
             Types = types.OrderByDescending(t => t.Takes.Count()).ToList();
             Functions = (functions.OrderByDescending(f => f.Takes.Count())).ToList();
-
         }
     }
 }

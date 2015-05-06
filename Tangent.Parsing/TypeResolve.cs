@@ -33,6 +33,36 @@ namespace Tangent.Parsing
             return results;
         }
 
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls)
+        {
+            List<BadTypePhrase> errors = new List<BadTypePhrase>();
+            Dictionary<PartialProductType, ProductType> inNeedOfPopulation = new Dictionary<PartialProductType,ProductType>();
+            var newLookup = typeDecls.Select(td =>
+            {
+                if (td.Returns is PartialProductType) {
+                    var newb = new ProductType(Enumerable.Empty<PhrasePart>());
+                    inNeedOfPopulation.Add((PartialProductType)td.Returns, newb);
+                    return new TypeDeclaration(td.Takes, newb);
+                } else {
+                    return td;
+                }
+            }).ToList();
+
+            foreach (var entry in inNeedOfPopulation) {
+                var resolvedType = PartialProductType(entry.Key, entry.Value, newLookup);
+                if (!resolvedType.Success) {
+                    var resolutionErrors = (TypeResolutionErrors)resolvedType.Error;
+                    errors.AddRange(resolutionErrors.Errors);
+                }
+            }
+
+            if (errors.Any()) {
+                return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new TypeResolutionErrors(errors));
+            }
+
+            return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);
+        }
+
         internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types)
         {
             var errors = new List<BadTypePhrase>();
@@ -58,6 +88,26 @@ namespace Tangent.Parsing
             }
 
             return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType.Result, fn.Implementation)));
+        }
+
+        internal static ResultOrParseError<ProductType> PartialProductType(PartialProductType partialType, ProductType target, IEnumerable<TypeDeclaration> types)
+        {
+            var errors = new List<BadTypePhrase>();
+
+            foreach (var part in partialType.DataConstructorParts) {
+                var resolved = Resolve(part, types);
+                if (resolved.Success) {
+                    target.DataConstructorParts.Add(resolved.Result);
+                } else {
+                    errors.AddRange((resolved.Error as TypeResolutionErrors).Errors);
+                }
+            }
+
+            if (errors.Any()) {
+                return new ResultOrParseError<ProductType>(new TypeResolutionErrors(errors));
+            }
+
+            return target;
         }
 
         internal static ResultOrParseError<PhrasePart> Resolve(PartialPhrasePart partial, IEnumerable<TypeDeclaration> types)

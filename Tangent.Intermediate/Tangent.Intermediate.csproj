@@ -45,6 +45,7 @@
     <Compile Include="Block.cs" />
     <Compile Include="BuiltinFunctions.cs" />
     <Compile Include="ConstantExpression.cs" />
+    <Compile Include="CtorCall.cs" />
     <Compile Include="DelegateInvocationExpression.cs" />
     <Compile Include="EnumType.cs" />
     <Compile Include="EnumWideningExpression.cs" />
@@ -58,6 +59,7 @@
     <Compile Include="ParameterAccessExpression.cs" />
     <Compile Include="ParameterDeclaration.cs" />
     <Compile Include="PhrasePart.cs" />
+    <Compile Include="ProductType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReductionDeclaration.cs" />
     <Compile Include="ReductionRule.cs" />

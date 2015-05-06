@@ -71,11 +71,18 @@ namespace Tangent.Parsing
             }
 
             // Move to Phase 2 - Resolve types in parameters and function return types.
-            var resolvedFunctions = TypeResolve.AllPartialFunctionDeclarations(partialFunctions, types);
+            var resolvedTypes = TypeResolve.AllTypePlaceholders(types);
+            if (!resolvedTypes.Success) {
+                return new ResultOrParseError<Intermediate.TangentProgram>(resolvedTypes.Error);
+            }
+
+            var resolvedFunctions = TypeResolve.AllPartialFunctionDeclarations(partialFunctions, resolvedTypes.Result);
             if (!resolvedFunctions.Success)
             {
                 return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error);
             }
+
+            var ctorCalls = resolvedTypes.Result.Where(td => td.Returns is ProductType).Select(td => new ReductionDeclaration(((ProductType)td.Returns).DataConstructorParts, new CtorCall((ProductType)td.Returns)));
 
             // And now Phase 3 - Statement parsing based on syntax.
             var lookup = new Dictionary<Function, Function>();
@@ -87,7 +94,7 @@ namespace Tangent.Parsing
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
                 if (partialFunction != null)
                 {
-                    var scope = new Scope(partialFunction.EffectiveType, types, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), resolvedFunctions.Result.Concat(BuiltinFunctions.All));
+                    var scope = new Scope(partialFunction.EffectiveType, types, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), resolvedFunctions.Result.Concat(BuiltinFunctions.All).Concat(ctorCalls));
                     Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
 
                     lookup.Add(partialFunction, newb);
@@ -274,7 +281,6 @@ namespace Tangent.Parsing
 
         public static ResultOrParseError<TangentType> Type(List<Token> tokens)
         {
-            // For now, only enums.
             var enumResult = Enum(tokens);
             if (enumResult.Success)
             {
@@ -282,7 +288,12 @@ namespace Tangent.Parsing
             }
             else
             {
-                return new ResultOrParseError<TangentType>(enumResult.Error);
+                var classResult = Class(tokens);
+                if (classResult.Success) {
+                    return new ResultOrParseError<TangentType>(classResult.Result);
+                }
+
+                return new ResultOrParseError<TangentType>(classResult.Error);
             }
         }
 
@@ -323,6 +334,26 @@ namespace Tangent.Parsing
             }
 
             return new EnumType(result);
+        }
+
+        internal static ResultOrParseError<PartialProductType> Class(List<Token> tokens)
+        {
+            var phrasePart = PartialPhrase(tokens);
+            if (!phrasePart.Success) {
+                return new ResultOrParseError<PartialProductType>(phrasePart.Error);
+            }
+
+            if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens)) {
+                return new ResultOrParseError<PartialProductType>(new ExpectedLiteralParseError("{", tokens.FirstOrDefault()));
+            }
+
+            // TODO: class bits.
+
+            if (!MatchAndDiscard(TokenIdentifier.Symbol, "}", tokens)) {
+                return new ResultOrParseError<PartialProductType>(new ExpectedLiteralParseError("}", tokens.FirstOrDefault()));
+            }
+
+            return new PartialProductType(phrasePart.Result);
         }
 
         internal static ResultOrParseError<PartialFunction> PartialParseFunctionBits(List<Token> tokens)

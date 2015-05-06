@@ -10,7 +10,9 @@ namespace Tangent.Intermediate
         Builtin,
         Enum,
         SingleValue,
-        Lazy
+        Lazy,
+        Product,
+        Placeholder
     }
 
     public class TangentType
