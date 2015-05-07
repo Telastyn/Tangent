@@ -83,17 +83,19 @@ namespace Tangent.CilGeneration
             return GetNameFor(rule, this.typeLookup);
         }
 
-        public static string GetNameFor(ParameterDeclaration rule, ITypeLookup typeLookup)
+        public static string GetNameFor(ParameterDeclaration rule, ITypeLookup typeLookup) { return GetNameFor(rule, tt => typeLookup[tt]); }
+
+        public static string GetNameFor(ParameterDeclaration rule, Func<TangentType,Type> typeLookup)
         {
             string paramTypeName;
             if (rule.Returns.ImplementationType == KindOfType.SingleValue)
             {
                 var svt = ((SingleValueType) rule.Returns);
-                paramTypeName = typeLookup[svt.ValueType].Name + "." + svt.Value.Value;
+                paramTypeName = typeLookup(svt.ValueType).Name + "." + svt.Value.Value;
             }
             else
             {
-                paramTypeName = typeLookup[rule.Returns].Name;
+                paramTypeName = typeLookup(rule.Returns).Name;
             }
 
             string result = string.Join(" ", rule.Takes.Select(id => id.Value)) + ": " + paramTypeName;

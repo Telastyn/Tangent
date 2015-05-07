@@ -112,7 +112,13 @@ namespace Tangent.CilGeneration
                     }
 
                     if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
-                    gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
+                    var ctor = invoke.Bindings.FunctionDefinition.Returns as CtorCall;
+                    if (ctor == null) {
+                        gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
+                    } else {
+                        var ctorFn = typeLookup[ctor.EffectiveType].GetConstructors().First();
+                        gen.Emit(OpCodes.Newobj, ctorFn);
+                    }
 
                     return;
 

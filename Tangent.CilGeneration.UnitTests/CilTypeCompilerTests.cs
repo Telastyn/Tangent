@@ -43,7 +43,7 @@ namespace Tangent.CilGeneration.UnitTests
             var compiler = new CilTypeCompiler(module);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, new EnumType(new Identifier[] { "a", "b", "c" }));
 
-            var result = compiler.Compile(typeDecl);
+            var result = compiler.Compile(typeDecl, p => { }, tt => typeof(int));
             Assert.AreEqual("foo bar", result.Name);
             var values = Enum.GetValues(result);
             Assert.AreEqual(3, values.Length);

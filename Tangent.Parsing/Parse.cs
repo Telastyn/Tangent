@@ -94,7 +94,7 @@ namespace Tangent.Parsing
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
                 if (partialFunction != null)
                 {
-                    var scope = new Scope(partialFunction.EffectiveType, types, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), resolvedFunctions.Result.Concat(BuiltinFunctions.All).Concat(ctorCalls));
+                    var scope = new Scope(partialFunction.EffectiveType, resolvedTypes.Result, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), resolvedFunctions.Result.Concat(BuiltinFunctions.All).Concat(ctorCalls));
                     Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
 
                     lookup.Add(partialFunction, newb);
@@ -117,7 +117,7 @@ namespace Tangent.Parsing
                 fn.ReplaceTypeResolvedFunctions(lookup, workset);
             }
 
-            return new TangentProgram(types, resolvedFunctions.Result.Select(fn =>
+            return new TangentProgram(resolvedTypes.Result, resolvedFunctions.Result.Select(fn =>
             {
                 if (fn.Returns is TypeResolvedFunction)
                 {

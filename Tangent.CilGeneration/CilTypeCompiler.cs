@@ -8,7 +8,7 @@ using Tangent.Intermediate;
 
 namespace Tangent.CilGeneration
 {
-    public class CilTypeCompiler:ITypeCompiler
+    public class CilTypeCompiler : ITypeCompiler
     {
         private readonly ModuleBuilder builder;
         public CilTypeCompiler(ModuleBuilder builder)
@@ -16,27 +16,50 @@ namespace Tangent.CilGeneration
             this.builder = builder;
         }
 
-
-        public Type Compile(TypeDeclaration typeDecl)
+        public Type Compile(TypeDeclaration typeDecl, Action<Type> placeholder, Func<TangentType, Type> lookup)
         {
             switch (typeDecl.Returns.ImplementationType) {
                 case KindOfType.Enum:
-                    return BuildEnum(typeDecl);
+                    return BuildEnum(typeDecl, placeholder, lookup);
+                case KindOfType.Product:
+                    return BuildClass(typeDecl, placeholder, lookup);
                 default:
                     throw new NotImplementedException();
             }
         }
 
-        private Type BuildEnum(TypeDeclaration result)
+        private Type BuildEnum(TypeDeclaration target, Action<Type> placeholder, Func<TangentType, Type> lookup)
         {
-            var typeName = GetNameFor(result);
+            var typeName = GetNameFor(target);
             var enumBuilder = builder.DefineEnum(typeName, System.Reflection.TypeAttributes.Public, typeof(int));
             int x = 1;
-            foreach (var value in (result.Returns as EnumType).Values) {
+            foreach (var value in (target.Returns as EnumType).Values) {
                 enumBuilder.DefineLiteral(value.Value, x++);
             }
 
             return enumBuilder.CreateType();
+        }
+
+        private Type BuildClass(TypeDeclaration target, Action<Type> placeholder, Func<TangentType, Type> lookup)
+        {
+            var typeName = GetNameFor(target);
+            var productType = (ProductType)target.Returns;
+            var tangentCtorParams = productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).ToList();
+            var dotnetCtorParamTypes = tangentCtorParams.Select(pp=>lookup(pp.Parameter.Returns)).ToList();
+            var classBuilder = builder.DefineType(typeName, System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Public);
+            placeholder(classBuilder);
+            var ctor = classBuilder.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, dotnetCtorParamTypes.ToArray());
+            var gen = ctor.GetILGenerator();
+            
+            for (int ix = 0; ix < dotnetCtorParamTypes.Count; ++ix) {
+                var field = classBuilder.DefineField(string.Join(" ", tangentCtorParams[ix].Parameter.Takes.Select(id => id.Value)), dotnetCtorParamTypes[ix], System.Reflection.FieldAttributes.Public | System.Reflection.FieldAttributes.InitOnly);
+                gen.Emit(OpCodes.Ldarg_0);
+                gen.Emit(OpCodes.Ldarg, ix+1);
+                gen.Emit(OpCodes.Stfld, field);
+            }
+
+            gen.Emit(OpCodes.Ret);
+            return classBuilder.CreateType();
         }
 
         public static string GetNameFor(TypeDeclaration rule)

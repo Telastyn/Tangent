@@ -36,15 +36,21 @@ namespace Tangent.CilGeneration
         {
             switch (t.ImplementationType) {
                 case KindOfType.Enum:
+                case KindOfType.Product:
                     // This should already be declared in our types.
                     var result = declaredTypes.FirstOrDefault(td => td.Returns == t);
                     if (result == null) {
                         throw new ApplicationException("Got TypeLookup request for a type that wasn't declared?");
                     }
 
-                    lookup.Add(result.Returns, typeCompiler.Compile(result));
+                    var type = typeCompiler.Compile(result, placeholder => lookup.Add(result.Returns, placeholder), tt => this[tt]);
+                    if (lookup.ContainsKey(result.Returns)) {
+                        lookup[result.Returns] = type;
+                    } else {
+                        lookup.Add(result.Returns, type);
+                    }
                     return;
-                
+
                 case KindOfType.Lazy:
                     // The target of the type constructor needs to be already declared in our types.
                     var lazyType = t as LazyType;
@@ -59,7 +65,7 @@ namespace Tangent.CilGeneration
 
                 case KindOfType.SingleValue:
                     throw new NotImplementedException("Something is asking for the type of a SingleValueType. We should never get here.");
-                
+
                 case KindOfType.Builtin:
                     lookup.Add(TangentType.Void, typeof(void));
                     lookup.Add(TangentType.String, typeof(string));
