@@ -24,7 +24,10 @@ namespace Tangent.Parsing
             }
 
             List<string> inputSources = tokens.Select(t => t.SourceInfo.Label).Distinct().ToList();
-            List<TypeDeclaration> types = new List<TypeDeclaration>() { new TypeDeclaration("void", TangentType.Void) };
+            List<TypeDeclaration> types = new List<TypeDeclaration>() { 
+                new TypeDeclaration("void", TangentType.Void),
+                new TypeDeclaration("int", TangentType.Int)
+            };
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
 
             while (tokens.Any()) {
@@ -234,7 +237,7 @@ namespace Tangent.Parsing
                 return new PartialPhrasePart(new PartialParameterDeclaration(paramName, typeName));
             }
 
-            if (first.Identifier == TokenIdentifier.Symbol) { // and not open parens
+            if (first.Identifier == TokenIdentifier.Symbol && first.Value!="{") { // and not open parens
                 tokens.RemoveAt(0);
                 return new PartialPhrasePart(first.Value);
             }
@@ -375,6 +378,9 @@ namespace Tangent.Parsing
                 } else if (first.Identifier == TokenIdentifier.StringConstant) {
                     tokens.RemoveAt(0);
                     result.Add(new ConstantElement<string>(new ConstantExpression<string>(TangentType.String, first.Value.Substring(1, first.Value.Length - 2), first.SourceInfo)));
+                }else if(first.Identifier == TokenIdentifier.IntegerConstant){
+                    tokens.RemoveAt(0);
+                    result.Add(new ConstantElement<int>(new ConstantExpression<int>(TangentType.Int, int.Parse(first.Value), first.SourceInfo)));
                 } else if (first.Value == ";") {
                     if (result.Any()) {
                         tokens.RemoveAt(0);

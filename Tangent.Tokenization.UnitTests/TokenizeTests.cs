@@ -28,7 +28,7 @@ namespace Tangent.Tokenization.UnitTests
         {
             var test = @"foo // blah blah
 bar";
-            Assert.AreEqual(17, Tokenize.Skip(test, 4));
+            Assert.AreEqual(18, Tokenize.Skip(test, 4));
         }
 
         [TestMethod]
@@ -205,6 +205,58 @@ bar";
             var result = Tokenize.String("test.tan", test, 0);
 
             Assert.IsNull(result);
+        }
+
+        [TestMethod]
+        public void IntegerHappyPath()
+        {
+            var test = "123";
+            var result = Tokenize.IntegerConstant("test.tan", test, 0);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(TokenIdentifier.IntegerConstant, result.Identifier);
+            Assert.AreEqual(1, result.SourceInfo.StartPosition.Column);
+            Assert.AreEqual(4, result.SourceInfo.EndPosition.Column);
+            Assert.AreEqual("123", result.Value);
+        }
+
+        [TestMethod]
+        public void IntegerStopsAtSymbol()
+        {
+            var test = "123+";
+            var result = Tokenize.IntegerConstant("test.tan", test, 0);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(TokenIdentifier.IntegerConstant, result.Identifier);
+            Assert.AreEqual(1, result.SourceInfo.StartPosition.Column);
+            Assert.AreEqual(4, result.SourceInfo.EndPosition.Column);
+            Assert.AreEqual("123", result.Value);
+        }
+
+        [TestMethod]
+        public void IntegerStopsAtSpace()
+        {
+            var test = "123 456";
+            var result = Tokenize.IntegerConstant("test.tan", test, 0);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(TokenIdentifier.IntegerConstant, result.Identifier);
+            Assert.AreEqual(1, result.SourceInfo.StartPosition.Column);
+            Assert.AreEqual(4, result.SourceInfo.EndPosition.Column);
+            Assert.AreEqual("123", result.Value);
+        }
+
+        [TestMethod]
+        public void IntegerStopsAtIdentifier()
+        {
+            var test = "123foo";
+            var result = Tokenize.IntegerConstant("test.tan", test, 0);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(TokenIdentifier.IntegerConstant, result.Identifier);
+            Assert.AreEqual(1, result.SourceInfo.StartPosition.Column);
+            Assert.AreEqual(4, result.SourceInfo.EndPosition.Column);
+            Assert.AreEqual("123", result.Value);
         }
     }
 }

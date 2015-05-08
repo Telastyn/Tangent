@@ -37,6 +37,7 @@ namespace Tangent.Intermediate
 
         public static readonly TangentType Void = new TangentType(KindOfType.Builtin);
         public static readonly TangentType String = new TangentType(KindOfType.Builtin);
+        public static readonly TangentType Int = new TangentType(KindOfType.Builtin);
         public static readonly TangentType PotentiallyAnything = new TangentType(KindOfType.Builtin);
     }
 }

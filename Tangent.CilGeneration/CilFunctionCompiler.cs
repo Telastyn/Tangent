@@ -141,6 +141,9 @@ namespace Tangent.CilGeneration
                     if (constant.EffectiveType == TangentType.String) {
                         gen.Emit(OpCodes.Ldstr, (string)constant.Value);
                         return;
+                    }else if(constant.EffectiveType == TangentType.Int){
+                        gen.Emit(OpCodes.Ldc_I4, (int)constant.Value);
+                        return;
                     } else {
                         throw new NotImplementedException();
                     }

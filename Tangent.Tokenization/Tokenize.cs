@@ -22,6 +22,7 @@ namespace Tangent.Tokenization
                     Match("~>", TokenIdentifier.LazyOperator, input, ix, inputLabel) ??
                     Identifier(inputLabel, input, ix) ??
                     String(inputLabel, input, ix) ??
+                    IntegerConstant(inputLabel, input, ix) ??
                     Symbol(inputLabel, input, ix);
 
                 yield return token;
@@ -86,6 +87,17 @@ namespace Tangent.Tokenization
             } else {
                 return null;
             }
+        }
+
+        public static Token IntegerConstant(string inputLabel, string input, int index)
+        {
+            int ix = index;
+            while (ix < input.Length && char.IsDigit(input[ix])) {
+                ix++;
+            }
+
+            if (ix == index) { return null; }
+            return new Token(TokenIdentifier.IntegerConstant, input, index, ix, inputLabel);
         }
 
         public static Token Symbol(string inputLabel, string input, int index)

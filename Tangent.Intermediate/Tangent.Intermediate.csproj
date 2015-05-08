@@ -47,6 +47,7 @@
     <Compile Include="ConstantExpression.cs" />
     <Compile Include="CtorCall.cs" />
     <Compile Include="DelegateInvocationExpression.cs" />
+    <Compile Include="DirectOpCode.cs" />
     <Compile Include="EnumType.cs" />
     <Compile Include="EnumWideningExpression.cs" />
     <Compile Include="Expression.cs" />
