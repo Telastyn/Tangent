@@ -47,13 +47,13 @@ namespace Tangent.Parsing.UnitTests
         }
 
         [TestMethod]
-        public void UnexpectedSymbol()
+        public void SymbolsParse()
         {
             var test = Tokenize.ProgramFile("a + c;", "test.tan");
 
             var result = Parse.PartialStatement(test.ToList());
 
-            Assert.IsFalse(result.Success);
+            Assert.IsTrue(result.Success);
         }
 
         [TestMethod]

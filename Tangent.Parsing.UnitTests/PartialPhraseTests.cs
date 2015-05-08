@@ -37,6 +37,33 @@ namespace Tangent.Parsing.UnitTests
         }
 
         [TestMethod]
+        public void BasicSymbolPath()
+        {
+            var test = "(x: int)+(y: int)";
+            var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
+
+            var result = Parse.PartialPhrase(tokens);
+
+            Assert.IsTrue(result.Success);
+            var partialPhrase = result.Result;
+            Assert.AreEqual(3, partialPhrase.Count);
+            var x = partialPhrase[0];
+            var plus = partialPhrase[1];
+            var y = partialPhrase[2];
+
+            Assert.IsFalse(x.IsIdentifier);
+            Assert.IsTrue(plus.IsIdentifier);
+            Assert.IsFalse(y.IsIdentifier);
+
+            Assert.AreEqual("x", x.Parameter.Takes.First().Value);
+            Assert.AreEqual(1, x.Parameter.Takes.Count);
+            Assert.AreEqual(1, x.Parameter.Returns.Count);
+            Assert.AreEqual("int", x.Parameter.Returns[0]);
+
+            Assert.AreEqual("+", plus.Identifier.Value);
+        }
+
+        [TestMethod]
         public void BasicPathAvoidsRemainingTokens()
         {
             var test = "(x: int) plus (y: int) :>";

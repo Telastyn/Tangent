@@ -19,8 +19,7 @@ namespace Tangent.Parsing
 
         private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens)
         {
-            if (!tokens.Any())
-            {
+            if (!tokens.Any()) {
                 return new TangentProgram(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>(), Enumerable.Empty<string>());
             }
 
@@ -28,11 +27,9 @@ namespace Tangent.Parsing
             List<TypeDeclaration> types = new List<TypeDeclaration>() { new TypeDeclaration("void", TangentType.Void) };
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
 
-            while (tokens.Any())
-            {
+            while (tokens.Any()) {
                 var shouldBePhrase = PartialPhrase(tokens);
-                if (!shouldBePhrase.Success)
-                {
+                if (!shouldBePhrase.Success) {
                     return new ResultOrParseError<TangentProgram>(shouldBePhrase.Error);
                 }
 
@@ -40,17 +37,14 @@ namespace Tangent.Parsing
 
                 var separator = tokens.First();
                 tokens.RemoveAt(0);
-                switch (separator.Identifier)
-                {
+                switch (separator.Identifier) {
                     case TokenIdentifier.TypeDeclSeparator:
                         var typeDecl = Type(tokens);
-                        if (!typeDecl.Success)
-                        {
+                        if (!typeDecl.Success) {
                             return new ResultOrParseError<TangentProgram>(typeDecl.Error);
                         }
 
-                        if (!phrase.All(pp => pp.IsIdentifier))
-                        {
+                        if (!phrase.All(pp => pp.IsIdentifier)) {
                             return new ResultOrParseError<TangentProgram>(new ExpectedTokenParseError(TokenIdentifier.ReductionDeclSeparator, separator));
                         }
 
@@ -58,8 +52,7 @@ namespace Tangent.Parsing
                         break;
                     case TokenIdentifier.ReductionDeclSeparator:
                         var functionParts = PartialParseFunctionBits(tokens);
-                        if (!functionParts.Success)
-                        {
+                        if (!functionParts.Success) {
                             return new ResultOrParseError<TangentProgram>(functionParts.Error);
                         }
 
@@ -77,8 +70,7 @@ namespace Tangent.Parsing
             }
 
             var resolvedFunctions = TypeResolve.AllPartialFunctionDeclarations(partialFunctions, resolvedTypes.Result);
-            if (!resolvedFunctions.Success)
-            {
+            if (!resolvedFunctions.Success) {
                 return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error);
             }
 
@@ -89,42 +81,33 @@ namespace Tangent.Parsing
             var bad = new List<IncomprehensibleStatementError>();
             var ambiguous = new List<AmbiguousStatementError>();
 
-            foreach (var fn in resolvedFunctions.Result)
-            {
+            foreach (var fn in resolvedFunctions.Result) {
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
-                if (partialFunction != null)
-                {
+                if (partialFunction != null) {
                     var scope = new Scope(partialFunction.EffectiveType, resolvedTypes.Result, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), resolvedFunctions.Result.Concat(BuiltinFunctions.All).Concat(ctorCalls));
                     Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
 
                     lookup.Add(partialFunction, newb);
-                }
-                else
-                {
+                } else {
                     throw new NotImplementedException("We shouldn't get here... No optimizations exist to fully resolve functions in one step.");
                 }
             }
 
-            if (bad.Any() || ambiguous.Any())
-            {
+            if (bad.Any() || ambiguous.Any()) {
                 return new ResultOrParseError<TangentProgram>(new StatementGrokErrors(bad, ambiguous));
             }
 
             // 3a - Replace TypeResolvedFunctions with fully resolved ones.
             var workset = new HashSet<Expression>();
-            foreach (var fn in lookup.Values)
-            {
+            foreach (var fn in lookup.Values) {
                 fn.ReplaceTypeResolvedFunctions(lookup, workset);
             }
 
             return new TangentProgram(resolvedTypes.Result, resolvedFunctions.Result.Select(fn =>
             {
-                if (fn.Returns is TypeResolvedFunction)
-                {
+                if (fn.Returns is TypeResolvedFunction) {
                     return new ReductionDeclaration(fn.Takes, lookup[fn.Returns]);
-                }
-                else
-                {
+                } else {
                     return fn;
                 }
             }).ToList(), inputSources);
@@ -140,28 +123,21 @@ namespace Tangent.Parsing
         private static Block BuildBlock(Scope scope, TangentType effectiveType, IEnumerable<PartialStatement> elements, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
         {
             List<Expression> statements = new List<Expression>();
-            if (!elements.Any())
-            {
+            if (!elements.Any()) {
                 if (effectiveType != TangentType.Void) { bad.Add(new IncomprehensibleStatementError(Enumerable.Empty<Expression>())); }
                 return new Block(Enumerable.Empty<Expression>());
             }
 
             var allElements = elements.ToList();
-            for (int ix = 0; ix < allElements.Count; ++ix)
-            {
+            for (int ix = 0; ix < allElements.Count; ++ix) {
                 var line = allElements[ix];
                 var statementBits = line.FlatTokens.Select(t => ElementToExpression(scope, t, bad, ambiguous));
                 var statement = new Input(statementBits, scope).InterpretTowards((effectiveType != null && ix == allElements.Count - 1) ? effectiveType : TangentType.Void);
-                if (statement.Count == 0)
-                {
+                if (statement.Count == 0) {
                     bad.Add(new IncomprehensibleStatementError(statementBits));
-                }
-                else if (statement.Count > 1)
-                {
+                } else if (statement.Count > 1) {
                     ambiguous.Add(new AmbiguousStatementError(statementBits, statement));
-                }
-                else
-                {
+                } else {
                     statements.Add(statement.First());
                 }
             }
@@ -171,8 +147,7 @@ namespace Tangent.Parsing
 
         private static Expression ElementToExpression(Scope scope, PartialElement element, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
         {
-            switch (element.Type)
-            {
+            switch (element.Type) {
                 case ElementType.Identifier:
                     return new IdentifierExpression(((IdentifierElement)element).Identifier, element.SourceInfo);
                 case ElementType.Parens:
@@ -198,28 +173,18 @@ namespace Tangent.Parsing
             var phrase = new List<PartialPhrasePart>();
 
             ResultOrParseError<PartialPhrasePart> part = null;
-            while (true)
-            {
+            while (true) {
                 part = TryPartialPhrasePart(tokens);
-                if (part == null)
-                {
-                    if (phrase.Any())
-                    {
+                if (part == null) {
+                    if (phrase.Any()) {
                         return phrase;
-                    }
-                    else
-                    {
+                    } else {
                         return new ResultOrParseError<List<PartialPhrasePart>>(new ExpectedLiteralParseError("phrase part", tokens.FirstOrDefault()));
                     }
-                }
-                else
-                {
-                    if (part.Success)
-                    {
+                } else {
+                    if (part.Success) {
                         phrase.Add(part.Result);
-                    }
-                    else
-                    {
+                    } else {
                         return new ResultOrParseError<List<PartialPhrasePart>>(part.Error);
                     }
                 }
@@ -229,30 +194,25 @@ namespace Tangent.Parsing
         internal static ResultOrParseError<PartialPhrasePart> TryPartialPhrasePart(List<Token> tokens)
         {
             var first = tokens.FirstOrDefault();
-            if (first == null)
-            {
+            if (first == null) {
                 return null;
             }
 
-            if (first.Identifier == TokenIdentifier.Identifier)
-            {
+            if (first.Identifier == TokenIdentifier.Identifier) {
                 tokens.RemoveAt(0);
                 return new PartialPhrasePart(first.Value);
             }
 
-            if (first.Identifier == TokenIdentifier.Symbol && first.Value == "(")
-            {
+            if (first.Identifier == TokenIdentifier.Symbol && first.Value == "(") {
                 tokens.RemoveAt(0);
                 var paramName = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => new Identifier(t.Value)).ToList();
                 tokens.RemoveRange(0, paramName.Count);
-                if (paramName.Count == 0)
-                {
+                if (paramName.Count == 0) {
                     return new ResultOrParseError<PartialPhrasePart>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
                 }
 
                 var colon = tokens.FirstOrDefault();
-                if (colon == null || colon.Value != ":")
-                {
+                if (colon == null || colon.Value != ":") {
                     return new ResultOrParseError<PartialPhrasePart>(new ExpectedLiteralParseError(":", colon));
                 }
 
@@ -260,14 +220,12 @@ namespace Tangent.Parsing
 
                 var typeName = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier || t.Identifier == TokenIdentifier.LazyOperator || (t.Value == ".")).Select(t => new Identifier(t.Value)).ToList();
                 tokens.RemoveRange(0, typeName.Count);
-                if (typeName.Count == 0)
-                {
+                if (typeName.Count == 0) {
                     return new ResultOrParseError<PartialPhrasePart>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
                 }
 
                 var close = tokens.FirstOrDefault();
-                if (close == null || close.Value != ")")
-                {
+                if (close == null || close.Value != ")") {
                     return new ResultOrParseError<PartialPhrasePart>(new ExpectedLiteralParseError(")", close));
                 }
 
@@ -276,18 +234,20 @@ namespace Tangent.Parsing
                 return new PartialPhrasePart(new PartialParameterDeclaration(paramName, typeName));
             }
 
+            if (first.Identifier == TokenIdentifier.Symbol) { // and not open parens
+                tokens.RemoveAt(0);
+                return new PartialPhrasePart(first.Value);
+            }
+
             return null;
         }
 
         public static ResultOrParseError<TangentType> Type(List<Token> tokens)
         {
             var enumResult = Enum(tokens);
-            if (enumResult.Success)
-            {
+            if (enumResult.Success) {
                 return enumResult.Result;
-            }
-            else
-            {
+            } else {
                 var classResult = Class(tokens);
                 if (classResult.Success) {
                     return new ResultOrParseError<TangentType>(classResult.Result);
@@ -299,27 +259,22 @@ namespace Tangent.Parsing
 
         public static ResultOrParseError<EnumType> Enum(List<Token> tokens)
         {
-            if (!MatchAndDiscard(TokenIdentifier.Identifier, "enum", tokens))
-            {
+            if (!MatchAndDiscard(TokenIdentifier.Identifier, "enum", tokens)) {
                 return new ResultOrParseError<EnumType>(new ExpectedLiteralParseError("enum", tokens.FirstOrDefault()));
             }
 
-            if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens))
-            {
+            if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens)) {
                 return new ResultOrParseError<EnumType>(new ExpectedLiteralParseError("{", tokens.FirstOrDefault()));
             }
 
             List<Identifier> result = new List<Identifier>();
 
-            if (tokens.First().Identifier == TokenIdentifier.Identifier)
-            {
+            if (tokens.First().Identifier == TokenIdentifier.Identifier) {
                 result.Add(tokens.First().Value);
                 tokens.RemoveAt(0);
-                while (MatchAndDiscard(TokenIdentifier.Symbol, ",", tokens))
-                {
+                while (MatchAndDiscard(TokenIdentifier.Symbol, ",", tokens)) {
                     var id = tokens.FirstOrDefault();
-                    if (id == null || id.Identifier != TokenIdentifier.Identifier)
-                    {
+                    if (id == null || id.Identifier != TokenIdentifier.Identifier) {
                         return new ResultOrParseError<EnumType>(new ExpectedTokenParseError(TokenIdentifier.Identifier, id));
                     }
 
@@ -328,8 +283,7 @@ namespace Tangent.Parsing
                 }
             }
 
-            if (!MatchAndDiscard(TokenIdentifier.Symbol, "}", tokens))
-            {
+            if (!MatchAndDiscard(TokenIdentifier.Symbol, "}", tokens)) {
                 return new ResultOrParseError<EnumType>(new ExpectedLiteralParseError("}", tokens.FirstOrDefault()));
             }
 
@@ -358,22 +312,19 @@ namespace Tangent.Parsing
 
         internal static ResultOrParseError<PartialFunction> PartialParseFunctionBits(List<Token> tokens)
         {
-            if (!tokens.Any())
-            {
+            if (!tokens.Any()) {
                 return new ResultOrParseError<PartialFunction>(new ExpectedTokenParseError(TokenIdentifier.Identifier, null));
             }
 
             var identifiers = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => new Identifier(t.Value)).ToList();
-            if (!identifiers.Any())
-            {
+            if (!identifiers.Any()) {
                 return new ResultOrParseError<PartialFunction>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.First()));
             }
 
             tokens.RemoveRange(0, identifiers.Count());
 
             var partialBlock = PartialBlock(tokens);
-            if (!partialBlock.Success)
-            {
+            if (!partialBlock.Success) {
                 return new ResultOrParseError<PartialFunction>(partialBlock.Error);
             }
 
@@ -385,35 +336,26 @@ namespace Tangent.Parsing
             List<IEnumerable<PartialElement>> result = new List<IEnumerable<PartialElement>>();
             string closeTarget;
 
-            if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens))
-            {
-                if (!MatchAndDiscard(TokenIdentifier.Symbol, "(", tokens))
-                {
+            if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens)) {
+                if (!MatchAndDiscard(TokenIdentifier.Symbol, "(", tokens)) {
                     return new ResultOrParseError<PartialBlock>(new ExpectedLiteralParseError("{", tokens.FirstOrDefault()));
-                }
-                else
-                {
+                } else {
                     closeTarget = ")";
                 }
-            }
-            else
-            {
+            } else {
                 closeTarget = "}";
             }
 
-            while (tokens.Any() && tokens.First().Value != closeTarget)
-            {
+            while (tokens.Any() && tokens.First().Value != closeTarget) {
                 var statement = PartialStatement(tokens);
-                if (!statement.Success)
-                {
+                if (!statement.Success) {
                     return new ResultOrParseError<PartialBlock>(statement.Error);
                 }
 
                 result.Add(statement.Result);
             }
 
-            if (!MatchAndDiscard(TokenIdentifier.Symbol, closeTarget, tokens))
-            {
+            if (!MatchAndDiscard(TokenIdentifier.Symbol, closeTarget, tokens)) {
                 return new ResultOrParseError<PartialBlock>(new ExpectedLiteralParseError(closeTarget, tokens.FirstOrDefault()));
             }
 
@@ -423,54 +365,37 @@ namespace Tangent.Parsing
         internal static ResultOrParseError<IEnumerable<PartialElement>> PartialStatement(List<Token> tokens)
         {
             List<PartialElement> result = new List<PartialElement>();
-            while (true)
-            {
+            while (true) {
                 var first = tokens.FirstOrDefault();
-                if (first == null)
-                {
+                if (first == null) {
                     return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
-                }
-                else if (first.Identifier == TokenIdentifier.Identifier)
-                {
+                } else if (first.Identifier == TokenIdentifier.Identifier) {
                     tokens.RemoveAt(0);
                     result.Add(new IdentifierElement(first.Value, first.SourceInfo));
-                }
-                else if (first.Identifier == TokenIdentifier.StringConstant)
-                {
+                } else if (first.Identifier == TokenIdentifier.StringConstant) {
                     tokens.RemoveAt(0);
                     result.Add(new ConstantElement<string>(new ConstantExpression<string>(TangentType.String, first.Value.Substring(1, first.Value.Length - 2), first.SourceInfo)));
-                }
-                else if (first.Value == ";")
-                {
-                    if (result.Any())
-                    {
+                } else if (first.Value == ";") {
+                    if (result.Any()) {
                         tokens.RemoveAt(0);
                         return result;
-                    }
-                    else
-                    {
+                    } else {
                         return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
                     }
-                }
-                else if (first.Value == "{" || first.Value == "(")
-                {
+                } else if (first.Value == "{" || first.Value == "(") {
                     var block = PartialBlock(tokens);
-                    if (block.Success)
-                    {
+                    if (block.Success) {
                         result.Add(new BlockElement(block.Result));
-                    }
-                    else
-                    {
+                    } else {
                         return new ResultOrParseError<IEnumerable<PartialElement>>(block.Error);
                     }
-                }
-                else if (first.Value == "}" || first.Value == ")")
-                {
+                } else if (first.Value == "}" || first.Value == ")") {
                     // we're at end of block. Return statement for optional semi-colon.
                     return result;
-                }
-                else
-                {
+                } else if (first.Identifier == TokenIdentifier.Symbol) {
+                    tokens.RemoveAt(0);
+                    result.Add(new IdentifierElement(first.Value, first.SourceInfo));
+                } else {
                     return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
                 }
             }
@@ -478,8 +403,7 @@ namespace Tangent.Parsing
 
         private static bool MatchAndDiscard(TokenIdentifier id, string value, List<Token> tokens)
         {
-            if (!tokens.Any() || tokens.First().Identifier != id || tokens.First().Value != value)
-            {
+            if (!tokens.Any() || tokens.First().Identifier != id || tokens.First().Value != value) {
                 return false;
             }
 
