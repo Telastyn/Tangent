@@ -113,12 +113,20 @@ namespace Tangent.CilGeneration
 
                     if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
                     var ctor = invoke.Bindings.FunctionDefinition.Returns as CtorCall;
-                    if (ctor == null) {
-                        gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
-                    } else {
+                    if (ctor != null) {
                         var ctorFn = typeLookup[ctor.EffectiveType].GetConstructors().First();
                         gen.Emit(OpCodes.Newobj, ctorFn);
+                        return;
                     }
+
+                    var opcode = invoke.Bindings.FunctionDefinition.Returns as DirectOpCode;
+                    if (opcode != null) {
+                        gen.Emit(opcode.OpCode);
+                        return;
+                    }
+
+                    // else, MethodInfo invocation.
+                    gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
 
                     return;
 
@@ -141,7 +149,7 @@ namespace Tangent.CilGeneration
                     if (constant.EffectiveType == TangentType.String) {
                         gen.Emit(OpCodes.Ldstr, (string)constant.Value);
                         return;
-                    }else if(constant.EffectiveType == TangentType.Int){
+                    } else if (constant.EffectiveType == TangentType.Int) {
                         gen.Emit(OpCodes.Ldc_I4, (int)constant.Value);
                         return;
                     } else {
@@ -207,9 +215,9 @@ namespace Tangent.CilGeneration
             // Push action creation onto stack.
             gen.Emit(OpCodes.Ldloc, obj);
             gen.Emit(OpCodes.Ldftn, closureFn);
-            if(returnType == typeof(void)){
+            if (returnType == typeof(void)) {
                 gen.Emit(OpCodes.Newobj, typeof(Action).GetConstructors().First());
-            }else{
+            } else {
                 gen.Emit(OpCodes.Newobj, typeof(Func<>).MakeGenericType(returnType).GetConstructors().First());
             }
         }

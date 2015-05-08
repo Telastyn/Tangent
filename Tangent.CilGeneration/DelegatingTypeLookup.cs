@@ -69,6 +69,7 @@ namespace Tangent.CilGeneration
                 case KindOfType.Builtin:
                     lookup.Add(TangentType.Void, typeof(void));
                     lookup.Add(TangentType.String, typeof(string));
+                    lookup.Add(TangentType.Int, typeof(int));
                     return;
 
                 default:

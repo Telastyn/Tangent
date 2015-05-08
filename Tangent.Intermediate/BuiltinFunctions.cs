@@ -20,11 +20,16 @@ namespace Tangent.Intermediate
             {PrintInt, typeof(Console).GetMethod("WriteLine", new[]{typeof(int)})}
         };
 
+        public static IEnumerable<ReductionDeclaration> AsmFunctions = new List<ReductionDeclaration>()
+        {
+            AddInt
+        };
+
         public static IEnumerable<ReductionDeclaration> All
         {
             get
             {
-                return lookup.Keys;
+                return lookup.Keys.Concat(AsmFunctions).ToList();
             }
         }
 
