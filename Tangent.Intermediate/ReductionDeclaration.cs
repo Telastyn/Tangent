@@ -11,6 +11,18 @@ namespace Tangent.Intermediate
         public ReductionDeclaration(PhrasePart takes, Function returns) : this(new[] { takes }, returns) { }
         public ReductionDeclaration(IEnumerable<PhrasePart> takes, Function returns) : base(takes, returns) { }
 
+        public bool IsConversion
+        {
+            get
+            {
+                if (Takes.Count != 1) {
+                    return false;
+                }
+
+                return !Takes.First().IsIdentifier;
+            }
+        }
+
         public bool IsSpecializationOf(ReductionDeclaration rhs)
         {
             if (this == rhs) { return false; }

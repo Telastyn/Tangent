@@ -61,7 +61,7 @@ namespace Tangent.Parsing
             foreach (var fn in resolvedFunctions.Result) {
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
                 if (partialFunction != null) {
-                    var scope = new Scope(partialFunction.EffectiveType, resolvedTypes.Result, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), partialFunction.Scope.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), resolvedFunctions.Result.Concat(BuiltinFunctions.All).Concat(ctorCalls));
+                    var scope = new Scope(partialFunction.EffectiveType, resolvedTypes.Result, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), partialFunction.Scope != null ? partialFunction.Scope.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter) : Enumerable.Empty<ParameterDeclaration>(), resolvedFunctions.Result.Concat(BuiltinFunctions.All).Concat(ctorCalls));
                     Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
 
                     lookup.Add(partialFunction, newb);
@@ -195,6 +195,10 @@ namespace Tangent.Parsing
                 part = TryPartialPhrasePart(tokens, allowThis);
                 if (part == null) {
                     if (phrase.Any()) {
+                        if (allowThis && !phrase.Any(pp => !pp.IsIdentifier && pp.Parameter.IsThisParam)) {
+                            return new ResultOrParseError<List<PartialPhrasePart>>(new ExpectedLiteralParseError("this", tokens.FirstOrDefault()));
+                        }
+
                         return phrase;
                     } else {
                         return new ResultOrParseError<List<PartialPhrasePart>>(new ExpectedLiteralParseError("phrase part", tokens.FirstOrDefault()));
@@ -229,7 +233,7 @@ namespace Tangent.Parsing
                     return new ResultOrParseError<PartialPhrasePart>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
                 }
 
-                if (allowThis && paramName.Count == 1 && paramName.First().Value == "this" && tokens.Any() && tokens.First().Value==")") {
+                if (allowThis && paramName.Count == 1 && paramName.First().Value == "this" && tokens.Any() && tokens.First().Value == ")") {
                     tokens.RemoveAt(0);
                     return new PartialPhrasePart(new PartialParameterDeclaration(paramName, paramName));
                 } else {

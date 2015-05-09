@@ -46,6 +46,7 @@
     <Compile Include="BuiltinFunctions.cs" />
     <Compile Include="ConstantExpression.cs" />
     <Compile Include="CtorCall.cs" />
+    <Compile Include="CtorParameterAccessExpression.cs" />
     <Compile Include="DelegateInvocationExpression.cs" />
     <Compile Include="DirectOpCode.cs" />
     <Compile Include="EnumType.cs" />

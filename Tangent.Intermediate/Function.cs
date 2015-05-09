@@ -18,6 +18,7 @@ namespace Tangent.Intermediate
 
         internal virtual void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
         {
+            if (Implementation == null) { return; }
             foreach (var entry in Implementation.Statements) {
                 entry.ReplaceTypeResolvedFunctions(replacements, workset);
             }

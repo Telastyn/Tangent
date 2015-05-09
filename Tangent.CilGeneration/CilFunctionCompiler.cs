@@ -111,7 +111,6 @@ namespace Tangent.CilGeneration
                         AddExpression(p, gen, fnLookup, typeLookup, closureScope, parameterCodes, false);
                     }
 
-                    if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
                     var ctor = invoke.Bindings.FunctionDefinition.Returns as CtorCall;
                     if (ctor != null) {
                         var ctorFn = typeLookup[ctor.EffectiveType].GetConstructors().First();
@@ -126,6 +125,7 @@ namespace Tangent.CilGeneration
                     }
 
                     // else, MethodInfo invocation.
+                    if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
                     gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
 
                     return;
@@ -164,6 +164,13 @@ namespace Tangent.CilGeneration
                 case ExpressionNodeType.EnumWidening:
                     var widening = (EnumWideningExpression)expr;
                     AddExpression(widening.EnumAccess, gen, fnLookup, typeLookup, closureScope, parameterCodes, lastStatement);
+                    return;
+
+                case ExpressionNodeType.CtorParamAccess:
+                    var ctorAccess = (CtorParameterAccessExpression)expr;
+                    parameterCodes[ctorAccess.ThisParam](gen);
+                    var thisType = typeLookup[ctorAccess.ThisParam.Returns];
+                    gen.Emit(OpCodes.Ldfld, thisType.GetField(string.Join(" ", string.Join(" ", ctorAccess.CtorParam.Takes.Select(id => id.Value)))));
                     return;
 
                 default:
