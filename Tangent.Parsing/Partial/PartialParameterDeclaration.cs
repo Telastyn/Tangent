@@ -10,5 +10,13 @@ namespace Tangent.Parsing.Partial
     {
         public PartialParameterDeclaration(Identifier takes, List<Identifier> returns) : this(new[] { takes }, returns) { }
         public PartialParameterDeclaration(IEnumerable<Identifier> takes, List<Identifier> returns) : base(takes, returns) { }
+
+        public bool IsThisParam
+        {
+            get
+            {
+                return this.Takes.Count == 1 && this.Takes.First().Value == "this" && this.Returns.Count == 1 && this.Returns.First().Value == "this";
+            }
+        }
     }
 }

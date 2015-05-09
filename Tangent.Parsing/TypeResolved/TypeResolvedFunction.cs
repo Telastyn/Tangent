@@ -11,12 +11,14 @@ namespace Tangent.Parsing.TypeResolved
     {
         public new readonly TangentType EffectiveType;
         public new readonly PartialBlock Implementation;
+        public readonly ProductType Scope;
 
-        public TypeResolvedFunction(TangentType type, PartialBlock implementation)
+        public TypeResolvedFunction(TangentType type, PartialBlock implementation, ProductType scope)
             : base(type, null)
         {
             EffectiveType = type;
             Implementation = implementation;
+            Scope = scope;
         }
     }
 }

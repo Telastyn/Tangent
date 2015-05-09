@@ -19,6 +19,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("foo", TangentType.Void) },
+                Enumerable.Empty<ParameterDeclaration>(),
                 Enumerable.Empty<ReductionDeclaration>());
 
             var tokens = Tokenize.ProgramFile("foo", "test.tan").Select(t => new Identifier(t.Value));
@@ -38,6 +39,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration(new Identifier[] { "foo", "bar" }, TangentType.Void) },
+                Enumerable.Empty<ParameterDeclaration>(),
                 Enumerable.Empty<ReductionDeclaration>());
 
             var tokens = Tokenize.ProgramFile("foo bar", "test.tan").Select(t => new Identifier(t.Value));
@@ -56,6 +58,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
             var tokens = Tokenize.ProgramFile("foo", "test.tan").Select(t => new Identifier(t.Value));
@@ -73,6 +76,7 @@ namespace Tangent.Parsing.UnitTests
             var scope = new Scope(
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart("bar") }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
@@ -97,6 +101,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("bar", t) },
+                Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("x", t)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
             var tokens = Tokenize.ProgramFile("foo bar", "test.tan").Select(token => new Identifier(token.Value));
@@ -125,6 +130,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("bar", t) },
+                Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("x", t)), new PhrasePart(new Identifier("foo")) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
             var tokens = Tokenize.ProgramFile("bar foo", "test.tan").Select(token => new Identifier(token.Value));
@@ -152,6 +158,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("bar", t) },
+                Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("x", t)), new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("y", t)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
             var tokens = Tokenize.ProgramFile("bar foo bar", "test.tan").Select(token => new Identifier(token.Value));
@@ -176,6 +183,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
                 Enumerable.Empty<ReductionDeclaration>());
 
             var tokens = Tokenize.ProgramFile("foo", "test.tan").Select(t => new Identifier(t.Value));
@@ -192,6 +200,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("foo", TangentType.Void) },
+                Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
             var tokens = Tokenize.ProgramFile("foo", "test.tan").Select(t => new Identifier(t.Value));
@@ -211,6 +220,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("foo", t) },
+                Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
             var tokens = Tokenize.ProgramFile("foo", "test.tan").Select(token => new Identifier(token.Value));
@@ -228,6 +238,7 @@ namespace Tangent.Parsing.UnitTests
             var scope = new Scope(
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { 
                     new ReductionDeclaration(new PhrasePart[] { new PhrasePart("f"), new ParameterDeclaration("x", TangentType.Void.Lazy) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) ,
@@ -250,6 +261,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("g", TangentType.String) },
+                Enumerable.Empty<ParameterDeclaration>(),
                 new[] { 
                     new ReductionDeclaration(new PhrasePart[] { new PhrasePart("f"), new ParameterDeclaration("x", TangentType.String.Lazy) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())))
                 });
@@ -269,6 +281,7 @@ namespace Tangent.Parsing.UnitTests
             var scope = new Scope(
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
                 BuiltinFunctions.All);
 
@@ -292,6 +305,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 new[] { foodecl },
                 Enumerable.Empty<ParameterDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("p", foo.SingleValueTypeFor(bar))), new Function(TangentType.Void, null)) });
 
             var result = new Input(new Expression[] { new IdentifierExpression("bar", null) }, scope).InterpretAsStatement();
@@ -312,6 +326,7 @@ namespace Tangent.Parsing.UnitTests
             var scope = new Scope(
                 TangentType.Void,
                 new[] { foodecl },
+                Enumerable.Empty<ParameterDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { special, generic });
 
@@ -334,6 +349,7 @@ namespace Tangent.Parsing.UnitTests
             var scope = new Scope(
                 TangentType.Void,
                 new[] { foodecl },
+                Enumerable.Empty<ParameterDeclaration>(),
                 Enumerable.Empty<ParameterDeclaration>(),
                 new[] { generic });
 
@@ -370,6 +386,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 new[] { booleanDecl },
                 Enumerable.Empty<ParameterDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
                 new[] { ifTrue, ifFalse });
 
             var result = new Input(new Expression[] { new IdentifierExpression("if", null), new IdentifierExpression("true", null), new FunctionBindingExpression(new ReductionDeclaration(Enumerable.Empty<PhrasePart>(), new Function(TangentType.Void, null)), new Expression[] { }, null) }, scope).InterpretAsStatement();
@@ -403,6 +420,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 new[] { booleanDecl },
                 Enumerable.Empty<ParameterDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
                 new[] { ifTrue, ifFalse });
 
             var result = new Input(new Expression[] { new IdentifierExpression("if", null), new IdentifierExpression("false", null), new FunctionBindingExpression(new ReductionDeclaration(Enumerable.Empty<PhrasePart>(), new Function(TangentType.Void, null)), new Expression[] { }, null) }, scope).InterpretAsStatement();
@@ -423,6 +441,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("bar", t) },
+                Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("x", t)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
             var tokens = new List<Expression>() { new IdentifierExpression("foo", null), new ParenExpression(new Block(Enumerable.Empty<Expression>()), new List<Expression>() { new IdentifierExpression("bar", null) }, null) };
@@ -450,6 +469,7 @@ namespace Tangent.Parsing.UnitTests
                 TangentType.Void,
                 Enumerable.Empty<TypeDeclaration>(),
                 new[] { new ParameterDeclaration("bar", t.Lazy) },
+                Enumerable.Empty<ParameterDeclaration>(),
                 new[] { new ReductionDeclaration(new[] { new PhrasePart(new Identifier("foo")), new PhrasePart(new ParameterDeclaration("x", t.Lazy)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>()))) });
 
             var tokens = new List<Expression>() { new IdentifierExpression("foo", null), new ParenExpression(new Block(Enumerable.Empty<Expression>()), new List<Expression>() { new IdentifierExpression("bar", null) }, null) };

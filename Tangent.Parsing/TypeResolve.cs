@@ -11,13 +11,13 @@ namespace Tangent.Parsing
 {
     public static class TypeResolve
     {
-        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types)
+        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types, Dictionary<PartialProductType, ProductType> conversions)
         {
             var errors = new List<BadTypePhrase>();
             var results = new List<ReductionDeclaration>();
 
             foreach (var fn in partialFunctions) {
-                var resolutionResult = PartialFunctionDeclaration(fn, types);
+                var resolutionResult = PartialFunctionDeclaration(fn, types, conversions);
                 if (resolutionResult.Success) {
                     results.Add(resolutionResult.Result);
                 } else {
@@ -33,10 +33,10 @@ namespace Tangent.Parsing
             return results;
         }
 
-        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls)
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, out Dictionary<PartialProductType, ProductType> placeholderConversions)
         {
             List<BadTypePhrase> errors = new List<BadTypePhrase>();
-            Dictionary<PartialProductType, ProductType> inNeedOfPopulation = new Dictionary<PartialProductType,ProductType>();
+            Dictionary<PartialProductType, ProductType> inNeedOfPopulation = new Dictionary<PartialProductType, ProductType>();
             var newLookup = typeDecls.Select(td =>
             {
                 if (td.Returns is PartialProductType) {
@@ -56,6 +56,8 @@ namespace Tangent.Parsing
                 }
             }
 
+            placeholderConversions = inNeedOfPopulation;
+
             if (errors.Any()) {
                 return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new TypeResolutionErrors(errors));
             }
@@ -63,17 +65,32 @@ namespace Tangent.Parsing
             return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);
         }
 
-        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types)
+        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types, Dictionary<PartialProductType, ProductType> conversions)
         {
             var errors = new List<BadTypePhrase>();
             var phrase = new List<PhrasePart>();
+            bool thisFound = false;
+
+            ProductType scope = null;
+            if (partialFunction.Returns.Scope != null) {
+                scope = conversions[partialFunction.Returns.Scope];
+            }
 
             foreach (var part in partialFunction.Takes) {
-                var resolved = Resolve(part, types);
-                if (resolved.Success) {
-                    phrase.Add(resolved.Result);
+                if (!part.IsIdentifier && part.Parameter.IsThisParam) {
+                    if (thisFound) { // TODO: nicer error.
+                        throw new ApplicationException("Multiple this parameters declared in function.");
+                    }
+
+                    phrase.Add(new PhrasePart(new ParameterDeclaration("this", scope)));
+                    thisFound = true;
                 } else {
-                    errors.AddRange((resolved.Error as TypeResolutionErrors).Errors);
+                    var resolved = Resolve(part, types);
+                    if (resolved.Success) {
+                        phrase.Add(resolved.Result);
+                    } else {
+                        errors.AddRange((resolved.Error as TypeResolutionErrors).Errors);
+                    }
                 }
             }
 
@@ -87,7 +104,7 @@ namespace Tangent.Parsing
                 return new ResultOrParseError<ReductionDeclaration>(new TypeResolutionErrors(errors));
             }
 
-            return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType.Result, fn.Implementation)));
+            return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType.Result, fn.Implementation, scope)));
         }
 
         internal static ResultOrParseError<ProductType> PartialProductType(PartialProductType partialType, ProductType target, IEnumerable<TypeDeclaration> types)
@@ -137,32 +154,25 @@ namespace Tangent.Parsing
         internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<Identifier> identifiers, IEnumerable<TypeDeclaration> types)
         {
             // TODO: fix perf.
-            if (identifiers.First().Value == "~>")
-            {
+            if (identifiers.First().Value == "~>") {
                 var nested = ResolveType(identifiers.Skip(1), types);
-                if (!nested.Success)
-                {
+                if (!nested.Success) {
                     return nested;
                 }
 
                 return nested.Result.Lazy;
-            }
-            else
-            {
+            } else {
                 List<int> dots = new List<int>();
                 int ix = 0;
-                foreach (var id in identifiers)
-                {
-                    if (id.Value == ".")
-                    {
+                foreach (var id in identifiers) {
+                    if (id.Value == ".") {
                         dots.Add(ix);
                     }
 
                     ix++;
                 }
 
-                if (dots.Count == 1)
-                {
+                if (dots.Count == 1) {
                     // For now, values can only be a single identifier, so dots needs to be a b c.v
                     if (dots[0] != ix - 2) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) })); }
                     var t = ResolveType(identifiers.Take(dots[0]), types);
@@ -172,17 +182,13 @@ namespace Tangent.Parsing
                     var v = identifiers.Last().Value;
                     if (!tenum.Values.Contains(v)) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) })); }
                     return tenum.SingleValueTypeFor(v);
-                }
-                else if (dots.Count > 1)
-                {
+                } else if (dots.Count > 1) {
                     return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) }));
                 } // else
 
-                foreach (var type in types)
-                {
+                foreach (var type in types) {
                     var typeIdentifiers = type.Takes;
-                    if (identifiers.SequenceEqual(typeIdentifiers))
-                    {
+                    if (identifiers.SequenceEqual(typeIdentifiers)) {
                         return type.Returns;
                     }
                 }

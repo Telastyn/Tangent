@@ -14,6 +14,7 @@ namespace Tangent.Intermediate
         public static ReductionDeclaration PrintString = new ReductionDeclaration(new PhrasePart[] { new Identifier("print"), new ParameterDeclaration("s", TangentType.String) }, new Function(TangentType.Void, null));
         public static ReductionDeclaration PrintInt = new ReductionDeclaration(new PhrasePart[] { new Identifier("print"), new ParameterDeclaration("x", TangentType.Int) }, new Function(TangentType.Void, null));
         public static ReductionDeclaration AddInt = new ReductionDeclaration(new PhrasePart[] { new Identifier("asm"), new Identifier("add"), new ParameterDeclaration("a", TangentType.Int), new ParameterDeclaration("b", TangentType.Int) }, new DirectOpCode(OpCodes.Add, TangentType.Int));
+        public static ReductionDeclaration MulInt = new ReductionDeclaration(new PhrasePart[] { new Identifier("asm"), new Identifier("mul"), new ParameterDeclaration("a", TangentType.Int), new ParameterDeclaration("b", TangentType.Int) }, new DirectOpCode(OpCodes.Mul, TangentType.Int));
 
         private static readonly Dictionary<ReductionDeclaration, MethodInfo> lookup = new Dictionary<ReductionDeclaration, MethodInfo>(){
             {PrintString, typeof(Console).GetMethod("WriteLine", new[]{typeof(string)})},
@@ -22,7 +23,8 @@ namespace Tangent.Intermediate
 
         public static IEnumerable<ReductionDeclaration> AsmFunctions = new List<ReductionDeclaration>()
         {
-            AddInt
+            AddInt,
+            MulInt,
         };
 
         public static IEnumerable<ReductionDeclaration> All

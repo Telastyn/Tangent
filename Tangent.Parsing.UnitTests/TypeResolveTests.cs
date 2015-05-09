@@ -122,9 +122,9 @@ namespace Tangent.Parsing.UnitTests
 
             var partial = new PartialReductionDeclaration(
                 new PartialPhrasePart(new PartialParameterDeclaration("x", new List<Identifier>() { "foo", "bar" })),
-                new PartialFunction(new Identifier[] { "foo", "bar" }, new PartialBlock(Enumerable.Empty<PartialStatement>())));
+                new PartialFunction(new Identifier[] { "foo", "bar" }, new PartialBlock(Enumerable.Empty<PartialStatement>()), null));
 
-            var result = TypeResolve.PartialFunctionDeclaration(partial, new[] { typeDecl });
+            var result = TypeResolve.PartialFunctionDeclaration(partial, new[] { typeDecl }, new Dictionary<PartialProductType,ProductType>());
 
             Assert.IsTrue(result.Success);
             Assert.IsFalse(result.Result.Takes.First().IsIdentifier);

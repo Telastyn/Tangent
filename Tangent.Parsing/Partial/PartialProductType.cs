@@ -6,13 +6,16 @@ using System.Threading.Tasks;
 
 namespace Tangent.Parsing.Partial
 {
-    internal class PartialProductType : PlaceholderType
+    public class PartialProductType : PlaceholderType
     {
         public readonly List<PartialPhrasePart> DataConstructorParts;
-        internal PartialProductType(IEnumerable<PartialPhrasePart> dataConstructorParts)
+        public readonly List<PartialReductionDeclaration> Functions;
+
+        internal PartialProductType(IEnumerable<PartialPhrasePart> dataConstructorParts, IEnumerable<PartialReductionDeclaration> functions)
             : base()
         {
             this.DataConstructorParts = new List<PartialPhrasePart>(dataConstructorParts);
+            this.Functions = new List<PartialReductionDeclaration>(functions);
         }
     }
 }

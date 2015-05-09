@@ -15,7 +15,7 @@ namespace Tangent.Parsing.UnitTests
             var test = "(x: int) plus (y: int)";
             var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
 
-            var result = Parse.PartialPhrase(tokens);
+            var result = Parse.PartialPhrase(tokens, false);
 
             Assert.IsTrue(result.Success);
             var partialPhrase = result.Result;
@@ -37,12 +37,50 @@ namespace Tangent.Parsing.UnitTests
         }
 
         [TestMethod]
+        public void BasicThisPath()
+        {
+            var test = "(this) plus (y: int)";
+            var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
+
+            var result = Parse.PartialPhrase(tokens, true);
+
+            Assert.IsTrue(result.Success);
+            var partialPhrase = result.Result;
+            Assert.AreEqual(3, partialPhrase.Count);
+            var x = partialPhrase[0];
+            var plus = partialPhrase[1];
+            var y = partialPhrase[2];
+
+            Assert.IsFalse(x.IsIdentifier);
+            Assert.IsTrue(plus.IsIdentifier);
+            Assert.IsFalse(y.IsIdentifier);
+
+            Assert.AreEqual("this", x.Parameter.Takes.First().Value);
+            Assert.AreEqual(1, x.Parameter.Takes.Count);
+            Assert.AreEqual(1, x.Parameter.Returns.Count);
+            Assert.AreEqual("this", x.Parameter.Returns[0]);
+
+            Assert.AreEqual("plus", plus.Identifier.Value);
+        }
+
+        [TestMethod]
+        public void ThisDisallowedPath()
+        {
+            var test = "(this) plus (y: int)";
+            var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
+
+            var result = Parse.PartialPhrase(tokens, false);
+
+            Assert.IsFalse(result.Success);
+        }
+
+        [TestMethod]
         public void BasicSymbolPath()
         {
             var test = "(x: int)+(y: int)";
             var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
 
-            var result = Parse.PartialPhrase(tokens);
+            var result = Parse.PartialPhrase(tokens, false);
 
             Assert.IsTrue(result.Success);
             var partialPhrase = result.Result;
@@ -69,7 +107,7 @@ namespace Tangent.Parsing.UnitTests
             var test = "(x: int) plus (y: int) :>";
             var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
 
-            var result = Parse.PartialPhrase(tokens);
+            var result = Parse.PartialPhrase(tokens, false);
 
             Assert.IsTrue(result.Success);
             Assert.AreEqual(1, tokens.Count);
@@ -81,7 +119,7 @@ namespace Tangent.Parsing.UnitTests
             var test = "(x: int) plus (y: int :>";
             var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
 
-            var result = Parse.PartialPhrase(tokens);
+            var result = Parse.PartialPhrase(tokens, false);
 
             Assert.IsFalse(result.Success);
         }
@@ -92,7 +130,7 @@ namespace Tangent.Parsing.UnitTests
             var test = ":> (x: int) plus (y: int)";
             var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
 
-            var result = Parse.PartialPhrase(tokens);
+            var result = Parse.PartialPhrase(tokens, false);
 
             Assert.IsFalse(result.Success);
         }
@@ -103,7 +141,7 @@ namespace Tangent.Parsing.UnitTests
             var test = "(x y z: unsigned int) plus (ab c: int)";
             var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
 
-            var result = Parse.PartialPhrase(tokens);
+            var result = Parse.PartialPhrase(tokens, false);
 
             Assert.IsTrue(result.Success);
             var partialPhrase = result.Result;

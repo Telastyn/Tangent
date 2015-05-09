@@ -7,7 +7,7 @@ using Tangent.Intermediate;
 
 namespace Tangent.Parsing.Partial
 {
-    internal class PlaceholderType : TangentType
+    public class PlaceholderType : TangentType
     {
         protected PlaceholderType() : base(KindOfType.Placeholder) { }
     }
