@@ -32,6 +32,15 @@ bar";
         }
 
         [TestMethod]
+        public void SkipConsecutiveCommentsWorks()
+        {
+            var test = @"// bleh
+// blah";
+
+            Assert.AreEqual(test.Length, Tokenize.Skip(test, 0));
+        }
+
+        [TestMethod]
         public void SkipCommentsEofGraceful()
         {
             var test = @"foo // blah blah";

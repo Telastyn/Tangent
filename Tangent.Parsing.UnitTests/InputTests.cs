@@ -254,26 +254,26 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(ExpressionNodeType.FunctionBinding, ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First().NodeType);
         }
 
-        [TestMethod]
-        public void LazyWorksWithParams()
-        {
-            var scope = new Scope(
-                TangentType.Void,
-                Enumerable.Empty<TypeDeclaration>(),
-                new[] { new ParameterDeclaration("g", TangentType.String) },
-                Enumerable.Empty<ParameterDeclaration>(),
-                new[] { 
-                    new ReductionDeclaration(new PhrasePart[] { new PhrasePart("f"), new ParameterDeclaration("x", TangentType.String.Lazy) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())))
-                });
+        //[TestMethod]
+        //public void LazyWorksWithParams()
+        //{
+        //    var scope = new Scope(
+        //        TangentType.Void,
+        //        Enumerable.Empty<TypeDeclaration>(),
+        //        new[] { new ParameterDeclaration("g", TangentType.String) },
+        //        Enumerable.Empty<ParameterDeclaration>(),
+        //        new[] { 
+        //            new ReductionDeclaration(new PhrasePart[] { new PhrasePart("f"), new ParameterDeclaration("x", TangentType.String.Lazy) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())))
+        //        });
 
-            var tokens = Tokenize.ProgramFile("f g", "test.tan").Select(t => new Identifier(t.Value));
+        //    var tokens = Tokenize.ProgramFile("f g", "test.tan").Select(t => new Identifier(t.Value));
 
-            var result = new Input(tokens, scope).InterpretAsStatement();
+        //    var result = new Input(tokens, scope).InterpretAsStatement();
 
-            Assert.AreEqual(1, result.Count);
-            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
-            Assert.AreEqual(ExpressionNodeType.FunctionBinding, ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First().NodeType);
-        }
+        //    Assert.AreEqual(1, result.Count);
+        //    Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
+        //    Assert.AreEqual(ExpressionNodeType.FunctionBinding, ((FunctionInvocationExpression)result.First()).Bindings.Parameters.First().NodeType);
+        //}
 
         [TestMethod]
         public void BuiltinBasicPath()

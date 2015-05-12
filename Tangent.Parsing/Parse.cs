@@ -26,7 +26,9 @@ namespace Tangent.Parsing
             List<string> inputSources = tokens.Select(t => t.SourceInfo.Label).Distinct().ToList();
             List<TypeDeclaration> types = new List<TypeDeclaration>() { 
                 new TypeDeclaration("void", TangentType.Void),
-                new TypeDeclaration("int", TangentType.Int)
+                new TypeDeclaration("int", TangentType.Int),
+                new TypeDeclaration("double", TangentType.Double),
+                new TypeDeclaration("bool", TangentType.Bool)
             };
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
 

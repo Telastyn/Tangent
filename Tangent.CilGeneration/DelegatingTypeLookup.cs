@@ -70,6 +70,8 @@ namespace Tangent.CilGeneration
                     lookup.Add(TangentType.Void, typeof(void));
                     lookup.Add(TangentType.String, typeof(string));
                     lookup.Add(TangentType.Int, typeof(int));
+                    lookup.Add(TangentType.Double, typeof(double));
+                    lookup.Add(TangentType.Bool, typeof(bool));
                     return;
 
                 default:

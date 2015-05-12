@@ -129,37 +129,37 @@ namespace Tangent.Parsing
                     yield return new List<List<Expression>>() { buffer.Take(ix).Concat(new[] { new DelegateInvocationExpression(paramAccess) }).Concat(buffer.Skip(ix + 1)).ToList() };
                 }
 
-                // Param accessed delegate -> lazy access.
-                if (paramAccess.Parameter.Returns == TangentType.Void) {
-                    throw new NotImplementedException("Attempting to work with a void parameter. wtf.");
-                } else {
-                    yield return new List<List<Expression>>(){ 
-                        buffer.Take(ix).Concat(new Expression[]{ 
-                            new FunctionBindingExpression(
-                                new ReductionDeclaration(
-                                    Enumerable.Empty<PhrasePart>(), 
-                                    new Function(
-                                        paramAccess.Parameter.Returns, 
-                                        new Block(
-                                            new[]{ 
-                                                 paramAccess }))), Enumerable.Empty<Expression>(), paramAccess.SourceInfo)}).ToList()};
-                }
+                //// Param access -> lazy access.
+                //if (paramAccess.Parameter.Returns == TangentType.Void) {
+                //    throw new NotImplementedException("Attempting to work with a void parameter. wtf.");
+                //} else {
+                //    yield return new List<List<Expression>>(){ 
+                //        buffer.Take(ix).Concat(new Expression[]{ 
+                //            new FunctionBindingExpression(
+                //                new ReductionDeclaration(
+                //                    Enumerable.Empty<PhrasePart>(), 
+                //                    new Function(
+                //                        paramAccess.Parameter.Returns, 
+                //                        new Block(
+                //                            new[]{ 
+                //                                 paramAccess }))), Enumerable.Empty<Expression>(), paramAccess.SourceInfo)}).ToList()};
+                //}
             }
 
-            // Ctor param access -> lazy access
-            if (buffer[ix].NodeType == ExpressionNodeType.CtorParamAccess) {
-                var ctorParamAccess = (CtorParameterAccessExpression)buffer[ix];
-                yield return new List<List<Expression>>(){
-                    buffer.Take(ix).Concat(new Expression[]{ 
-                        new FunctionBindingExpression(
-                            new ReductionDeclaration(
-                                Enumerable.Empty<PhrasePart>(), 
-                                new Function(
-                                    ctorParamAccess.CtorParam.Returns,
-                                    new Block(
-                                        new[]{ 
-                                             ctorParamAccess }))), Enumerable.Empty<Expression>(), ctorParamAccess.SourceInfo)}).ToList()};
-            }
+            //// Ctor param access -> lazy access
+            //if (buffer[ix].NodeType == ExpressionNodeType.CtorParamAccess) {
+            //    var ctorParamAccess = (CtorParameterAccessExpression)buffer[ix];
+            //    yield return new List<List<Expression>>(){
+            //        buffer.Take(ix).Concat(new Expression[]{ 
+            //            new FunctionBindingExpression(
+            //                new ReductionDeclaration(
+            //                    Enumerable.Empty<PhrasePart>(), 
+            //                    new Function(
+            //                        ctorParamAccess.CtorParam.Returns,
+            //                        new Block(
+            //                            new[]{ 
+            //                                 ctorParamAccess }))), Enumerable.Empty<Expression>(), ctorParamAccess.SourceInfo)}).ToList()};
+            //}
         }
 
 

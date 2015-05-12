@@ -36,19 +36,26 @@ namespace Tangent.Tokenization
         {
             if (index >= input.Length) { return input.Length; }
 
-            if (index < input.Length - 1) {
+            bool go = false;
+            do {
+                go = false;
 
-                // Comments.
-                if (input[index] == '/' && input[index + 1] == '/') {
-                    var eol = input.IndexOf('\n', index + 2);
-                    if (eol == -1) { eol = input.Length - 1; }
-                    return eol + 1;
+                if (index < input.Length - 1) {
+
+                    // Comments.
+                    if (input[index] == '/' && input[index + 1] == '/') {
+                        var eol = input.IndexOf('\n', index + 2);
+                        if (eol == -1) { eol = input.Length - 1; }
+                        index = eol + 1;
+                        go = true;
+                    }
                 }
-            }
 
-            while (index < input.Length && char.IsWhiteSpace(input[index])) {
-                index++;
-            }
+                while (index < input.Length && char.IsWhiteSpace(input[index])) {
+                    index++;
+                    go = true;
+                }
+            } while (go);
 
             return index;
         }
