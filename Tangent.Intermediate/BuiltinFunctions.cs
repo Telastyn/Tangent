@@ -26,6 +26,7 @@ namespace Tangent.Intermediate
         public static ReductionDeclaration AndBool = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Bool), new Identifier("and"), new ParameterDeclaration("b", TangentType.Bool) }, new DirectOpCode(OpCodes.And, TangentType.Bool));
         public static ReductionDeclaration OrBool = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Bool), new Identifier("or"), new ParameterDeclaration("b", TangentType.Bool) }, new DirectOpCode(OpCodes.Or, TangentType.Bool));
         public static ReductionDeclaration NotBool = new ReductionDeclaration(new PhrasePart[] { new Identifier("not"), new ParameterDeclaration("b", TangentType.Bool) }, new DirectOpCode(OpCodes.Not, TangentType.Bool));
+        public static ReductionDeclaration EqBool = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Bool), new Identifier("="), new ParameterDeclaration("b", TangentType.Bool) }, new DirectOpCode(OpCodes.Ceq, TangentType.Bool));
 
         public static ReductionDeclaration AddDouble = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Double), new Identifier("+"), new ParameterDeclaration("b", TangentType.Double) }, new DirectOpCode(OpCodes.Add, TangentType.Double));
         public static ReductionDeclaration SubDouble = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Double), new Identifier("-"), new ParameterDeclaration("b", TangentType.Double) }, new DirectOpCode(OpCodes.Sub, TangentType.Double));
@@ -53,6 +54,7 @@ namespace Tangent.Intermediate
             AndBool,
             OrBool,
             NotBool,
+            EqBool,
 
             AddDouble,
             SubDouble,
