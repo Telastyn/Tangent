@@ -63,6 +63,7 @@
     <Compile Include="Partial\PartialReductionDeclaration.cs" />
     <Compile Include="Partial\PartialStatement.cs" />
     <Compile Include="Partial\PartialElement.cs" />
+    <Compile Include="Partial\PartialTypeReference.cs" />
     <Compile Include="Partial\PlaceholderType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Errors\ResultOrError.cs" />

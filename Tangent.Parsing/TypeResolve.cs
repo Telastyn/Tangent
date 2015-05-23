@@ -11,7 +11,7 @@ namespace Tangent.Parsing
 {
     public static class TypeResolve
     {
-        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types, Dictionary<PartialProductType, ProductType> conversions)
+        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types, Dictionary<PlaceholderType, TangentType> conversions)
         {
             var errors = new List<BadTypePhrase>();
             var results = new List<ReductionDeclaration>();
@@ -33,26 +33,56 @@ namespace Tangent.Parsing
             return results;
         }
 
-        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, out Dictionary<PartialProductType, ProductType> placeholderConversions)
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, out Dictionary<PlaceholderType, TangentType> placeholderConversions)
         {
             List<BadTypePhrase> errors = new List<BadTypePhrase>();
-            Dictionary<PartialProductType, ProductType> inNeedOfPopulation = new Dictionary<PartialProductType, ProductType>();
-            var newLookup = typeDecls.Select(td =>
+            Dictionary<PlaceholderType, TangentType> inNeedOfPopulation = new Dictionary<PlaceholderType, TangentType>();
+            Func<TangentType, TangentType> selector = t => t;
+            selector = t =>
             {
-                if (td.Returns is PartialProductType) {
+                if (t.ImplementationType == KindOfType.Sum) {
+                    return SumType.For(((SumType)t).Types.Select(selector));
+                } else if (t is PartialProductType) {
                     var newb = new ProductType(Enumerable.Empty<PhrasePart>());
-                    inNeedOfPopulation.Add((PartialProductType)td.Returns, newb);
-                    return new TypeDeclaration(td.Takes, newb);
+                    inNeedOfPopulation.Add((PartialProductType)t, newb);
+                    return newb;
+                } else if (t is PartialTypeReference) {
+                    var reference = (PartialTypeReference)t;
+                    var target = reference.ResolvedType == null ? reference : reference.ResolvedType;
+                    if (!inNeedOfPopulation.ContainsKey(reference)) {
+                        inNeedOfPopulation.Add(reference, target);
+                    } else {
+                        inNeedOfPopulation[reference] = target;
+                    }
+
+                    return target;
                 } else {
-                    return td;
+                    return t;
                 }
-            }).ToList();
+            };
+
+            var newLookup = typeDecls.Select(td => new TypeDeclaration(td.Takes, selector(td.Returns))).ToList();
+            var references = new HashSet<PartialTypeReference>();
 
             foreach (var entry in inNeedOfPopulation) {
-                var resolvedType = PartialProductType(entry.Key, entry.Value, newLookup);
-                if (!resolvedType.Success) {
-                    var resolutionErrors = (TypeResolutionErrors)resolvedType.Error;
-                    errors.AddRange(resolutionErrors.Errors);
+                if (entry.Key is PartialProductType) {
+                    var resolvedType = PartialProductType((PartialProductType)entry.Key, (ProductType)entry.Value, newLookup);
+                    if (!resolvedType.Success) {
+                        var resolutionErrors = (TypeResolutionErrors)resolvedType.Error;
+                        errors.AddRange(resolutionErrors.Errors);
+                    }
+                } else if (entry.Key is PartialTypeReference) {
+                    var reference = (PartialTypeReference)entry.Key;
+                    references.Add(reference);
+                    var resolvedType = ResolveType(reference.Identifiers, newLookup);
+                    if (resolvedType.Success) {
+                        reference.ResolvedType = resolvedType.Result;
+                    } else {
+                        var resolutionErrors = (TypeResolutionErrors)resolvedType.Error;
+                        errors.AddRange(resolutionErrors.Errors);
+                    }
+                } else {
+                    throw new NotImplementedException();
                 }
             }
 
@@ -62,10 +92,12 @@ namespace Tangent.Parsing
                 return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new TypeResolutionErrors(errors));
             }
 
+            newLookup = newLookup.Select(td => new TypeDeclaration(td.Takes, selector(td.Returns))).ToList();
+
             return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);
         }
 
-        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types, Dictionary<PartialProductType, ProductType> conversions)
+        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types, Dictionary<PlaceholderType, TangentType> conversions)
         {
             var errors = new List<BadTypePhrase>();
             var phrase = new List<PhrasePart>();
@@ -73,7 +105,7 @@ namespace Tangent.Parsing
 
             ProductType scope = null;
             if (partialFunction.Returns.Scope != null) {
-                scope = conversions[partialFunction.Returns.Scope];
+                scope = (ProductType)conversions[partialFunction.Returns.Scope];
             }
 
             foreach (var part in partialFunction.Takes) {
@@ -189,6 +221,20 @@ namespace Tangent.Parsing
                 foreach (var type in types) {
                     var typeIdentifiers = type.Takes;
                     if (identifiers.SequenceEqual(typeIdentifiers)) {
+                        var reference = type.Returns as PartialTypeReference;
+                        if (reference != null) {
+                            if (reference.ResolvedType == null) {
+                                var nested = ResolveType(reference.Identifiers, types);
+                                if (nested.Success) {
+                                    reference.ResolvedType = nested.Result;
+                                } else {
+                                    return new ResultOrParseError<TangentType>(nested.Error);
+                                }
+                            }
+
+                            return reference.ResolvedType;
+                        }
+
                         return type.Returns;
                     }
                 }

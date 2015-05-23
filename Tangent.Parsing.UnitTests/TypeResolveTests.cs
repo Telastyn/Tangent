@@ -51,7 +51,7 @@ namespace Tangent.Parsing.UnitTests
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
             var result = TypeResolve.ResolveType(new Identifier[] { "foo", "bar" }, new[] { typeDecl });
-            
+
             Assert.IsTrue(result.Success);
             Assert.AreEqual(foo, result.Result);
         }
@@ -124,7 +124,7 @@ namespace Tangent.Parsing.UnitTests
                 new PartialPhrasePart(new PartialParameterDeclaration("x", new List<Identifier>() { "foo", "bar" })),
                 new PartialFunction(new Identifier[] { "foo", "bar" }, new PartialBlock(Enumerable.Empty<PartialStatement>()), null));
 
-            var result = TypeResolve.PartialFunctionDeclaration(partial, new[] { typeDecl }, new Dictionary<PartialProductType,ProductType>());
+            var result = TypeResolve.PartialFunctionDeclaration(partial, new[] { typeDecl }, new Dictionary<PlaceholderType, TangentType>());
 
             Assert.IsTrue(result.Success);
             Assert.IsFalse(result.Result.Takes.First().IsIdentifier);
@@ -220,7 +220,7 @@ namespace Tangent.Parsing.UnitTests
             var foo = new EnumType(new Identifier[] { "a", "moocow" });
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
-            var result = TypeResolve.ResolveType(new Identifier[] { "~>", "foo", "bar", ".", "moocow"}, new[] { typeDecl });
+            var result = TypeResolve.ResolveType(new Identifier[] { "~>", "foo", "bar", ".", "moocow" }, new[] { typeDecl });
             Assert.IsTrue(result.Success);
             Assert.AreEqual(KindOfType.Lazy, result.Result.ImplementationType);
             Assert.AreEqual(foo.SingleValueTypeFor("moocow").Lazy, result.Result);

@@ -12,6 +12,7 @@ namespace Tangent.Intermediate
         SingleValue,
         Lazy,
         Product,
+        Sum,
         Placeholder
     }
 

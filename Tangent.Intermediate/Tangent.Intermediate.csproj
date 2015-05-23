@@ -66,6 +66,7 @@
     <Compile Include="ReductionDeclaration.cs" />
     <Compile Include="ReductionRule.cs" />
     <Compile Include="SingleValueType.cs" />
+    <Compile Include="SumType.cs" />
     <Compile Include="TangentProgram.cs" />
     <Compile Include="TangentType.cs" />
     <Compile Include="TypeAccessExpression.cs" />
