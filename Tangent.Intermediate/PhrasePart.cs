@@ -30,5 +30,11 @@ namespace Tangent.Intermediate
         {
             return new PhrasePart(decl);
         }
+
+        public override string ToString()
+        {
+            if (IsIdentifier) { return Identifier.Value; }
+            return Parameter.ToString();
+        }
     }
 }

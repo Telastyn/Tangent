@@ -9,6 +9,7 @@ namespace Tangent.Intermediate
     public class CtorCall : Function
     {
         public CtorCall(ProductType type) : base(type, null) { }
+        public CtorCall(SumType type) : base(type, null) { }
         internal override void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
         {
             // nada.

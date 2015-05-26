@@ -9,5 +9,10 @@ namespace Tangent.Intermediate
     {
         public TypeDeclaration(Identifier takes, TangentType returns) : this(new[] { takes }, returns) { }
         public TypeDeclaration(IEnumerable<Identifier> takes, TangentType returns) : base(takes, returns) { }
+
+        public override string SeparatorToken
+        {
+            get { return ":>"; }
+        }
     }
 }

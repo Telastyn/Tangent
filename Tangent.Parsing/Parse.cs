@@ -42,7 +42,7 @@ namespace Tangent.Parsing
             partialFunctions.AddRange(types.Where(td => td.Returns is PartialProductType).SelectMany(td => ((PartialProductType)td.Returns).Functions));
 
             // Move to Phase 2 - Resolve types in parameters and function return types.
-            Dictionary<PlaceholderType, TangentType> conversions;
+            Dictionary<TangentType, TangentType> conversions;
             var resolvedTypes = TypeResolve.AllTypePlaceholders(types, out conversions);
             if (!resolvedTypes.Success) {
                 return new ResultOrParseError<Intermediate.TangentProgram>(resolvedTypes.Error);
@@ -62,7 +62,15 @@ namespace Tangent.Parsing
                 }
             }
 
-            var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt)));
+            HashSet<SumType> allSumTypes = new HashSet<SumType>();
+            allSumTypes.UnionWith(resolvedTypes.Result.Where(t => t.Returns.ImplementationType == KindOfType.Sum).Select(t => t.Returns).Cast<SumType>());
+
+            var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt))).ToList();
+            foreach (var entry in allSumTypes) {
+                foreach (var type in entry.Types) {
+                    ctorCalls.Add(new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", type)), new CtorCall(entry)));
+                }
+            }
 
             // And now Phase 3 - Statement parsing based on syntax.
             var lookup = new Dictionary<Function, Function>();
@@ -303,8 +311,8 @@ namespace Tangent.Parsing
                 tokens.RemoveAt(0);
                 ResultOrParseError<TangentType> result = Type(tokens);
                 if (result.Success) {
-                    if (firstPart.ImplementationType == KindOfType.Sum) {
-                        return SumType.For(((SumType)firstPart).Types.Concat(new List<TangentType>() { result.Result }));
+                    if (result.Result.ImplementationType == KindOfType.Sum) {
+                        return SumType.For(((SumType)result.Result).Types.Concat(new List<TangentType>() { firstPart }));
                     } else {
                         return SumType.For(new List<TangentType>() { firstPart, result.Result });
                     }

@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="IdentifierTests.cs" />
+    <Compile Include="ReductionDeclarationTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.Intermediate\Tangent.Intermediate.csproj">

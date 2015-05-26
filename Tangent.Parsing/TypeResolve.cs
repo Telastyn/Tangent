@@ -11,7 +11,7 @@ namespace Tangent.Parsing
 {
     public static class TypeResolve
     {
-        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types, Dictionary<PlaceholderType, TangentType> conversions)
+        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types, Dictionary<TangentType, TangentType> conversions)
         {
             var errors = new List<BadTypePhrase>();
             var results = new List<ReductionDeclaration>();
@@ -33,15 +33,17 @@ namespace Tangent.Parsing
             return results;
         }
 
-        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, out Dictionary<PlaceholderType, TangentType> placeholderConversions)
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, out Dictionary<TangentType, TangentType> placeholderConversions)
         {
             List<BadTypePhrase> errors = new List<BadTypePhrase>();
-            Dictionary<PlaceholderType, TangentType> inNeedOfPopulation = new Dictionary<PlaceholderType, TangentType>();
+            Dictionary<TangentType, TangentType> inNeedOfPopulation = new Dictionary<TangentType, TangentType>();
             Func<TangentType, TangentType> selector = t => t;
             selector = t =>
             {
                 if (t.ImplementationType == KindOfType.Sum) {
-                    return SumType.For(((SumType)t).Types.Select(selector));
+                    var newSum = SumType.For(((SumType)t).Types.Select(selector));
+                    inNeedOfPopulation.Add(t, newSum);
+                    return newSum;
                 } else if (t is PartialProductType) {
                     var newb = new ProductType(Enumerable.Empty<PhrasePart>());
                     inNeedOfPopulation.Add((PartialProductType)t, newb);
@@ -81,6 +83,8 @@ namespace Tangent.Parsing
                         var resolutionErrors = (TypeResolutionErrors)resolvedType.Error;
                         errors.AddRange(resolutionErrors.Errors);
                     }
+                } else if (entry.Key is SumType) {
+                    // Nothing, just need it in placeholder lists so that sum types with placeholders get fixed.
                 } else {
                     throw new NotImplementedException();
                 }
@@ -97,7 +101,7 @@ namespace Tangent.Parsing
             return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);
         }
 
-        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types, Dictionary<PlaceholderType, TangentType> conversions)
+        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types, Dictionary<TangentType, TangentType> conversions)
         {
             var errors = new List<BadTypePhrase>();
             var phrase = new List<PhrasePart>();
@@ -223,16 +227,33 @@ namespace Tangent.Parsing
                     if (identifiers.SequenceEqual(typeIdentifiers)) {
                         var reference = type.Returns as PartialTypeReference;
                         if (reference != null) {
-                            if (reference.ResolvedType == null) {
-                                var nested = ResolveType(reference.Identifiers, types);
-                                if (nested.Success) {
-                                    reference.ResolvedType = nested.Result;
+                            return ResolvePlaceholderReference(reference, types);
+                        }
+
+                        var sum = type.Returns as SumType;
+                        if (sum != null) {
+                            bool replace = false;
+                            List<TangentType> newbs = new List<TangentType>();
+                            foreach (var t in sum.Types) {
+                                var innerReference = t as PartialTypeReference;
+                                if (innerReference != null) {
+                                    replace = true;
+                                    var innerResult = ResolvePlaceholderReference(innerReference, types);
+                                    if (innerResult.Success) {
+                                        newbs.Add(innerResult.Result);
+                                    } else {
+                                        return innerResult;
+                                    }
                                 } else {
-                                    return new ResultOrParseError<TangentType>(nested.Error);
+                                    newbs.Add(t);
                                 }
                             }
 
-                            return reference.ResolvedType;
+                            if (replace) {
+                                return SumType.For(newbs);
+                            } else {
+                                return sum;
+                            }
                         }
 
                         return type.Returns;
@@ -241,6 +262,20 @@ namespace Tangent.Parsing
 
                 return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) }));
             }
+        }
+
+        private static ResultOrParseError<TangentType> ResolvePlaceholderReference(PartialTypeReference reference, IEnumerable<TypeDeclaration> types)
+        {
+            if (reference.ResolvedType == null) {
+                var nested = ResolveType(reference.Identifiers, types);
+                if (nested.Success) {
+                    reference.ResolvedType = nested.Result;
+                } else {
+                    return new ResultOrParseError<TangentType>(nested.Error);
+                }
+            }
+
+            return reference.ResolvedType;
         }
     }
 }

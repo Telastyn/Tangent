@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Tangent.Intermediate
 {
-    public class ReductionRule<T, R>
+    public abstract class ReductionRule<T, R>
     {
         public List<T> Takes { get; private set; }
         public R Returns { get; internal set; }
@@ -14,6 +14,13 @@ namespace Tangent.Intermediate
         {
             Takes = new List<T>(takes);
             Returns = returns;
+        }
+
+        public abstract string SeparatorToken { get; }
+
+        public override string ToString()
+        {
+            return string.Format("{0} {2} {1}", string.Join(" ", Takes), Returns, SeparatorToken);
         }
     }
 }

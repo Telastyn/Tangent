@@ -11,5 +11,10 @@ namespace Tangent.Parsing.Partial
         public PartialReductionDeclaration(Identifier takes, PartialFunction returns) : this(new[] { new PartialPhrasePart(takes) }, returns) { }
         public PartialReductionDeclaration(PartialPhrasePart takes, PartialFunction returns) : this(new[] { takes }, returns) { }
         public PartialReductionDeclaration(IEnumerable<PartialPhrasePart> takes, PartialFunction returns) : base(takes, returns) { }
+
+        public override string SeparatorToken
+        {
+            get { return "=>"; }
+        }
     }
 }

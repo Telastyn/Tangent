@@ -23,6 +23,11 @@ namespace Tangent.Intermediate
             }
         }
 
+        public override string SeparatorToken
+        {
+            get { return "=>"; }
+        }
+
         public bool IsSpecializationOf(ReductionDeclaration rhs)
         {
             if (this == rhs) { return false; }
@@ -49,42 +54,49 @@ namespace Tangent.Intermediate
                 }
                 else
                 {
-                    switch (thisEnum.Current.Parameter.Returns.ImplementationType)
-                    {
-                        case KindOfType.SingleValue:
-                            var single = (SingleValueType)thisEnum.Current.Parameter.Returns;
-                            switch (rhsEnum.Current.Parameter.Returns.ImplementationType)
-                            {
-                                case KindOfType.SingleValue:
-                                    var rhsSingle = (SingleValueType)rhsEnum.Current.Parameter.Returns;
-                                    if (rhsSingle.ValueType != single.ValueType || rhsSingle.Value != single.Value)
-                                    {
+                    if (!rhsEnum.Current.IsIdentifier && rhsEnum.Current.Parameter.Returns.ImplementationType == KindOfType.Sum) {
+                        if (rhsEnum.Current.Parameter.Returns == thisEnum.Current.Parameter.Returns) {
+                            break;
+                        }
+
+                        if (!((SumType)rhsEnum.Current.Parameter.Returns).Types.Contains(thisEnum.Current.Parameter.Returns)) {
+                            return false;
+                        }
+
+                        break;
+                    } else {
+                        switch (thisEnum.Current.Parameter.Returns.ImplementationType) {
+                            case KindOfType.SingleValue:
+                                var single = (SingleValueType)thisEnum.Current.Parameter.Returns;
+                                switch (rhsEnum.Current.Parameter.Returns.ImplementationType) {
+                                    case KindOfType.SingleValue:
+                                        var rhsSingle = (SingleValueType)rhsEnum.Current.Parameter.Returns;
+                                        if (rhsSingle.ValueType != single.ValueType || rhsSingle.Value != single.Value) {
+                                            return false;
+                                        }
+
+                                        break;
+
+                                    case KindOfType.Enum:
+                                        if (single.ValueType != rhsEnum.Current.Parameter.Returns) {
+                                            return false;
+                                        }
+
+                                        break;
+
+                                    default:
                                         return false;
-                                    }
+                                }
 
-                                    break;
+                                break;
 
-                                case KindOfType.Enum:
-                                    if (single.ValueType != rhsEnum.Current.Parameter.Returns)
-                                    {
-                                        return false;
-                                    }
-
-                                    break;
-
-                                default:
+                            default:
+                                if (thisEnum.Current.Parameter.Returns != rhsEnum.Current.Parameter.Returns) {
                                     return false;
-                            }
+                                }
 
-                            break;
-
-                        default:
-                            if (thisEnum.Current.Parameter.Returns != rhsEnum.Current.Parameter.Returns)
-                            {
-                                return false;
-                            }
-
-                            break;
+                                break;
+                        }
                     }
                 }
             }

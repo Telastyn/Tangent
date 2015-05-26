@@ -11,6 +11,11 @@ namespace Tangent.Parsing.Partial
         public PartialParameterDeclaration(Identifier takes, List<Identifier> returns) : this(new[] { takes }, returns) { }
         public PartialParameterDeclaration(IEnumerable<Identifier> takes, List<Identifier> returns) : base(takes, returns) { }
 
+        public override string SeparatorToken
+        {
+            get { return ":"; }
+        }
+
         public bool IsThisParam
         {
             get
