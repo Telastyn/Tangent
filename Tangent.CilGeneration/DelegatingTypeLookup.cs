@@ -37,10 +37,11 @@ namespace Tangent.CilGeneration
             switch (t.ImplementationType) {
                 case KindOfType.Enum:
                 case KindOfType.Product:
+                case KindOfType.Sum:
                     // This should already be declared in our types.
                     var result = declaredTypes.FirstOrDefault(td => td.Returns == t);
                     if (result == null) {
-                        throw new ApplicationException("Got TypeLookup request for a type that wasn't declared?");
+                        result = new TypeDeclaration((Identifier)null, t);
                     }
 
                     var type = typeCompiler.Compile(result, placeholder => lookup.Add(result.Returns, placeholder), tt => this[tt]);

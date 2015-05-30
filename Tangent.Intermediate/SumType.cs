@@ -18,7 +18,8 @@ namespace Tangent.Intermediate
             }
         }
 
-        private SumType(HashSet<TangentType> types):base(KindOfType.Sum)
+        private SumType(HashSet<TangentType> types)
+            : base(KindOfType.Sum)
         {
             this.types = types;
         }

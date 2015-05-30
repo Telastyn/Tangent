@@ -64,6 +64,10 @@
       <Project>{91b94f1e-2f60-4392-bb46-ec5f65a44b59}</Project>
       <Name>Tangent.Intermediate</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Tangent.Runtime\Tangent.Runtime.csproj">
+      <Project>{dc6e9b99-9e30-413f-b4f4-1352fdfae50b}</Project>
+      <Name>Tangent.Runtime</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
