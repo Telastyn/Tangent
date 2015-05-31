@@ -30,9 +30,21 @@ namespace Tangent.Intermediate
 
         public bool IsSpecializationOf(ReductionDeclaration rhs)
         {
-            if (this == rhs) { return false; }
-            if (this.Returns.EffectiveType != rhs.Returns.EffectiveType) { return false; }
-            if (this.Takes.Count != rhs.Takes.Count) { return false; }
+            return SpecializationAgainst(rhs) != null;
+        }
+
+        public SpecializationDefinition SpecializationAgainst(ReductionDeclaration rhs)
+        {
+            var result = SpecializationsFor(rhs).ToList();
+            if (result.Any(r => r == null)) { return null; }
+            if (!result.Any()) { throw new ApplicationException("Some error has happened in specialization logic. Fix and test."); }
+            return new SpecializationDefinition(result);
+        }
+
+        private IEnumerable<SpecializationEntry> SpecializationsFor(ReductionDeclaration rhs){
+            if (this == rhs) { yield return null; yield break; }
+            if (this.Returns.EffectiveType != rhs.Returns.EffectiveType) { yield return null; yield break; }
+            if (this.Takes.Count != rhs.Takes.Count) { yield return null; yield break; }
 
             var thisEnum = this.Takes.GetEnumerator();
             var rhsEnum = rhs.Takes.GetEnumerator();
@@ -44,12 +56,14 @@ namespace Tangent.Intermediate
                     {
                         if (thisEnum.Current.Identifier.Value != rhsEnum.Current.Identifier.Value)
                         {
-                            return false;
+                            yield return null;
+                            yield break;
                         }
                     }
                     else
                     {
-                        return false;
+                        yield return null;
+                        yield break;
                     }
                 }
                 else
@@ -60,7 +74,10 @@ namespace Tangent.Intermediate
                         }
 
                         if (!((SumType)rhsEnum.Current.Parameter.Returns).Types.Contains(thisEnum.Current.Parameter.Returns)) {
-                            return false;
+                            yield return null;
+                            yield break;
+                        } else {
+                            yield return new SpecializationEntry(rhsEnum.Current.Parameter, thisEnum.Current.Parameter);
                         }
 
                         break;
@@ -72,27 +89,33 @@ namespace Tangent.Intermediate
                                     case KindOfType.SingleValue:
                                         var rhsSingle = (SingleValueType)rhsEnum.Current.Parameter.Returns;
                                         if (rhsSingle.ValueType != single.ValueType || rhsSingle.Value != single.Value) {
-                                            return false;
+                                            yield return null;
+                                            yield break;
+                                        } else {
+                                            yield return new SpecializationEntry(rhsEnum.Current.Parameter, thisEnum.Current.Parameter);
                                         }
 
                                         break;
 
                                     case KindOfType.Enum:
                                         if (single.ValueType != rhsEnum.Current.Parameter.Returns) {
-                                            return false;
+                                            yield return null;
+                                            yield break;
                                         }
 
                                         break;
 
                                     default:
-                                        return false;
+                                        yield return null;
+                                        yield break;
                                 }
 
                                 break;
 
                             default:
                                 if (thisEnum.Current.Parameter.Returns != rhsEnum.Current.Parameter.Returns) {
-                                    return false;
+                                    yield return null;
+                                    yield break;
                                 }
 
                                 break;
@@ -100,8 +123,6 @@ namespace Tangent.Intermediate
                     }
                 }
             }
-
-            return true;
         }
     }
 }

@@ -18,7 +18,7 @@ namespace Tangent.CilGeneration
             this.builder = builder;
         }
 
-        public Type Compile(TypeDeclaration typeDecl, Action<Type> placeholder, Func<TangentType, Type> lookup)
+        public Type Compile(TypeDeclaration typeDecl, Action<Type> placeholder, Func<TangentType, bool, Type> lookup)
         {
             switch (typeDecl.Returns.ImplementationType) {
                 case KindOfType.Enum:
@@ -32,7 +32,7 @@ namespace Tangent.CilGeneration
             }
         }
 
-        private Type BuildEnum(TypeDeclaration target, Action<Type> placeholder, Func<TangentType, Type> lookup)
+        private Type BuildEnum(TypeDeclaration target, Action<Type> placeholder, Func<TangentType, bool, Type> lookup)
         {
             var typeName = GetNameFor(target);
             var enumBuilder = builder.DefineEnum(typeName, System.Reflection.TypeAttributes.Public, typeof(int));
@@ -44,12 +44,14 @@ namespace Tangent.CilGeneration
             return enumBuilder.CreateType();
         }
 
-        private Type BuildClass(TypeDeclaration target, Action<Type> placeholder, Func<TangentType, Type> lookup)
+        private Type BuildClass(TypeDeclaration target, Action<Type> placeholder, Func<TangentType, bool, Type> lookup)
         {
             var typeName = GetNameFor(target);
             var productType = (ProductType)target.Returns;
             var tangentCtorParams = productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).ToList();
-            var dotnetCtorParamTypes = tangentCtorParams.Select(pp => lookup(pp.Parameter.Returns)).ToList();
+            var dotnetCtorParamTypes = tangentCtorParams.Select(pp => lookup(pp.Parameter.Returns, true)).ToList();
+            var me = lookup(target.Returns, false);
+            if (me != null) { return me; }
             var classBuilder = builder.DefineType(typeName, System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Public);
             placeholder(classBuilder);
             var ctor = classBuilder.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, dotnetCtorParamTypes.ToArray());
@@ -66,13 +68,13 @@ namespace Tangent.CilGeneration
             return classBuilder.CreateType();
         }
 
-        private Type BuildVariant(TypeDeclaration target, Action<Type> placeholder, Func<TangentType, Type> lookup)
+        private Type BuildVariant(TypeDeclaration target, Action<Type> placeholder, Func<TangentType, bool, Type> lookup)
         {
             var typeName = GetNameFor(target);
             var sumType = (SumType)target.Returns;
             var classBuilder = builder.DefineType(typeName);
             placeholder(classBuilder);
-            var variantTypes = sumType.Types.Select(tt => lookup(tt)).OrderBy(t => t.Name).ToArray();
+            var variantTypes = sumType.Types.Select(tt => lookup(tt, true)).OrderBy(t => t.Name).ToArray();
             var variantContainer = typeof(Variant<,>).Module.GetTypes().FirstOrDefault(t => t.Name.StartsWith("Variant`" + variantTypes.Length));
             if (variantContainer == null) {
                 throw new ApplicationException("Error finding runtime variant type of size " + variantTypes.Length);

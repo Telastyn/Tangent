@@ -39,8 +39,6 @@ namespace Tangent.Parsing
                 }
             }
 
-            partialFunctions.AddRange(types.Where(td => td.Returns is PartialProductType).SelectMany(td => ((PartialProductType)td.Returns).Functions));
-
             // Move to Phase 2 - Resolve types in parameters and function return types.
             Dictionary<TangentType, TangentType> conversions;
             var resolvedTypes = TypeResolve.AllTypePlaceholders(types, out conversions);
@@ -132,6 +130,7 @@ namespace Tangent.Parsing
                         return new ExpectedTokenParseError(TokenIdentifier.ReductionDeclSeparator, separator);
                     }
 
+                    partialFunctions.AddRange(ExtractPartialFunctions(typeDecl.Result));
                     types.Add(new TypeDeclaration(phrase.Select(pp => pp.Identifier), typeDecl.Result));
                     break;
                 case TokenIdentifier.ReductionDeclSeparator:
@@ -487,6 +486,33 @@ namespace Tangent.Parsing
 
             tokens.RemoveAt(0);
             return true;
+        }
+
+        private static IEnumerable<PartialReductionDeclaration> ExtractPartialFunctions(TangentType tt, HashSet<TangentType> searched = null)
+        {
+            searched = searched ?? new HashSet<TangentType>();
+            switch (tt.ImplementationType) {
+                case KindOfType.Sum:
+                    if (searched.Contains(tt)) {
+                        return Enumerable.Empty<PartialReductionDeclaration>();
+                    }
+
+                    searched.Add(tt);
+                    List<PartialReductionDeclaration> result = new List<PartialReductionDeclaration>();
+                    foreach (var part in ((SumType)tt).Types) {
+                        result.AddRange(ExtractPartialFunctions(part, searched));
+                    }
+
+                    return result;
+                case KindOfType.Placeholder:
+                    if (tt is PartialProductType) {
+                        return ((PartialProductType)tt).Functions;
+                    }
+
+                    return Enumerable.Empty<PartialReductionDeclaration>();
+                default:
+                    return Enumerable.Empty<PartialReductionDeclaration>();
+            }
         }
     }
 }

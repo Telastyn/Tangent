@@ -41,20 +41,55 @@ namespace Tangent.CilGeneration
             // For now, we can't have nested specializations, so just go in order, doing the checks.
             foreach (var specialization in specializations) {
                 Label next = gen.DefineLabel();
-                foreach (var typeValuePair in fn.Takes.Zip(specialization.Takes, Tuple.Create).Where(z => !z.Item2.IsIdentifier && z.Item2.Parameter.Returns.ImplementationType == KindOfType.SingleValue)) {
-                    var single = (SingleValueType)typeValuePair.Item2.Parameter.Returns;
+                var specializationDetails = specialization.SpecializationAgainst(fn).Specializations;
+                var modes = new Dictionary<ParameterDeclaration, Tuple<Type,Type>>();
+                foreach (var specializationParam in specializationDetails) {
+                    switch (specializationParam.SpecializationType) {
+                        case DispatchType.SingleValue:
+                            var single = (SingleValueType)specializationParam.SpecificFunctionParameter.Returns;
 
-                    // If the specialization is not met, go to next specialization.
-                    parameterAccessors[typeValuePair.Item1.Parameter](gen);
-                    gen.Emit(OpCodes.Ldc_I4, single.NumericEquivalent);
-                    gen.Emit(OpCodes.Ceq);
-                    gen.Emit(OpCodes.Brfalse, next);
-                    // Otherwise, proceed to next param.
+                            // If the specialization is not met, go to next specialization.
+                            parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
+                            gen.Emit(OpCodes.Ldc_I4, single.NumericEquivalent);
+                            gen.Emit(OpCodes.Ceq);
+                            gen.Emit(OpCodes.Brfalse, next);
+                            // Otherwise, proceed to next param.
+                            break;
+
+                        case DispatchType.SumType:
+                            var dotNetSum = typeLookup[specializationParam.GeneralFunctionParameter.Returns];
+                            var dotNetTarget = typeLookup[specializationParam.SpecificFunctionParameter.Returns];
+                            var targetMode = GetVariantMode(dotNetSum, dotNetTarget);
+                            modes.Add(specializationParam.GeneralFunctionParameter, Tuple.Create(dotNetSum, dotNetTarget));
+                            var modeField = dotNetSum.GetField("Mode");
+                            parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
+                            gen.Emit(OpCodes.Ldfld, modeField);
+                            gen.Emit(OpCodes.Ldc_I4, targetMode);
+                            gen.Emit(OpCodes.Ceq);
+                            gen.Emit(OpCodes.Brfalse, next);
+                            break;
+
+                        default:
+                            throw new NotImplementedException();
+                    }
                 }
 
                 // Cool. Load parameters, call function and return.
                 foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
-                    parameterAccessors[parameter.Parameter](gen);
+                    
+                    if (modes.ContainsKey(parameter.Parameter)) {
+                        var valueFld = modes[parameter.Parameter].Item1.GetField("Value");
+                        parameterAccessors[parameter.Parameter](gen);
+                        gen.Emit(OpCodes.Ldfld, valueFld);
+                        
+                        if (modes[parameter.Parameter].Item2.IsValueType) {
+                            gen.Emit(OpCodes.Unbox_Any, modes[parameter.Parameter].Item2);
+                        } else {
+                            gen.Emit(OpCodes.Castclass, modes[parameter.Parameter].Item2);
+                        }
+                    } else {
+                        parameterAccessors[parameter.Parameter](gen);
+                    }
                 }
 
                 gen.Emit(OpCodes.Tailcall);
@@ -65,6 +100,18 @@ namespace Tangent.CilGeneration
                 gen.Emit(OpCodes.Nop);
                 gen.MarkLabel(next);
             }
+        }
+
+        private static int GetVariantMode(Type variantType, Type targetType)
+        {
+            var genericParams = variantType.BaseType.GetGenericArguments();
+            for (int i = 1; i <= genericParams.Length; ++i) {
+                if (genericParams[i-1] == targetType) {
+                    return i;
+                }
+            }
+
+            throw new ApplicationException(string.Format("Looking for {0} in variant {1}, but not found!", targetType, variantType));
         }
 
         private void AddDebuggingInfo(ILGenerator gen, Expression expr)
@@ -113,7 +160,7 @@ namespace Tangent.CilGeneration
 
                     var ctor = invoke.Bindings.FunctionDefinition.Returns as CtorCall;
                     if (ctor != null) {
-                        var ctorFn = typeLookup[ctor.EffectiveType].GetConstructors().First();
+                        var ctorFn = typeLookup[ctor.EffectiveType].GetConstructor(invoke.Bindings.FunctionDefinition.Takes.Where(pp=>!pp.IsIdentifier).Select(pp=>typeLookup[pp.Parameter.Returns]).ToArray());
                         gen.Emit(OpCodes.Newobj, ctorFn);
                         return;
                     }

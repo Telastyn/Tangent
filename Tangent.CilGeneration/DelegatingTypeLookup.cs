@@ -44,7 +44,7 @@ namespace Tangent.CilGeneration
                         result = new TypeDeclaration((Identifier)null, t);
                     }
 
-                    var type = typeCompiler.Compile(result, placeholder => lookup.Add(result.Returns, placeholder), tt => this[tt]);
+                    var type = typeCompiler.Compile(result, placeholder => { if (!lookup.ContainsKey(result.Returns)) { lookup.Add(result.Returns, placeholder); } }, (tt, create) => { if (create) { return this[tt]; } else { if (lookup.ContainsKey(tt)) { return lookup[tt]; } else { return null; } } });
                     if (lookup.ContainsKey(result.Returns)) {
                         lookup[result.Returns] = type;
                     } else {

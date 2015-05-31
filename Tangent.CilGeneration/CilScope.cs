@@ -16,7 +16,7 @@ namespace Tangent.CilGeneration
         private readonly ITypeLookup typeLookup;
         private readonly TypeBuilder scope;
 
-        public CilScope(TypeBuilder scope, IEnumerable<ReductionDeclaration> functions, ITypeLookup typeLookup)
+        public CilScope(TypeBuilder scope, IEnumerable<ReductionDeclaration> functions, IEnumerable<ReductionDeclaration> builtIns, ITypeLookup typeLookup)
         {
             this.typeLookup = typeLookup;
             functionStubs = functions
@@ -29,10 +29,9 @@ namespace Tangent.CilGeneration
                         typeLookup[((SingleValueType)t.Parameter.Returns).ValueType] :
                         typeLookup[t.Parameter.Returns]).ToArray()));
 
-            var specializationFunctions = functions.Where(fn => fn.Takes.Any(pp => !pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.SingleValue)).ToList();
             foreach (var fn in functionStubs.Keys.ToList())
             {
-                var fnSpecializations = specializationFunctions.Where(fnsp => fnsp.IsSpecializationOf(fn)).ToList();
+                var fnSpecializations = functions.Concat(builtIns).Where(fnsp => fnsp.IsSpecializationOf(fn)).ToList();
                 this.specializations.Add(fn, fnSpecializations);
             }
 
