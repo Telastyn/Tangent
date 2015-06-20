@@ -26,6 +26,8 @@ namespace Tangent.Intermediate
     {
         public abstract ExpressionNodeType NodeType { get; }
         public readonly LineColumnRange SourceInfo;
+        public abstract TangentType EffectiveType { get; }
+            
 
         protected Expression(LineColumnRange sourceInfo)
         {

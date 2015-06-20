@@ -13,21 +13,24 @@ namespace Tangent.Parsing
         private readonly List<Expression> buffer;
         public readonly Scope Scope;
         private readonly List<ConversionHistory> conversionsTaken;
+        private readonly IEnumerable<TransformationRule> customTransformations;
 
-        public Input(IEnumerable<Identifier> identifiers, Scope scope)
+        public Input(IEnumerable<Identifier> identifiers, Scope scope, IEnumerable<TransformationRule> customTransformations = null)
         {
+            this.customTransformations = customTransformations ?? Enumerable.Empty<TransformationRule>();
             buffer = new List<Expression>(identifiers.Select(id => new IdentifierExpression(id, null)));
             Scope = scope;
             conversionsTaken = new List<ConversionHistory>();
         }
 
-        public Input(IEnumerable<Expression> exprs, Scope scope) : this(exprs, scope, new List<ConversionHistory>()) { }
+        public Input(IEnumerable<Expression> exprs, Scope scope) : this(exprs, scope, new List<ConversionHistory>(), new List<TransformationRule>()) { }
 
-        private Input(IEnumerable<Expression> exprs, Scope scope, IEnumerable<ConversionHistory> conversionsTaken)
+        private Input(IEnumerable<Expression> exprs, Scope scope, IEnumerable<ConversionHistory> conversionsTaken, IEnumerable<TransformationRule> customTransformations)
         {
             buffer = new List<Expression>(exprs);
             Scope = scope;
             this.conversionsTaken = new List<ConversionHistory>(conversionsTaken);
+            this.customTransformations = customTransformations;
         }
 
         public List<Expression> InterpretAsStatement()
@@ -38,7 +41,10 @@ namespace Tangent.Parsing
         internal List<Expression> InterpretTowards(TangentType type)
         {
             if (buffer.Count == 1) {
-                if (type == GetEffectiveTypeIfPossible(buffer[0])) {
+                if (type == buffer[0].EffectiveType) {
+                    return buffer;
+                } else if (type == TangentType.Any.Kind && (buffer[0].EffectiveType is KindType || buffer[0].EffectiveType is TypeConstant)) {
+                    // mild hack since there's no subtyping yet.
                     return buffer;
                 }
             }
@@ -48,9 +54,9 @@ namespace Tangent.Parsing
                     List<Expression> successes = new List<Expression>();
                     foreach (var candidate in reductionCandidatePool) {
                         if (candidate[ix].NodeType == ExpressionNodeType.FunctionInvocation && ((FunctionInvocationExpression)candidate[ix]).Bindings.FunctionDefinition.IsConversion) {
-                            successes.AddRange(new Input(candidate, Scope, conversionsTaken.Concat(new[] { new ConversionHistory(((FunctionInvocationExpression)candidate[ix]).Bindings.FunctionDefinition, buffer.Count, ix) })).InterpretTowards(type));
+                            successes.AddRange(new Input(candidate, Scope, conversionsTaken.Concat(new[] { new ConversionHistory(((FunctionInvocationExpression)candidate[ix]).Bindings.FunctionDefinition, buffer.Count, ix) }), customTransformations).InterpretTowards(type));
                         } else {
-                            successes.AddRange(new Input(candidate, Scope, conversionsTaken).InterpretTowards(type));
+                            successes.AddRange(new Input(candidate, Scope, conversionsTaken, customTransformations).InterpretTowards(type));
                         }
                     }
 
@@ -69,23 +75,32 @@ namespace Tangent.Parsing
         /// </summary>
         private IEnumerable<List<List<Expression>>> TryReduce(int ix)
         {
+            // custom transforms
+            var subBuffer = buffer.Skip(ix).ToList();
+            foreach (var transform in customTransformations) {
+                var result = transform.TryReduce(subBuffer);
+                if (result != null) {
+                    yield return new List<List<Expression>>() { buffer.Take(ix).Concat(new[] { result.ReplacesWith }).Concat(subBuffer.Skip(result.Takes)).ToList() };
+                }
+            }
+
             // param
-            foreach (IGrouping<int, ParameterDeclaration> parameterTier in Scope.Parameters.Where(pd => IsMatch(buffer.Skip(ix).ToList(), pd.Takes.Select(id => new PhrasePart(id)).ToList())).GroupBy(pd => pd.Takes.Count).OrderByDescending(grp => grp.Key)) {
+            foreach (IGrouping<int, ParameterDeclaration> parameterTier in Scope.Parameters.Where(pd => IsMatch(subBuffer, pd.Takes.Select(id => new PhrasePart(id)).ToList())).GroupBy(pd => pd.Takes.Count).OrderByDescending(grp => grp.Key)) {
                 yield return parameterTier.Select(pd => buffer.Take(ix).Concat(new[] { new ParameterAccessExpression(pd, buffer[ix].SourceInfo) }).Concat(buffer.Skip(ix + pd.Takes.Count)).ToList()).ToList();
             }
 
             // ctor param
-            foreach (IGrouping<int, ParameterDeclaration> ctorParameterTier in Scope.CtorParameters.Where(pd => IsMatch(buffer.Skip(ix).ToList(), pd.Takes.Select(id => new PhrasePart(id)).ToList())).GroupBy(pd => pd.Takes.Count).OrderByDescending(grp => grp.Key)) {
+            foreach (IGrouping<int, ParameterDeclaration> ctorParameterTier in Scope.CtorParameters.Where(pd => IsMatch(subBuffer, pd.Takes.Select(id => new PhrasePart(id)).ToList())).GroupBy(pd => pd.Takes.Count).OrderByDescending(grp => grp.Key)) {
                 yield return ctorParameterTier.Select(pd => buffer.Take(ix).Concat(new[] { new CtorParameterAccessExpression(Scope.Parameters.First(ctorPd => ctorPd.Takes.Count == 1 && ctorPd.Takes.First().Value == "this"), pd, buffer[ix].SourceInfo) }).Concat(buffer.Skip(ix + pd.Takes.Count)).ToList()).ToList();
             }
 
             // type
-            foreach (IGrouping<int, TypeDeclaration> typeTier in Scope.Types.Where(td => IsMatch(buffer.Skip(ix).ToList(), td.Takes.Select(id => new PhrasePart(id)).ToList())).GroupBy(td => td.Takes.Count).OrderByDescending(grp => grp.Key)) {
-                yield return typeTier.Select(td => buffer.Take(ix).Concat(new[] { new TypeAccessExpression(td.Returns, buffer[ix].SourceInfo) }).Concat(buffer.Skip(ix + td.Takes.Count)).ToList()).ToList();
+            foreach (IGrouping<int, TypeDeclaration> typeTier in Scope.Types.Where(td => IsMatch(buffer.Skip(ix).ToList(), td.Takes)).GroupBy(td => td.Takes.Count).OrderByDescending(grp => grp.Key)) {
+                yield return typeTier.Select(td => buffer.Take(ix).Concat(new[] { new TypeAccessExpression(td.Returns.TypeConstant, buffer[ix].SourceInfo) }).Concat(buffer.Skip(ix + td.Takes.Count)).ToList()).ToList();
             }
 
             // fn
-            var legalFunctions = Scope.Functions.Where(fn => IsMatch(buffer.Skip(ix).ToList(), fn.Takes) && !(fn.IsConversion && conversionsTaken.Contains(new ConversionHistory(fn,buffer.Count,ix)))).ToList();
+            var legalFunctions = Scope.Functions.Where(fn => IsMatch(subBuffer, fn.Takes) && !(fn.IsConversion && conversionsTaken.Contains(new ConversionHistory(fn,buffer.Count,ix)))).ToList();
             while (legalFunctions.Any()) {
                 var candidates = PopBestCandidates(legalFunctions);
                 var pool = new List<List<Expression>>();
@@ -175,7 +190,7 @@ namespace Tangent.Parsing
                         return false;
                     }
                 } else {
-                    var inType = GetEffectiveTypeIfPossible(inputEnum.Current);
+                    var inType = inputEnum.Current.EffectiveType;
                     if (inType == null || (inType != entry.Parameter.Returns && inType != TangentType.PotentiallyAnything)) {
                         return false;
                     }
@@ -183,53 +198,6 @@ namespace Tangent.Parsing
             }
 
             return true;
-        }
-
-        private static TangentType GetEffectiveTypeIfPossible(Expression expr)
-        {
-            switch (expr.NodeType) {
-                case ExpressionNodeType.FunctionInvocation:
-                    var invoke = (FunctionInvocationExpression)expr;
-                    return invoke.EffectiveType;
-
-                case ExpressionNodeType.ParameterAccess:
-                    var param = (ParameterAccessExpression)expr;
-                    return param.Parameter.Returns;
-
-                case ExpressionNodeType.FunctionBinding:
-                    var binding = expr as FunctionBindingExpression;
-                    return binding.EffectiveType;
-
-                case ExpressionNodeType.DelegateInvocation:
-                    var delegateInvoke = expr as DelegateInvocationExpression;
-                    return delegateInvoke.EffectiveType;
-
-                case ExpressionNodeType.Constant:
-                    var constant = expr as ConstantExpression;
-                    return constant.EffectiveType;
-
-                case ExpressionNodeType.EnumValueAccess:
-                    var valueAccess = expr as EnumValueAccessExpression;
-                    return valueAccess.EnumValue;
-
-                case ExpressionNodeType.EnumWidening:
-                    var widening = expr as EnumWideningExpression;
-                    return widening.EnumAccess.EnumValue.ValueType;
-
-                case ExpressionNodeType.CtorParamAccess:
-                    var ctorAccess = expr as CtorParameterAccessExpression;
-                    return ctorAccess.CtorParam.Returns;
-
-                case ExpressionNodeType.ParenExpr:
-                    return TangentType.PotentiallyAnything;
-
-                case ExpressionNodeType.TypeAccess:
-                case ExpressionNodeType.Identifier:
-                case ExpressionNodeType.Unknown:
-                    return null;
-                default:
-                    throw new NotImplementedException();
-            }
         }
 
         private List<ReductionDeclaration> PopBestCandidates(List<ReductionDeclaration> candidates)

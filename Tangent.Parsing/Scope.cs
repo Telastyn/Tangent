@@ -23,5 +23,10 @@ namespace Tangent.Parsing
             Types = types.OrderByDescending(t => t.Takes.Count()).ToList();
             Functions = (functions.OrderByDescending(f => f.Takes.Count())).ToList();
         }
+
+        public static Scope ForTypes(IEnumerable<TypeDeclaration> types)
+        {
+            return new Scope(TangentType.Any.Kind, types, Enumerable.Empty<ParameterDeclaration>(), Enumerable.Empty<ParameterDeclaration>(), Enumerable.Empty<ReductionDeclaration>());
+        }
     }
 }

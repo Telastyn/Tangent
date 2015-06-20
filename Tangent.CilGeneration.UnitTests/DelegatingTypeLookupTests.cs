@@ -20,16 +20,6 @@ namespace Tangent.CilGeneration.UnitTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ApplicationException))]
-        public void LookupForSomethingThatDoesntExistExplodes()
-        {
-            var mockCompiler = new Mock<ITypeCompiler>();
-            var lookup = new DelegatingTypeLookup(mockCompiler.Object, Enumerable.Empty<TypeDeclaration>());
-
-            var result = lookup[new EnumType(Enumerable.Empty<Identifier>())]; // boom!
-        }
-
-        [TestMethod]
         public void LookupCompilesOnce()
         {
             var typeDecl = new TypeDeclaration("foo", new EnumType(new Identifier[] { "bar" }));

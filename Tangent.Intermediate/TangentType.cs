@@ -13,6 +13,8 @@ namespace Tangent.Intermediate
         Lazy,
         Product,
         Sum,
+        Kind,
+        TypeConstant,
         Placeholder
     }
 
@@ -36,11 +38,33 @@ namespace Tangent.Intermediate
             }
         }
 
+        private KindType kind = null;
+
+        public KindType Kind
+        {
+            get
+            {
+                kind = kind ?? new KindType(this);
+                return kind;
+            }
+        }
+
+        private TypeConstant constant = null;
+        public TypeConstant TypeConstant
+        {
+            get
+            {
+                constant = constant ?? new TypeConstant(this);
+                return constant;
+            }
+        }
+
         public static readonly TangentType Void = new TangentType(KindOfType.Builtin);
         public static readonly TangentType String = new TangentType(KindOfType.Builtin);
         public static readonly TangentType Int = new TangentType(KindOfType.Builtin);
         public static readonly TangentType Double = new TangentType(KindOfType.Builtin);
         public static readonly TangentType Bool = new TangentType(KindOfType.Builtin);
+        public static readonly TangentType Any = new TangentType(KindOfType.Builtin);
         public static readonly TangentType PotentiallyAnything = new TangentType(KindOfType.Builtin);
     }
 }

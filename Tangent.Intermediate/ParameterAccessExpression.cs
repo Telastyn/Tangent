@@ -14,6 +14,11 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.ParameterAccess; }
         }
 
+        public override TangentType EffectiveType
+        {
+            get { return Parameter.Returns; }
+        }
+
         public ParameterAccessExpression(ParameterDeclaration decl, LineColumnRange sourceInfo)
             : base(sourceInfo)
         {

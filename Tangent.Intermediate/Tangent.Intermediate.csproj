@@ -69,9 +69,11 @@
     <Compile Include="SpecializationDefinition.cs" />
     <Compile Include="SpecializationEntry.cs" />
     <Compile Include="SumType.cs" />
+    <Compile Include="KindType.cs" />
     <Compile Include="TangentProgram.cs" />
     <Compile Include="TangentType.cs" />
     <Compile Include="TypeAccessExpression.cs" />
+    <Compile Include="TypeConstant.cs" />
     <Compile Include="TypeDeclaration.cs" />
     <Compile Include="EnumValueAccessExpression.cs" />
   </ItemGroup>

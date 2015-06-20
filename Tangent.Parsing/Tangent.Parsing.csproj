@@ -43,11 +43,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConversionHistory.cs" />
+    <Compile Include="Errors\AggregateParseError.cs" />
     <Compile Include="Errors\BadTypePhrase.cs" />
     <Compile Include="Errors\AmbiguousStatementError.cs" />
     <Compile Include="Errors\ExpectedLiteralParseError.cs" />
     <Compile Include="Errors\ExpectedTokenParseError.cs" />
     <Compile Include="Errors\IncomprehensibleStatementError.cs" />
+    <Compile Include="Errors\ThisAsGeneric.cs" />
     <Compile Include="Input.cs" />
     <Compile Include="ParenExpression.cs" />
     <Compile Include="Parse.cs" />
@@ -63,6 +65,7 @@
     <Compile Include="Partial\PartialReductionDeclaration.cs" />
     <Compile Include="Partial\PartialStatement.cs" />
     <Compile Include="Partial\PartialElement.cs" />
+    <Compile Include="Partial\PartialTypeDeclaration.cs" />
     <Compile Include="Partial\PartialTypeReference.cs" />
     <Compile Include="Partial\PlaceholderType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -71,6 +74,10 @@
     <Compile Include="Scope.cs" />
     <Compile Include="Errors\StatementGrokErrors.cs" />
     <Compile Include="Errors\TypeResolutionErrors.cs" />
+    <Compile Include="TransformationResult.cs" />
+    <Compile Include="TransformationRule.cs" />
+    <Compile Include="Transformations\LazyOperator.cs" />
+    <Compile Include="Transformations\SingleValueAccessor.cs" />
     <Compile Include="TypeResolve.cs" />
     <Compile Include="TypeResolved\TypeResolvedFunction.cs" />
   </ItemGroup>
@@ -88,6 +95,7 @@
       <Name>Tangent.Tokenization</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

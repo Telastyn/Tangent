@@ -101,7 +101,7 @@ namespace Tangent.CilGeneration
                 return "__AnonymousType" + anonymousTypeIndex++;
             }
 
-            string result = string.Join(" ", rule.Takes.Select(id => id.Value));
+            string result = string.Join(" ", rule.Takes.Select(id => id.ToString()));
             var t = rule.Returns;
             while (t.ImplementationType == KindOfType.Lazy) {
                 result = "~> " + result;

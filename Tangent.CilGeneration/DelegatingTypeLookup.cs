@@ -41,7 +41,7 @@ namespace Tangent.CilGeneration
                     // This should already be declared in our types.
                     var result = declaredTypes.FirstOrDefault(td => td.Returns == t);
                     if (result == null) {
-                        result = new TypeDeclaration((Identifier)null, t);
+                        result = new TypeDeclaration((PhrasePart)null, t);
                     }
 
                     var type = typeCompiler.Compile(result, placeholder => { if (!lookup.ContainsKey(result.Returns)) { lookup.Add(result.Returns, placeholder); } }, (tt, create) => { if (create) { return this[tt]; } else { if (lookup.ContainsKey(tt)) { return lookup[tt]; } else { return null; } } });

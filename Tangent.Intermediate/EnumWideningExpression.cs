@@ -15,6 +15,11 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.EnumWidening; }
         }
 
+        public override TangentType EffectiveType
+        {
+            get { return EnumAccess.EnumValue.ValueType; }
+        }
+
         public EnumWideningExpression(EnumValueAccessExpression expr)
             : base(expr.SourceInfo)
         {

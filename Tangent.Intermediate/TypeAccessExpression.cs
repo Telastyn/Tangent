@@ -7,14 +7,19 @@ namespace Tangent.Intermediate
 {
     public class TypeAccessExpression : Expression
     {
-        public readonly TangentType TypeConstant;
+        public readonly TypeConstant TypeConstant;
 
         public override ExpressionNodeType NodeType
         {
             get { return ExpressionNodeType.TypeAccess; }
         }
 
-        public TypeAccessExpression(TangentType type, LineColumnRange sourceInfo)
+        public override TangentType EffectiveType
+        {
+            get { return TypeConstant; }
+        }
+
+        public TypeAccessExpression(TypeConstant type, LineColumnRange sourceInfo)
             : base(sourceInfo)
         {
             TypeConstant = type;

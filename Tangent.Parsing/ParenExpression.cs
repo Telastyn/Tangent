@@ -32,6 +32,11 @@ namespace Tangent.Parsing
             }
         }
 
+        public override TangentType EffectiveType
+        {
+            get { return TangentType.PotentiallyAnything; }
+        }
+
         public IEnumerable<Expression> TryResolve(Scope scope, TangentType towardsType)
         {
             var input = new Input(LastStatement, scope);

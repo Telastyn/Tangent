@@ -101,6 +101,8 @@ namespace Tangent.Intermediate
                                         if (single.ValueType != rhsEnum.Current.Parameter.Returns) {
                                             yield return null;
                                             yield break;
+                                        } else {
+                                            yield return new SpecializationEntry(rhsEnum.Current.Parameter, thisEnum.Current.Parameter);
                                         }
 
                                         break;

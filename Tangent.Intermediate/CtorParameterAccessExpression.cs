@@ -23,6 +23,11 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.CtorParamAccess; }
         }
 
+        public override TangentType EffectiveType
+        {
+            get { return CtorParam.Returns; }
+        }
+
         internal override void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
         {
             // noop.

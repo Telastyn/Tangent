@@ -15,7 +15,7 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.FunctionBinding; }
         }
 
-        public TangentType EffectiveType
+        public override TangentType EffectiveType
         {
             get
             {

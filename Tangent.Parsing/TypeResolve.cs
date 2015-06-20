@@ -5,12 +5,83 @@ using System.Text;
 using Tangent.Intermediate;
 using Tangent.Parsing.Errors;
 using Tangent.Parsing.Partial;
+using Tangent.Parsing.Transformations;
 using Tangent.Parsing.TypeResolved;
 
 namespace Tangent.Parsing
 {
     public static class TypeResolve
     {
+        private static readonly IEnumerable<TransformationRule> typeResolutionRules = new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common };
+
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllPartialTypeDeclarations(IEnumerable<PartialTypeDeclaration> partialTypes, IEnumerable<TypeDeclaration> builtInTypes)
+        {
+            List<TypeDeclaration> types = new List<TypeDeclaration>(builtInTypes);
+            var simpleTypes = partialTypes.Where(ptd => ptd.Takes.All(pp => pp.IsIdentifier));
+            types.AddRange(simpleTypes.Select(ptd => new TypeDeclaration(ptd.Takes.Select(ppp => new PhrasePart(ppp.Identifier)), ptd.Returns)));
+            var leftToProcess = partialTypes.Except(simpleTypes).ToList();
+
+            while (leftToProcess.Any()) {
+                List<PartialTypeDeclaration> removals = new List<PartialTypeDeclaration>();
+
+                foreach (var entry in leftToProcess) {
+                    var resolution = TryPartialTypeDeclaration(entry, types, false);
+                    if (resolution != null) {
+                        if (!resolution.Success) {
+                            return new ResultOrParseError<IEnumerable<TypeDeclaration>>(resolution.Error);
+                        }
+
+                        removals.Add(entry);
+                        types.Add(resolution.Result);
+                    }
+                }
+
+                if (removals.Any()) {
+                    leftToProcess = leftToProcess.Except(removals).ToList();
+                } else {
+                    return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new TypeResolutionErrors(leftToProcess.SelectMany(ptd => ptd.Takes.Where(ppp => !ppp.IsIdentifier).Select(ppp => new BadTypePhrase(ppp.Parameter.Returns, BadTypePhraseReason.Incomprehensible)))));
+                }
+            }
+
+            // Unfortunately, what we resolved mid-way into building types might not be the same thing we resolve now that we have all the types.
+            // Even though it is costly, we will double check and toss if things no longer parse unambiguously.
+            var issues = partialTypes.Except(simpleTypes).Select(pt => TryPartialTypeDeclaration(pt, types, true)).ToList();
+            issues = issues.Where(i => !i.Success).ToList();
+            if (issues.Any()) {
+                return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new AggregateParseError(issues.Select(i => i.Error)));
+            }
+
+            return types;
+        }
+
+        public static ResultOrParseError<TypeDeclaration> TryPartialTypeDeclaration(PartialTypeDeclaration partial, IEnumerable<TypeDeclaration> types, bool hardError)
+        {
+            var scope = Scope.ForTypes(types);
+            List<PhrasePart> takes = new List<PhrasePart>();
+            foreach (var t in partial.Takes) {
+                if (t.IsIdentifier) {
+                    takes.Add(new PhrasePart(t.Identifier));
+                } else {
+                    var input = new Input(t.Parameter.Returns.Select(id => new IdentifierExpression(id, null)), scope);
+                    var interpretResults = input.InterpretTowards(TangentType.Any.Kind);
+                    if (interpretResults.Count == 1) {
+                        takes.Add(new PhrasePart(new ParameterDeclaration(t.Parameter.Takes, interpretResults.Cast<TypeAccessExpression>().First().TypeConstant.Value.Kind)));
+                    } else if (interpretResults.Count == 0) {
+                        // No way to parse things. 
+                        if (!hardError) {
+                            return null;
+                        } else {
+                            return new ResultOrParseError<TypeDeclaration>(new TypeResolutionErrors(new[] { new BadTypePhrase(t.Parameter.Returns, BadTypePhraseReason.Incomprehensible) }));
+                        }
+                    } else {
+                        return new ResultOrParseError<TypeDeclaration>(new TypeResolutionErrors(new[] { new BadTypePhrase(t.Parameter.Returns, BadTypePhraseReason.Ambiguous) }));
+                    }
+                }
+            }
+
+            return new TypeDeclaration(takes, partial.Returns);
+        }
+
         public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types, Dictionary<TangentType, TangentType> conversions)
         {
             var errors = new List<BadTypePhrase>();
@@ -133,7 +204,7 @@ namespace Tangent.Parsing
             var fn = partialFunction.Returns;
             var effectiveType = ResolveType(fn.EffectiveType, types);
             if (!effectiveType.Success) {
-                errors.Add(new BadTypePhrase(fn.EffectiveType));
+                errors.Add(new BadTypePhrase(fn.EffectiveType, BadTypePhraseReason.Incomprehensible));
             }
 
             if (errors.Any()) {
@@ -189,79 +260,52 @@ namespace Tangent.Parsing
 
         internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<Identifier> identifiers, IEnumerable<TypeDeclaration> types)
         {
-            // TODO: fix perf.
-            if (identifiers.First().Value == "~>") {
-                var nested = ResolveType(identifiers.Skip(1), types);
-                if (!nested.Success) {
-                    return nested;
-                }
+            var input = new Input(identifiers, Scope.ForTypes(types), typeResolutionRules);
+            var result = input.InterpretTowards(TangentType.Any.Kind);
+            if (result.Count == 1) {
+                var resolvedType = result[0].EffectiveType;
 
-                return nested.Result.Lazy;
-            } else {
-                List<int> dots = new List<int>();
-                int ix = 0;
-                foreach (var id in identifiers) {
-                    if (id.Value == ".") {
-                        dots.Add(ix);
+                if (resolvedType.ImplementationType == KindOfType.TypeConstant) {
+                    resolvedType = ((TypeConstant)resolvedType).Value;
+
+                    var reference = resolvedType as PartialTypeReference;
+                    if (reference != null) {
+                        return ResolvePlaceholderReference(reference, types);
                     }
 
-                    ix++;
-                }
-
-                if (dots.Count == 1) {
-                    // For now, values can only be a single identifier, so dots needs to be a b c.v
-                    if (dots[0] != ix - 2) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) })); }
-                    var t = ResolveType(identifiers.Take(dots[0]), types);
-                    if (!t.Success) { return t; }
-                    if (t.Result.ImplementationType != KindOfType.Enum) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) })); }
-                    var tenum = t.Result as EnumType;
-                    var v = identifiers.Last().Value;
-                    if (!tenum.Values.Contains(v)) { return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) })); }
-                    return tenum.SingleValueTypeFor(v);
-                } else if (dots.Count > 1) {
-                    return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) }));
-                } // else
-
-                foreach (var type in types) {
-                    var typeIdentifiers = type.Takes;
-                    if (identifiers.SequenceEqual(typeIdentifiers)) {
-                        var reference = type.Returns as PartialTypeReference;
-                        if (reference != null) {
-                            return ResolvePlaceholderReference(reference, types);
-                        }
-
-                        var sum = type.Returns as SumType;
-                        if (sum != null) {
-                            bool replace = false;
-                            List<TangentType> newbs = new List<TangentType>();
-                            foreach (var t in sum.Types) {
-                                var innerReference = t as PartialTypeReference;
-                                if (innerReference != null) {
-                                    replace = true;
-                                    var innerResult = ResolvePlaceholderReference(innerReference, types);
-                                    if (innerResult.Success) {
-                                        newbs.Add(innerResult.Result);
-                                    } else {
-                                        return innerResult;
-                                    }
+                    var sum = resolvedType as SumType;
+                    if (sum != null) {
+                        bool replace = false;
+                        List<TangentType> newbs = new List<TangentType>();
+                        foreach (var t in sum.Types) {
+                            var innerReference = t as PartialTypeReference;
+                            if (innerReference != null) {
+                                replace = true;
+                                var innerResult = ResolvePlaceholderReference(innerReference, types);
+                                if (innerResult.Success) {
+                                    newbs.Add(innerResult.Result);
                                 } else {
-                                    newbs.Add(t);
+                                    return innerResult;
                                 }
-                            }
-
-                            if (replace) {
-                                return SumType.For(newbs);
                             } else {
-                                return sum;
+                                newbs.Add(t);
                             }
                         }
 
-                        return type.Returns;
+                        if (replace) {
+                            return SumType.For(newbs);
+                        } else {
+                            return sum;
+                        }
                     }
-                }
 
-                return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers) }));
+                    return resolvedType;
+                } else {
+                    throw new NotImplementedException();
+                }
             }
+
+            return new ResultOrParseError<TangentType>(new TypeResolutionErrors(new[] { new BadTypePhrase(identifiers, result.Count == 0 ? BadTypePhraseReason.Incomprehensible : BadTypePhraseReason.Ambiguous) }));
         }
 
         private static ResultOrParseError<TangentType> ResolvePlaceholderReference(PartialTypeReference reference, IEnumerable<TypeDeclaration> types)

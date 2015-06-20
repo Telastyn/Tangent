@@ -8,7 +8,15 @@ namespace Tangent.Intermediate
 {
     public class ConstantExpression : Expression
     {
-        public readonly TangentType EffectiveType;
+        private TangentType effectiveType;
+        public override TangentType EffectiveType
+        {
+            get
+            {
+                return effectiveType;
+            }
+        }
+
         public readonly object Value;
 
         public override ExpressionNodeType NodeType
@@ -19,7 +27,7 @@ namespace Tangent.Intermediate
         protected ConstantExpression(TangentType type, object value, LineColumnRange sourceInfo)
             : base(sourceInfo)
         {
-            this.EffectiveType = type;
+            this.effectiveType = type;
             this.Value = value;
         }
     }

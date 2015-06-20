@@ -64,17 +64,6 @@ namespace Tangent.Parsing.UnitTests
         }
 
         [TestMethod]
-        public void ThisDisallowedPath()
-        {
-            var test = "(this) plus (y: int)";
-            var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
-
-            var result = Parse.PartialPhrase(tokens, false);
-
-            Assert.IsFalse(result.Success);
-        }
-
-        [TestMethod]
         public void BasicSymbolPath()
         {
             var test = "(x: int)+(y: int)";

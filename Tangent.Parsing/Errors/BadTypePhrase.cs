@@ -6,13 +6,22 @@ using Tangent.Intermediate;
 
 namespace Tangent.Parsing.Errors
 {
+    public enum BadTypePhraseReason
+    {
+        Unknown,
+        Ambiguous,
+        Incomprehensible
+    }
+
     public class BadTypePhrase
     {
         public readonly IEnumerable<Identifier> TypePhrase;
+        public readonly BadTypePhraseReason Reason;
 
-        public BadTypePhrase(IEnumerable<Identifier> identifiers)
+        public BadTypePhrase(IEnumerable<Identifier> identifiers, BadTypePhraseReason reason)
         {
             TypePhrase = identifiers;
+            Reason = reason;
         }
     }
 }

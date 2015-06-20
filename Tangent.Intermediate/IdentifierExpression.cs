@@ -14,6 +14,11 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.Identifier; }
         }
 
+        public override TangentType EffectiveType
+        {
+            get { return null; }
+        }
+
         public IdentifierExpression(Identifier identifier, LineColumnRange sourceInfo)
             : base(sourceInfo)
         {

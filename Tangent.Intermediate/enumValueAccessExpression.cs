@@ -14,6 +14,11 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.EnumValueAccess; }
         }
 
+        public override TangentType EffectiveType
+        {
+            get { return EnumValue; }
+        }
+
         public EnumValueAccessExpression(SingleValueType svt, LineColumnRange sourceInfo)
             : base(sourceInfo)
         {
