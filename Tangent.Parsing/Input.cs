@@ -23,14 +23,14 @@ namespace Tangent.Parsing
             conversionsTaken = new List<ConversionHistory>();
         }
 
-        public Input(IEnumerable<Expression> exprs, Scope scope) : this(exprs, scope, new List<ConversionHistory>(), new List<TransformationRule>()) { }
+        public Input(IEnumerable<Expression> exprs, Scope scope, IEnumerable<TransformationRule> customTransformations = null) : this(exprs, scope, new List<ConversionHistory>(), customTransformations) { }
 
         private Input(IEnumerable<Expression> exprs, Scope scope, IEnumerable<ConversionHistory> conversionsTaken, IEnumerable<TransformationRule> customTransformations)
         {
             buffer = new List<Expression>(exprs);
             Scope = scope;
             this.conversionsTaken = new List<ConversionHistory>(conversionsTaken);
-            this.customTransformations = customTransformations;
+            this.customTransformations = customTransformations ?? Enumerable.Empty<TransformationRule>();
         }
 
         public List<Expression> InterpretAsStatement()
@@ -43,7 +43,7 @@ namespace Tangent.Parsing
             if (buffer.Count == 1) {
                 if (type == buffer[0].EffectiveType) {
                     return buffer;
-                } else if (type == TangentType.Any.Kind && (buffer[0].EffectiveType is KindType || buffer[0].EffectiveType is TypeConstant)) {
+                } else if (type == TangentType.Any.Kind && (buffer[0].EffectiveType is KindType || buffer[0].EffectiveType is TypeConstant || buffer[0].EffectiveType is GenericArgumentReferenceType)) {
                     // mild hack since there's no subtyping yet.
                     return buffer;
                 }
@@ -82,6 +82,11 @@ namespace Tangent.Parsing
                 if (result != null) {
                     yield return new List<List<Expression>>() { buffer.Take(ix).Concat(new[] { result.ReplacesWith }).Concat(subBuffer.Skip(result.Takes)).ToList() };
                 }
+            }
+
+            // generic param
+            foreach (IGrouping<int, ParameterDeclaration> genericTier in Scope.GenericArguments.Where(pd => IsMatch(subBuffer, pd.Takes.Select(id => new PhrasePart(id)).ToList())).GroupBy(pd => pd.Takes.Count).OrderByDescending(grp => grp.Key)) {
+                yield return genericTier.Select(pd => buffer.Take(ix).Concat(new[] { new GenericParameterAccessExpression(pd, buffer[ix].SourceInfo) }).Concat(buffer.Skip(ix + pd.Takes.Count)).ToList()).ToList();
             }
 
             // param
@@ -191,7 +196,9 @@ namespace Tangent.Parsing
                     }
                 } else {
                     var inType = inputEnum.Current.EffectiveType;
-                    if (inType == null || (inType != entry.Parameter.Returns && inType != TangentType.PotentiallyAnything)) {
+                    if (inType != null && entry.Parameter.Returns == TangentType.Any.Kind && (inType.ImplementationType == KindOfType.Kind || inType.ImplementationType == KindOfType.TypeConstant || inType.ImplementationType == KindOfType.GenericReference)) {
+                        // good.
+                    }else if (inType == null || (inType != entry.Parameter.Returns && inType != TangentType.PotentiallyAnything)) {
                         return false;
                     }
                 }

@@ -15,6 +15,7 @@ namespace Tangent.Intermediate
         Sum,
         Kind,
         TypeConstant,
+        GenericReference,
         Placeholder
     }
 

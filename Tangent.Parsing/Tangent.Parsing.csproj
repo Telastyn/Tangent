@@ -44,7 +44,6 @@
   <ItemGroup>
     <Compile Include="ConversionHistory.cs" />
     <Compile Include="Errors\AggregateParseError.cs" />
-    <Compile Include="Errors\BadTypePhrase.cs" />
     <Compile Include="Errors\AmbiguousStatementError.cs" />
     <Compile Include="Errors\ExpectedLiteralParseError.cs" />
     <Compile Include="Errors\ExpectedTokenParseError.cs" />
@@ -73,7 +72,6 @@
     <Compile Include="Errors\ResultOrParseError.cs" />
     <Compile Include="Scope.cs" />
     <Compile Include="Errors\StatementGrokErrors.cs" />
-    <Compile Include="Errors\TypeResolutionErrors.cs" />
     <Compile Include="TransformationResult.cs" />
     <Compile Include="TransformationRule.cs" />
     <Compile Include="Transformations\LazyOperator.cs" />

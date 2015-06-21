@@ -6,10 +6,10 @@ using Tangent.Intermediate;
 
 namespace Tangent.Parsing.Partial
 {
-    public class PartialParameterDeclaration : ReductionRule<Identifier, List<Identifier>>
+    public class PartialParameterDeclaration : ReductionRule<Identifier, List<IdentifierExpression>>
     {
-        public PartialParameterDeclaration(Identifier takes, List<Identifier> returns) : this(new[] { takes }, returns) { }
-        public PartialParameterDeclaration(IEnumerable<Identifier> takes, List<Identifier> returns) : base(takes, returns) { }
+        public PartialParameterDeclaration(Identifier takes, List<IdentifierExpression> returns) : this(new[] { takes }, returns) { }
+        public PartialParameterDeclaration(IEnumerable<Identifier> takes, List<IdentifierExpression> returns) : base(takes, returns) { }
 
         public override string SeparatorToken
         {
@@ -20,7 +20,7 @@ namespace Tangent.Parsing.Partial
         {
             get
             {
-                return this.Takes.Count == 1 && this.Takes.First().Value == "this" && this.Returns.Count == 1 && this.Returns.First().Value == "this";
+                return this.Takes.Count == 1 && this.Takes.First().Value == "this" && this.Returns.Count == 1 && this.Returns.First().Identifier.Value == "this";
             }
         }
     }

@@ -19,7 +19,8 @@ namespace Tangent.Intermediate
         EnumValueAccess = 9,
         EnumWidening = 10,
         ParenExpr = 11,
-        CtorParamAccess = 12 
+        CtorParamAccess = 12,
+        GenericParameterAccess = 13
     }
 
     public abstract class Expression

@@ -9,12 +9,14 @@ namespace Tangent.Parsing.Partial
 {
     public class PartialTypeReference : PlaceholderType
     {
-        public IEnumerable<Identifier> Identifiers;
+        public readonly IEnumerable<IdentifierExpression> Identifiers;
+        public readonly IEnumerable<PartialParameterDeclaration> GenericArgumentPlaceholders;
         public TangentType ResolvedType = null;
 
-        public PartialTypeReference(IEnumerable<Identifier> parts)
+        public PartialTypeReference(IEnumerable<IdentifierExpression> parts, IEnumerable<PartialParameterDeclaration> genericArgs)
         {
-            Identifiers = new List<Identifier>(parts);
+            Identifiers = new List<IdentifierExpression>(parts);
+            GenericArgumentPlaceholders = genericArgs;
         }
     }
 }

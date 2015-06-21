@@ -31,7 +31,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual("x", x.Parameter.Takes.First().Value);
             Assert.AreEqual(1, x.Parameter.Takes.Count);
             Assert.AreEqual(1, x.Parameter.Returns.Count);
-            Assert.AreEqual("int", x.Parameter.Returns[0]);
+            Assert.AreEqual("int", x.Parameter.Returns[0].Identifier.Value);
 
             Assert.AreEqual("plus", plus.Identifier.Value);
         }
@@ -58,7 +58,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual("this", x.Parameter.Takes.First().Value);
             Assert.AreEqual(1, x.Parameter.Takes.Count);
             Assert.AreEqual(1, x.Parameter.Returns.Count);
-            Assert.AreEqual("this", x.Parameter.Returns[0]);
+            Assert.AreEqual("this", x.Parameter.Returns[0].Identifier.Value);
 
             Assert.AreEqual("plus", plus.Identifier.Value);
         }
@@ -85,7 +85,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual("x", x.Parameter.Takes.First().Value);
             Assert.AreEqual(1, x.Parameter.Takes.Count);
             Assert.AreEqual(1, x.Parameter.Returns.Count);
-            Assert.AreEqual("int", x.Parameter.Returns[0]);
+            Assert.AreEqual("int", x.Parameter.Returns[0].Identifier.Value);
 
             Assert.AreEqual("+", plus.Identifier.Value);
         }
@@ -147,7 +147,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.IsTrue(new[] { "x", "y", "z" }.SequenceEqual(x.Parameter.Takes.Select(id => id.Value)));
 
             Assert.AreEqual(2, x.Parameter.Returns.Count);
-            Assert.IsTrue(new[] { "unsigned", "int" }.SequenceEqual(x.Parameter.Returns.Select(id => id.Value)));
+            Assert.IsTrue(new[] { "unsigned", "int" }.SequenceEqual(x.Parameter.Returns.Select(id => id.Identifier.Value)));
         }
     }
 }

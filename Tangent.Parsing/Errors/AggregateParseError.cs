@@ -13,5 +13,15 @@ namespace Tangent.Parsing.Errors
         {
             Errors = errors;
         }
+
+        public AggregateParseError Concat(ParseError error)
+        {
+            var agg = error as AggregateParseError;
+            if (agg != null) {
+                return new AggregateParseError(Errors.Concat(agg.Errors));
+            }
+
+            return new AggregateParseError(Errors.Concat(new[] { error }));
+        }
     }
 }
