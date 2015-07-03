@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,10 +10,17 @@ namespace Tangent.Intermediate
     public class GenericInferencePlaceholder : TangentType
     {
         public readonly ParameterDeclaration GenericArgument;
-        public GenericInferencePlaceholder(ParameterDeclaration genericArg)
+        private GenericInferencePlaceholder(ParameterDeclaration genericArg)
             : base(KindOfType.InferencePoint)
         {
             GenericArgument = genericArg;
+        }
+
+        private static readonly ConcurrentDictionary<ParameterDeclaration, GenericInferencePlaceholder> cache = new ConcurrentDictionary<ParameterDeclaration, GenericInferencePlaceholder>();
+
+        public static GenericInferencePlaceholder For(ParameterDeclaration genericArg)
+        {
+            return cache.GetOrAdd(genericArg, pd => new GenericInferencePlaceholder(pd));
         }
 
         public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)

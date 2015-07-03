@@ -138,7 +138,7 @@ namespace Tangent.Parsing
                     if (phrase.All(pp => !pp.IsIdentifier)) { return new ExpectedTokenParseError(TokenIdentifier.Identifier, separator); }
                     if (phrase.Any(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.Takes.First() == "this")) { return new ThisAsGeneric(); }
 
-                    var typeDecl = Type(tokens, phrase.Where(ppp=>!ppp.IsIdentifier).Select(ppp=>ppp.Parameter));
+                    var typeDecl = Type(tokens, phrase.Where(ppp => !ppp.IsIdentifier).Select(ppp => ppp.Parameter));
                     if (!typeDecl.Success) {
                         return typeDecl.Error;
                     }
@@ -277,7 +277,7 @@ namespace Tangent.Parsing
                     if (possibleColon != null && possibleColon.Value == ")") {
                         // Something like List(T) - return null as the type info.
                         tokens.RemoveAt(0);
-                        return new ResultOrParseError<PartialPhrasePart>(new PartialPhrasePart(new PartialParameterDeclaration(paramName.Select(p=>p.Identifier), null)));
+                        return new ResultOrParseError<PartialPhrasePart>(new PartialPhrasePart(new PartialParameterDeclaration(paramName.Select(p => p.Identifier), null)));
                     }
 
                     if (possibleColon == null || possibleColon.Value != ":") {
@@ -295,7 +295,7 @@ namespace Tangent.Parsing
                         throw new NotImplementedException("sorry, non-identifier/symbols in type expressions is not currently supported.");
                     }
 
-                    return new PartialPhrasePart(new PartialParameterDeclaration(paramName.Select(p => p.Identifier), typeName.Result.Select(pe=>new IdentifierExpression(((IdentifierElement)pe).Identifier, pe.SourceInfo)).ToList()));
+                    return new PartialPhrasePart(new PartialParameterDeclaration(paramName.Select(p => p.Identifier), typeName.Result.Select(pe => new IdentifierExpression(((IdentifierElement)pe).Identifier, pe.SourceInfo)).ToList()));
                 }
             }
 
@@ -388,14 +388,14 @@ namespace Tangent.Parsing
             }
 
             if (phrasePart.Result.All(pp => pp.IsIdentifier) && (!tokens.Any() || tokens[0].Value != "{")) {
-                return new PartialTypeReference(phrasePart.Result.Select(pp=>new IdentifierExpression(pp.Identifier,null)), genericArgs);
+                return new PartialTypeReference(phrasePart.Result.Select(pp => new IdentifierExpression(pp.Identifier, null)), genericArgs);
             }
 
             if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens)) {
                 return new ResultOrParseError<TangentType>(new ExpectedLiteralParseError("{", tokens.FirstOrDefault()));
             }
 
-            var result = new PartialProductType(phrasePart.Result, Enumerable.Empty<PartialReductionDeclaration>());
+            var result = new PartialProductType(phrasePart.Result, Enumerable.Empty<PartialReductionDeclaration>(), genericArgs);
 
             while (tokens.Any() && tokens.First().Value != "}") {
                 var error = ParseDeclaration(tokens, null, result.Functions, result);

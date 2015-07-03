@@ -101,8 +101,12 @@ namespace Tangent.Parsing
 
             // type
             foreach (IGrouping<int, TypeDeclaration> typeTier in Scope.Types.Where(td => IsMatch(buffer.Skip(ix).ToList(), td.Takes)).GroupBy(td => td.Takes.Count).OrderByDescending(grp => grp.Key)) {
-                // TODO: bound generic types.
-                yield return typeTier.Select(td => buffer.Take(ix).Concat(new[] { new TypeAccessExpression(td.Returns.TypeConstant, buffer[ix].SourceInfo) }).Concat(buffer.Skip(ix + td.Takes.Count)).ToList()).ToList();
+                yield return typeTier.Select(td => buffer.Take(ix).Concat(new[] { new TypeAccessExpression(
+                    (
+                        td.IsGeneric?
+                        BoundGenericType.For(td, buffer.Skip(ix).Where(expr=>!(expr is IdentifierExpression)).Take(td.Takes.Where(pp=>!pp.IsIdentifier).Count()).Select(expr=>expr.EffectiveType)) :
+                        td.Returns
+                    ).TypeConstant, buffer[ix].SourceInfo) }).Concat(buffer.Skip(ix + td.Takes.Count)).ToList()).ToList();
             }
 
             // concrete fn

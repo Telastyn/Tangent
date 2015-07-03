@@ -40,14 +40,14 @@ namespace Tangent.Parsing
                 if (removals.Any()) {
                     leftToProcess = leftToProcess.Except(removals).ToList();
                 } else {
-                    return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new AggregateParseError(leftToProcess.SelectMany(ptd=>ptd.Takes.Where(ppp=>!ppp.IsIdentifier).Select(ppp=> new IncomprehensibleStatementError(ppp.Parameter.Returns)))));
+                    return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new AggregateParseError(leftToProcess.SelectMany(ptd => ptd.Takes.Where(ppp => !ppp.IsIdentifier).Select(ppp => new IncomprehensibleStatementError(ppp.Parameter.Returns)))));
                 }
             }
 
             // Unfortunately, what we resolved mid-way into building types might not be the same thing we resolve now that we have all the types.
             // Even though it is costly, we will double check and toss if things no longer parse unambiguously.
             var genericTypes = partialTypes.Except(simpleTypes).Select(pt => Tuple.Create(pt, TryPartialTypeDeclaration(pt, types, true))).ToList();
-            var issues = genericTypes.Where(i => !i.Item2.Success).Select(i=>i.Item2).ToList();
+            var issues = genericTypes.Where(i => !i.Item2.Success).Select(i => i.Item2).ToList();
             if (issues.Any()) {
                 return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new AggregateParseError(issues.Select(i => i.Error)));
             }
@@ -65,7 +65,7 @@ namespace Tangent.Parsing
 
         public static ResultOrParseError<TypeDeclaration> TryPartialTypeDeclaration(PartialTypeDeclaration partial, IEnumerable<TypeDeclaration> types, bool hardError)
         {
-            var scope = Scope.ForTypes(types,Enumerable.Empty<ParameterDeclaration>());
+            var scope = Scope.ForTypes(types, Enumerable.Empty<ParameterDeclaration>());
             List<PhrasePart> takes = new List<PhrasePart>();
             foreach (var t in partial.Takes) {
                 if (t.IsIdentifier) {
@@ -151,14 +151,15 @@ namespace Tangent.Parsing
 
             foreach (var entry in inNeedOfPopulation) {
                 if (entry.Key is PartialProductType) {
-                    var resolvedType = PartialProductType((PartialProductType)entry.Key, (ProductType)entry.Value, newLookup);
+                    var ppt = (PartialProductType)entry.Key;
+                    var resolvedType = PartialProductType(ppt, (ProductType)entry.Value, newLookup, ppt.GenericArguments.Select(ppd => genericArgumentMapping[ppd]));
                     if (!resolvedType.Success) {
                         errors = errors.Concat(resolvedType.Error);
                     }
                 } else if (entry.Key is PartialTypeReference) {
                     var reference = (PartialTypeReference)entry.Key;
                     references.Add(reference);
-                    var resolvedType = ResolveType(reference.Identifiers, newLookup, reference.GenericArgumentPlaceholders.Select(ppd=>genericArgumentMapping[ppd]));
+                    var resolvedType = ResolveType(reference.Identifiers, newLookup, reference.GenericArgumentPlaceholders.Select(ppd => genericArgumentMapping[ppd]));
                     if (resolvedType.Success) {
                         reference.ResolvedType = resolvedType.Result;
                     } else {
@@ -224,12 +225,12 @@ namespace Tangent.Parsing
             return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType.Result, fn.Implementation, scope)));
         }
 
-        internal static ResultOrParseError<ProductType> PartialProductType(PartialProductType partialType, ProductType target, IEnumerable<TypeDeclaration> types)
+        internal static ResultOrParseError<ProductType> PartialProductType(PartialProductType partialType, ProductType target, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
         {
             var errors = new AggregateParseError(Enumerable.Empty<ParseError>());
 
             foreach (var part in partialType.DataConstructorParts) {
-                var resolved = Resolve(part, types);
+                var resolved = Resolve(part, types, genericArguments);
                 if (resolved.Success) {
                     target.DataConstructorParts.Add(resolved.Result);
                 } else {
@@ -244,13 +245,13 @@ namespace Tangent.Parsing
             return target;
         }
 
-        internal static ResultOrParseError<PhrasePart> Resolve(PartialPhrasePart partial, IEnumerable<TypeDeclaration> types)
+        internal static ResultOrParseError<PhrasePart> Resolve(PartialPhrasePart partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
         {
             if (partial.IsIdentifier) {
                 return new PhrasePart(partial.Identifier);
             }
 
-            var resolved = Resolve(partial.Parameter, types);
+            var resolved = Resolve(partial.Parameter, types, ctorGenericArguments);
             if (resolved.Success) {
                 return new ResultOrParseError<PhrasePart>(new PhrasePart(resolved.Result));
             } else {
@@ -258,14 +259,14 @@ namespace Tangent.Parsing
             }
         }
 
-        internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types)
+        internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
         {
-            var type = ResolveType(partial.Returns, types, Enumerable.Empty<ParameterDeclaration>());
+            var type = ResolveType(partial.Returns, types, ctorGenericArguments ?? Enumerable.Empty<ParameterDeclaration>());
             if (!type.Success) {
                 return new ResultOrParseError<ParameterDeclaration>(type.Error);
             }
 
-            return new ParameterDeclaration(partial.Takes, type.Result);
+            return new ParameterDeclaration(partial.Takes, ctorGenericArguments == null ? type.Result : ConvertGenericReferencesToInferences(type.Result));
         }
 
         internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<IdentifierExpression> identifiers, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
@@ -310,7 +311,7 @@ namespace Tangent.Parsing
                     }
 
                     return resolvedType;
-                }else if(resolvedType.ImplementationType == KindOfType.GenericReference){
+                } else if (resolvedType.ImplementationType == KindOfType.GenericReference) {
                     // some type reference. Just go with it?
                     return resolvedType;
                 } else {
@@ -337,6 +338,35 @@ namespace Tangent.Parsing
             }
 
             return reference.ResolvedType;
+        }
+
+        private static TangentType ConvertGenericReferencesToInferences(TangentType input)
+        {
+            switch (input.ImplementationType) {
+                case KindOfType.BoundGeneric:
+                    var boundGeneric = input as BoundGenericType;
+                    return BoundGenericType.For(boundGeneric.GenericTypeDeclatation, boundGeneric.TypeArguments.Select(ta => ConvertGenericReferencesToInferences(ta)));
+                case KindOfType.Builtin:
+                case KindOfType.Enum:
+                case KindOfType.SingleValue:
+                case KindOfType.InferencePoint:
+                case KindOfType.Placeholder:
+                case KindOfType.Product:
+                case KindOfType.Sum:
+                    return input;
+                case KindOfType.GenericReference:
+                    var genref = input as GenericArgumentReferenceType;
+                    return GenericInferencePlaceholder.For(genref.GenericParameter);
+                case KindOfType.Kind:
+                    var kind = input as KindType;
+                    return ConvertGenericReferencesToInferences(kind.KindOf).Kind;
+                case KindOfType.Lazy:
+                    var lazy = input as LazyType;
+                    return ConvertGenericReferencesToInferences(lazy.Type).Lazy;
+                default:
+                    throw new NotImplementedException();
+
+            }
         }
     }
 }

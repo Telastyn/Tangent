@@ -30,7 +30,7 @@ namespace Tangent.Intermediate
             }
         }
 
-        public BoundGenericType(TypeDeclaration genericTypeDecl, IEnumerable<TangentType> arguments)
+        private BoundGenericType(TypeDeclaration genericTypeDecl, IEnumerable<TangentType> arguments)
             : base(KindOfType.BoundGeneric)
         {
             if (!genericTypeDecl.IsGeneric) { throw new InvalidOperationException(string.Format("Specified generic type '{0}' isn't generic.", genericTypeDecl)); }
@@ -38,6 +38,27 @@ namespace Tangent.Intermediate
 
             GenericTypeDeclatation = genericTypeDecl;
             TypeArguments = arguments;
+        }
+
+        private static readonly Dictionary<TypeDeclaration, Dictionary<IEnumerable<TangentType>, BoundGenericType>> cache = new Dictionary<TypeDeclaration, Dictionary<IEnumerable<TangentType>, BoundGenericType>>();
+
+        public static BoundGenericType For(TypeDeclaration genericTypeDecl, IEnumerable<TangentType> arguments)
+        {
+            lock (cache) {
+                if (!cache.ContainsKey(genericTypeDecl)) {
+                    cache.Add(genericTypeDecl, new Dictionary<IEnumerable<TangentType>, BoundGenericType>());
+                }
+
+                foreach (var concreteVersion in cache[genericTypeDecl]) {
+                    if (arguments.SequenceEqual(concreteVersion.Key)) {
+                        return concreteVersion.Value;
+                    }
+                }
+
+                var result = new BoundGenericType(genericTypeDecl, arguments);
+                cache[genericTypeDecl].Add(arguments, result);
+                return result;
+            }
         }
 
         public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
