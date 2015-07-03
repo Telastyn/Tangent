@@ -20,6 +20,16 @@ namespace Tangent.Intermediate
             return GetBoundTypeFor(refType.GenericParameter);
         }
 
+        private TangentType concreteType = null;
+        public TangentType ConcreteType
+        {
+            get
+            {
+                concreteType = concreteType ?? GenericTypeDeclatation.Returns.ResolveGenericReferences(GetBoundTypeFor);
+                return concreteType;
+            }
+        }
+
         private Dictionary<ParameterDeclaration, TangentType> bindingStore = null;
         private Dictionary<ParameterDeclaration, TangentType> BindingStore
         {
@@ -79,6 +89,11 @@ namespace Tangent.Intermediate
             }
 
             return true;
+        }
+
+        public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return BoundGenericType.For(this.GenericTypeDeclatation, this.TypeArguments.Select(ta => ta.ResolveGenericReferences(mapping)));
         }
     }
 }

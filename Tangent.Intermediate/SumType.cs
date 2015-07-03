@@ -72,5 +72,10 @@ namespace Tangent.Intermediate
             //necessaryTypeInferences.Add(leftoverInference.GenericArgument, otherMatch);
             //return true;
         }
+
+        public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return SumType.For(this.Types.Select(t => t.ResolveGenericReferences(mapping)));
+        }
     }
 }

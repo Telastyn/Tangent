@@ -44,5 +44,10 @@ namespace Tangent.Intermediate
         {
             return this == other;
         }
+
+        public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return this;
+        }
     }
 }

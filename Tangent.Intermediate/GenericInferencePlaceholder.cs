@@ -39,5 +39,11 @@ namespace Tangent.Intermediate
             necessaryTypeInferences.Add(GenericArgument, other);
             return true;
         }
+
+        public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            // Nothing?
+            return this;
+        }
     }
 }

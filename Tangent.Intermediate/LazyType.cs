@@ -22,5 +22,10 @@ namespace Tangent.Intermediate
             if (lazyOther == null) { return false; }
             return this.Type.CompatibilityMatches(lazyOther.Type, necessaryTypeInferences);
         }
+
+        public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return this.Type.ResolveGenericReferences(mapping).Lazy;
+        }
     }
 }

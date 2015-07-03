@@ -67,6 +67,11 @@ namespace Tangent.Intermediate
             return this == other;
         }
 
+        public virtual TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return this;
+        }
+
         public static readonly TangentType Void = new TangentType(KindOfType.Builtin);
         public static readonly TangentType String = new TangentType(KindOfType.Builtin);
         public static readonly TangentType Int = new TangentType(KindOfType.Builtin);

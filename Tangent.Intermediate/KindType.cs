@@ -22,5 +22,10 @@ namespace Tangent.Intermediate
             if (kindOther == null) { return false; }
             return this.KindOf.CompatibilityMatches(kindOther.KindOf, necessaryTypeInferences);
         }
+
+        public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return this.KindOf.ResolveGenericReferences(mapping).Kind;
+        }
     }
 }
