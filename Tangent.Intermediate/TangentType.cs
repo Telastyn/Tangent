@@ -16,6 +16,8 @@ namespace Tangent.Intermediate
         Kind,
         TypeConstant,
         GenericReference,
+        BoundGeneric,
+        InferencePoint,
         Placeholder
     }
 
@@ -58,6 +60,11 @@ namespace Tangent.Intermediate
                 constant = constant ?? new TypeConstant(this);
                 return constant;
             }
+        }
+
+        public virtual bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
+        {
+            return this == other;
         }
 
         public static readonly TangentType Void = new TangentType(KindOfType.Builtin);

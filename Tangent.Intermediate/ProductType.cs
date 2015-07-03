@@ -15,5 +15,10 @@ namespace Tangent.Intermediate
         {
             this.DataConstructorParts = new List<PhrasePart>(dataConstructorParts);
         }
+
+        public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
+        {
+            return this == other;
+        }
     }
 }

@@ -26,5 +26,10 @@ namespace Tangent.Intermediate
             Value = value;
             NumericEquivalent = numeric;
         }
+
+        public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
+        {
+            return this == other;
+        }
     }
 }

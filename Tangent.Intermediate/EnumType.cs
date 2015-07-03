@@ -39,5 +39,10 @@ namespace Tangent.Intermediate
 
             throw new InvalidOperationException();
         }
+
+        public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
+        {
+            return this == other;
+        }
     }
 }

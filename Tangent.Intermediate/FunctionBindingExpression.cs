@@ -8,6 +8,7 @@ namespace Tangent.Intermediate
     public class FunctionBindingExpression : Expression
     {
         public readonly IEnumerable<Expression> Parameters;
+        public readonly IEnumerable<TangentType> GenericParameters;
         public readonly ReductionDeclaration FunctionDefinition;
 
         public override ExpressionNodeType NodeType
@@ -24,9 +25,16 @@ namespace Tangent.Intermediate
         }
 
         public FunctionBindingExpression(ReductionDeclaration function, IEnumerable<Expression> parameters, LineColumnRange sourceInfo)
-            : base(sourceInfo)
+            : this(function,parameters,Enumerable.Empty<TangentType>(), sourceInfo)
         {
+        }
+
+        public FunctionBindingExpression(ReductionDeclaration function, IEnumerable<Expression> parameters, IEnumerable<TangentType> genericParameters, LineColumnRange sourceInfo):base(sourceInfo)
+        {
+            if (function.GenericParameters.Count() != genericParameters.Count()) { throw new InvalidOperationException("Generic parameter and argument mismatch in Function Binding."); }
+
             Parameters = parameters.ToList();
+            GenericParameters = genericParameters.ToList();
             FunctionDefinition = function;
         }
 

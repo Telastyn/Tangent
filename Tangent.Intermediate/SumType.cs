@@ -50,5 +50,27 @@ namespace Tangent.Intermediate
 
             return result;
         }
+
+        public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
+        {
+            if (this == other) { return true; }
+
+            return false;
+            
+            // RMS: right now, there's no anonymous sum types in parameters, so they can't be matched. Leaving this here in case they might.
+
+            //var otherSum = other as SumType;
+            //if (otherSum == null) { return false; }
+            //if (this.types.Count != otherSum.types.Count) { return false; }
+            //var leftOvers = this.Types.Except(otherSum.Types);
+            //if (!leftOvers.Any()) { return false; }
+            //if (!leftOvers.All(tt => tt.ImplementationType == KindOfType.InferencePoint)) { return false; }
+            //if (leftOvers.Skip(1).Any()) { throw new InvalidOperationException("Trying to infer a sum type with multiple inference points."); }
+
+            //var otherMatch = otherSum.Types.Except(this.Types).First();
+            //var leftoverInference = leftOvers.First() as GenericInferencePlaceholder;
+            //necessaryTypeInferences.Add(leftoverInference.GenericArgument, otherMatch);
+            //return true;
+        }
     }
 }

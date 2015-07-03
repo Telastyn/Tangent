@@ -14,5 +14,13 @@ namespace Tangent.Intermediate
         {
             KindOf = kindof;
         }
+
+        public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
+        {
+            if (this == other) { return true; }
+            var kindOther = other as KindType;
+            if (kindOther == null) { return false; }
+            return this.KindOf.CompatibilityMatches(kindOther.KindOf, necessaryTypeInferences);
+        }
     }
 }

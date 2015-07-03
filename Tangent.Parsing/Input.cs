@@ -101,18 +101,27 @@ namespace Tangent.Parsing
 
             // type
             foreach (IGrouping<int, TypeDeclaration> typeTier in Scope.Types.Where(td => IsMatch(buffer.Skip(ix).ToList(), td.Takes)).GroupBy(td => td.Takes.Count).OrderByDescending(grp => grp.Key)) {
+                // TODO: bound generic types.
                 yield return typeTier.Select(td => buffer.Take(ix).Concat(new[] { new TypeAccessExpression(td.Returns.TypeConstant, buffer[ix].SourceInfo) }).Concat(buffer.Skip(ix + td.Takes.Count)).ToList()).ToList();
             }
 
-            // fn
-            var legalFunctions = Scope.Functions.Where(fn => IsMatch(subBuffer, fn.Takes) && !(fn.IsConversion && conversionsTaken.Contains(new ConversionHistory(fn,buffer.Count,ix)))).ToList();
+            // concrete fn
+            var legalFunctionTypeInferences = new Dictionary<ReductionDeclaration, Dictionary<ParameterDeclaration, TangentType>>();
+            var legalFunctions = Scope.Functions.Where(fn => !(fn.IsConversion && conversionsTaken.Contains(new ConversionHistory(fn, buffer.Count, ix)))).ToList();
+            foreach (var fn in legalFunctions) {
+                legalFunctionTypeInferences.Add(fn, new Dictionary<ParameterDeclaration, TangentType>());
+            }
+
+            legalFunctions = legalFunctions.Where(fn => IsMatch(buffer.Skip(ix).ToList(), fn.Takes, legalFunctionTypeInferences[fn])).ToList();
+
             while (legalFunctions.Any()) {
                 var candidates = PopBestCandidates(legalFunctions);
                 var pool = new List<List<Expression>>();
                 foreach (var candidate in candidates) {
                     var bindings = PermutateParenBindings(
                         candidate.Takes.Where(t => !t.IsIdentifier).ToList(),
-                        buffer.Skip(ix).Take(candidate.Takes.Count).Where(p => p.NodeType != ExpressionNodeType.Identifier).ToList());
+                        buffer.Skip(ix).Take(candidate.Takes.Count).Where(p => p.NodeType != ExpressionNodeType.Identifier).ToList(),
+                        legalFunctionTypeInferences[candidate]);
 
                     foreach (var paramSet in bindings) {
                         pool.Add(buffer.Take(ix).Concat(new[] { new FunctionBindingExpression(candidate, paramSet, LineColumnRange.Combine(buffer[ix].SourceInfo, paramSet.Select(ps => ps.SourceInfo))) }).Concat(buffer.Skip(ix + candidate.Takes.Count)).ToList());
@@ -182,9 +191,9 @@ namespace Tangent.Parsing
             //}
         }
 
-
-        public static bool IsMatch(List<Expression> input, List<PhrasePart> rule)
+        public static bool IsMatch(List<Expression> input, List<PhrasePart> rule, Dictionary<ParameterDeclaration, TangentType> neededGenericInferences = null)
         {
+            neededGenericInferences = neededGenericInferences ?? new Dictionary<ParameterDeclaration, TangentType>();
             if (input.Count < rule.Count) { return false; }
             var inputEnum = input.GetEnumerator();
             foreach (var entry in rule) {
@@ -196,9 +205,12 @@ namespace Tangent.Parsing
                     }
                 } else {
                     var inType = inputEnum.Current.EffectiveType;
-                    if (inType != null && entry.Parameter.Returns == TangentType.Any.Kind && (inType.ImplementationType == KindOfType.Kind || inType.ImplementationType == KindOfType.TypeConstant || inType.ImplementationType == KindOfType.GenericReference)) {
+                    if (inType == null) { return false; }
+                    if (entry.Parameter.Returns == TangentType.Any.Kind && (inType.ImplementationType == KindOfType.Kind || inType.ImplementationType == KindOfType.TypeConstant || inType.ImplementationType == KindOfType.GenericReference)) {
                         // good.
-                    }else if (inType == null || (inType != entry.Parameter.Returns && inType != TangentType.PotentiallyAnything)) {
+                    } else if (inType == TangentType.PotentiallyAnything) {
+                        // good.
+                    } else if (!entry.Parameter.Returns.CompatibilityMatches(inType, neededGenericInferences)) {
                         return false;
                     }
                 }
@@ -285,7 +297,7 @@ namespace Tangent.Parsing
         }
 
 
-        private IEnumerable<List<Expression>> PermutateParenBindings(List<PhrasePart> parameters, List<Expression> arguments)
+        private IEnumerable<List<Expression>> PermutateParenBindings(List<PhrasePart> parameters, List<Expression> arguments, Dictionary<ParameterDeclaration, TangentType> typeInferences)
         {
             if (!arguments.Any(arg => arg.NodeType == ExpressionNodeType.ParenExpr)) { yield return arguments; yield break; }
             List<List<Expression>> potentials = arguments.Select((arg, ix) => arg.NodeType != ExpressionNodeType.ParenExpr ? new List<Expression>() { arg } : GetParenCandidates(parameters[ix], arg)).ToList();
@@ -308,6 +320,38 @@ namespace Tangent.Parsing
         {
             var parenExpr = arg as ParenExpression;
             return parenExpr.TryResolve(Scope, phrasePart.Parameter.Returns).ToList();
+        }
+
+        private FunctionBindingExpression InferGenerics(ReductionDeclaration candidate, List<Expression> paramSet, LineColumnRange sourceInfo)
+        {
+            Dictionary<ParameterDeclaration, TangentType> inferences = new Dictionary<ParameterDeclaration, TangentType>();
+            foreach (var pair in candidate.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).Zip(paramSet, (p, expr) => Tuple.Create(p, expr))) {
+                Infer(pair.Item1.Returns, pair.Item2.EffectiveType, inferences);
+            }
+
+            if (!candidate.GenericParameters.All(p => inferences.ContainsKey(p))) { return null; }
+            return new FunctionBindingExpression(candidate, paramSet, candidate.GenericParameters.Select(p => inferences[p]).ToList(), sourceInfo);
+        }
+
+        private static void Infer(TangentType parameterType, TangentType effectiveType, Dictionary<ParameterDeclaration, TangentType> results)
+        {
+            if (parameterType.ImplementationType == KindOfType.InferencePoint) {
+                GenericInferencePlaceholder placeholder = parameterType as GenericInferencePlaceholder;
+                results.Add(placeholder.GenericArgument, effectiveType);
+                return;
+            }
+
+            if (parameterType.ImplementationType == KindOfType.BoundGeneric && effectiveType.ImplementationType == KindOfType.BoundGeneric) {
+                BoundGenericType boundParam = parameterType as BoundGenericType;
+                BoundGenericType boundArg = effectiveType as BoundGenericType;
+                if (boundParam.GenericTypeDeclatation == boundArg.GenericTypeDeclatation) {
+                    foreach (var pair in boundParam.TypeArguments.Zip(boundArg.TypeArguments, (p, a) => Tuple.Create(p, a))) {
+                        Infer(pair.Item1, pair.Item2, results);
+                    }
+                }
+            }
+
+            // else, not generic, no inference needed.
         }
     }
 }

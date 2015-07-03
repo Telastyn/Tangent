@@ -9,7 +9,15 @@ namespace Tangent.Intermediate
     {
         public ReductionDeclaration(Identifier takes, Function returns) : this(new[] { new PhrasePart(takes) }, returns) { }
         public ReductionDeclaration(PhrasePart takes, Function returns) : this(new[] { takes }, returns) { }
-        public ReductionDeclaration(IEnumerable<PhrasePart> takes, Function returns) : base(takes, returns) { }
+        public ReductionDeclaration(IEnumerable<PhrasePart> takes, Function returns) : this(takes, returns, Enumerable.Empty<ParameterDeclaration>()) { }
+        public ReductionDeclaration(IEnumerable<PhrasePart> takes, Function returns, IEnumerable<ParameterDeclaration> genericParameters)
+            : base(takes, returns)
+        {
+            if (!genericParameters.All(pd => pd.Returns.ImplementationType == KindOfType.Kind)) { throw new InvalidOperationException("Generic arguments to functions must have Kind types."); }
+            GenericParameters = genericParameters;
+        }
+
+        public readonly IEnumerable<ParameterDeclaration> GenericParameters;
 
         public bool IsConversion
         {

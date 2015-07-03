@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Tangent.Intermediate
 {
-    public class GenericArgumentReferenceType:TangentType
+    public class GenericArgumentReferenceType : TangentType
     {
         public readonly ParameterDeclaration GenericParameter;
         private GenericArgumentReferenceType(ParameterDeclaration genericParam)
@@ -21,6 +21,11 @@ namespace Tangent.Intermediate
         public static GenericArgumentReferenceType For(ParameterDeclaration decl)
         {
             return cache.GetOrAdd(decl, pd => new GenericArgumentReferenceType(pd));
+        }
+
+        public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
+        {
+            return this == other;
         }
     }
 }

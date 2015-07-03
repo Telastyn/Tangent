@@ -14,5 +14,13 @@ namespace Tangent.Intermediate
         {
             Type = t;
         }
+
+        public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
+        {
+            if (this == other) { return true; }
+            var lazyOther = other as LazyType;
+            if (lazyOther == null) { return false; }
+            return this.Type.CompatibilityMatches(lazyOther.Type, necessaryTypeInferences);
+        }
     }
 }

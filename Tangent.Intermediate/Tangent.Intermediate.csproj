@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Block.cs" />
+    <Compile Include="BoundGenericType.cs" />
     <Compile Include="BuiltinFunctions.cs" />
     <Compile Include="ConstantExpression.cs" />
     <Compile Include="CtorCall.cs" />
@@ -56,6 +57,7 @@
     <Compile Include="FunctionBindingExpression.cs" />
     <Compile Include="FunctionInvocationExpression.cs" />
     <Compile Include="GenericArgumentReferenceType.cs" />
+    <Compile Include="GenericInferencePlaceholder.cs" />
     <Compile Include="GenericParameterAccessExpression.cs" />
     <Compile Include="Identifier.cs" />
     <Compile Include="IdentifierExpression.cs" />
