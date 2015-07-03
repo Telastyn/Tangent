@@ -23,5 +23,10 @@ namespace Tangent.Parsing.Errors
 
             return new AggregateParseError(Errors.Concat(new[] { error }));
         }
+
+        public override string ToString()
+        {
+            return string.Join(Environment.NewLine, Errors);
+        }
     }
 }
