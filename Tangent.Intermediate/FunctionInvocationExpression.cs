@@ -18,7 +18,7 @@ namespace Tangent.Intermediate
         {
             get
             {
-                return Bindings.FunctionDefinition.Returns.EffectiveType;
+                return Bindings.ReturnType;
             }
         }
 

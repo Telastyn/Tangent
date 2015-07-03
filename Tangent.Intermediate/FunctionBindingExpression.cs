@@ -7,8 +7,8 @@ namespace Tangent.Intermediate
 {
     public class FunctionBindingExpression : Expression
     {
-        public readonly IEnumerable<Expression> Parameters;
-        public readonly IEnumerable<TangentType> GenericParameters;
+        public readonly IEnumerable<Expression> Arguments;
+        public readonly IEnumerable<TangentType> GenericArguments;
         public readonly ReductionDeclaration FunctionDefinition;
 
         public override ExpressionNodeType NodeType
@@ -20,21 +20,32 @@ namespace Tangent.Intermediate
         {
             get
             {
-                return FunctionDefinition.Returns.EffectiveType.Lazy;
+                return ReturnType.Lazy;
             }
         }
 
-        public FunctionBindingExpression(ReductionDeclaration function, IEnumerable<Expression> parameters, LineColumnRange sourceInfo)
-            : this(function,parameters,Enumerable.Empty<TangentType>(), sourceInfo)
+        private TangentType returnType = null;
+
+        internal TangentType ReturnType
+        {
+            get
+            {
+                returnType = returnType ?? ResolveReturnType();
+                return returnType;
+            }
+        }
+
+        public FunctionBindingExpression(ReductionDeclaration function, IEnumerable<Expression> arguments, LineColumnRange sourceInfo)
+            : this(function,arguments,Enumerable.Empty<TangentType>(), sourceInfo)
         {
         }
 
-        public FunctionBindingExpression(ReductionDeclaration function, IEnumerable<Expression> parameters, IEnumerable<TangentType> genericParameters, LineColumnRange sourceInfo):base(sourceInfo)
+        public FunctionBindingExpression(ReductionDeclaration function, IEnumerable<Expression> arguments, IEnumerable<TangentType> genericArguments, LineColumnRange sourceInfo):base(sourceInfo)
         {
-            if (function.GenericParameters.Count() != genericParameters.Count()) { throw new InvalidOperationException("Generic parameter and argument mismatch in Function Binding."); }
+            if (function.GenericParameters.Count() != genericArguments.Count()) { throw new InvalidOperationException("Generic parameter and argument mismatch in Function Binding."); }
 
-            Parameters = parameters.ToList();
-            GenericParameters = genericParameters.ToList();
+            Arguments = arguments.ToList();
+            GenericArguments = genericArguments.ToList();
             FunctionDefinition = function;
         }
 
@@ -51,9 +62,19 @@ namespace Tangent.Intermediate
 
             FunctionDefinition.Returns.ReplaceTypeResolvedFunctions(replacements, workset);
 
-            foreach (var entry in Parameters)
+            foreach (var entry in Arguments)
             {
                 entry.ReplaceTypeResolvedFunctions(replacements, workset);
+            }
+        }
+
+        private TangentType ResolveReturnType()
+        {
+            if (this.GenericArguments.Any()) {
+                var mapping = FunctionDefinition.GenericParameters.Zip(GenericArguments, (a, b) => new KeyValuePair<ParameterDeclaration, TangentType>(a, b)).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                return this.FunctionDefinition.Returns.EffectiveType.ResolveGenericReferences(pd => mapping[pd]);
+            } else {
+                return this.FunctionDefinition.Returns.EffectiveType;
             }
         }
     }

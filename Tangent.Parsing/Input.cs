@@ -109,7 +109,7 @@ namespace Tangent.Parsing
                     ).TypeConstant, buffer[ix].SourceInfo) }).Concat(buffer.Skip(ix + td.Takes.Count)).ToList()).ToList();
             }
 
-            // concrete fn
+            // fn
             var legalFunctionTypeInferences = new Dictionary<ReductionDeclaration, Dictionary<ParameterDeclaration, TangentType>>();
             var legalFunctions = Scope.Functions.Where(fn => !(fn.IsConversion && conversionsTaken.Contains(new ConversionHistory(fn, buffer.Count, ix)))).ToList();
             foreach (var fn in legalFunctions) {

@@ -154,7 +154,7 @@ namespace Tangent.CilGeneration
                 case ExpressionNodeType.FunctionInvocation:
                     var invoke = (FunctionInvocationExpression)expr;
                     AddDebuggingInfo(gen, expr);
-                    foreach (var p in invoke.Bindings.Parameters) {
+                    foreach (var p in invoke.Bindings.Arguments) {
                         AddExpression(p, gen, fnLookup, typeLookup, closureScope, parameterCodes, false);
                     }
 
