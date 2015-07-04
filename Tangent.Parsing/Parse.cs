@@ -71,13 +71,27 @@ namespace Tangent.Parsing
                 }
             }
 
-            HashSet<SumType> allSumTypes = new HashSet<SumType>();
-            allSumTypes.UnionWith(resolvedTypes.Result.Where(t => t.Returns.ImplementationType == KindOfType.Sum).Select(t => t.Returns).Cast<SumType>());
-
             var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt))).ToList();
-            foreach (var entry in allSumTypes) {
-                foreach (var type in entry.Types) {
-                    ctorCalls.Add(new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", type)), new CtorCall(entry)));
+            foreach (var sumTypeDeclaration in resolvedTypes.Result.Where(t => t.Returns.ImplementationType == KindOfType.Sum)) {
+                var sumType = (sumTypeDeclaration.Returns as SumType);
+                if (sumTypeDeclaration.IsGeneric) {
+                    var genericParams = sumTypeDeclaration.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
+                    var fnGenerics = genericParams.Select(pd => new ParameterDeclaration(pd.Takes, pd.Returns)).ToList();
+                    var inferences = fnGenerics.ToDictionary(p => p, p => GenericInferencePlaceholder.For(p));
+                    var genericReferences = fnGenerics.Select(pd => GenericArgumentReferenceType.For(pd)).ToList();
+                    var ctorReturnType = sumTypeDeclaration.Returns.ResolveGenericReferences(pd => genericReferences[genericParams.IndexOf(pd)]);
+
+                    foreach (var type in sumType.Types) {
+                        List<ParameterDeclaration> inferredTypes = new List<ParameterDeclaration>();
+                        var paramType = type.ResolveGenericReferences(pd => { inferredTypes.Add(pd); return inferences[fnGenerics[genericParams.IndexOf(pd)]]; });
+                        var specificCtorType = sumTypeDeclaration.Returns.ResolveGenericReferences(pd => inferredTypes.Contains(pd) ? genericReferences[genericParams.IndexOf(pd)] : TangentType.DontCare);
+
+                        ctorCalls.Add(new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("_", paramType)) }, new CtorCall(specificCtorType as SumType), inferredTypes.Select(it => fnGenerics[genericParams.IndexOf(it)])));
+                    }
+                } else {
+                    foreach (var type in sumType.Types) {
+                        ctorCalls.Add(new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", type)), new CtorCall(sumType)));
+                    }
                 }
             }
 

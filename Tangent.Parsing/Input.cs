@@ -128,7 +128,7 @@ namespace Tangent.Parsing
                         legalFunctionTypeInferences[candidate]);
 
                     foreach (var paramSet in bindings) {
-                        pool.Add(buffer.Take(ix).Concat(new[] { new FunctionBindingExpression(candidate, paramSet, LineColumnRange.Combine(buffer[ix].SourceInfo, paramSet.Select(ps => ps.SourceInfo))) }).Concat(buffer.Skip(ix + candidate.Takes.Count)).ToList());
+                        pool.Add(buffer.Take(ix).Concat(new[] { new FunctionBindingExpression(candidate, paramSet, candidate.GenericParameters.Select(p => legalFunctionTypeInferences[candidate][p]), LineColumnRange.Combine(buffer[ix].SourceInfo, paramSet.Select(ps => ps.SourceInfo))) }).Concat(buffer.Skip(ix + candidate.Takes.Count)).ToList());
                     }
                 }
 

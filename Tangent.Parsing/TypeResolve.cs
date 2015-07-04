@@ -34,6 +34,9 @@ namespace Tangent.Parsing
 
                         removals.Add(entry);
                         types.Add(resolution.Result);
+                        foreach (var genericMapping in entry.Takes.Where(ppp => !ppp.IsIdentifier).Select(ppp => ppp.Parameter).Zip(resolution.Result.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), (ppp, pp) => new KeyValuePair<PartialParameterDeclaration, ParameterDeclaration>(ppp, pp))) {
+                            genericArgumentMapping.Add(genericMapping.Key, genericMapping.Value);
+                        }
                     }
                 }
 
@@ -50,14 +53,6 @@ namespace Tangent.Parsing
             var issues = genericTypes.Where(i => !i.Item2.Success).Select(i => i.Item2).ToList();
             if (issues.Any()) {
                 return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new AggregateParseError(issues.Select(i => i.Error)));
-            }
-
-            foreach (var entry in genericTypes) {
-                foreach (var phrasePartPair in entry.Item1.Takes.Zip(entry.Item2.Result.Takes, (ppp, pp) => Tuple.Create(ppp, pp))) {
-                    if (!phrasePartPair.Item1.IsIdentifier) {
-                        genericArgumentMapping.Add(phrasePartPair.Item1.Parameter, phrasePartPair.Item2.Parameter);
-                    }
-                }
             }
 
             return types;
@@ -179,7 +174,7 @@ namespace Tangent.Parsing
             }
 
             newLookup = newLookup.Select(td => new TypeDeclaration(td.Takes, selector(td.Returns))).ToList();
-
+            // newLookup.Last().Takes.First().Parameter == ((newLookup.Last().Returns as SumType).Types.First() as GenericArgumentReferenceType).GenericParameter
             return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);
         }
 

@@ -79,5 +79,6 @@ namespace Tangent.Intermediate
         public static readonly TangentType Bool = new TangentType(KindOfType.Builtin);
         public static readonly TangentType Any = new TangentType(KindOfType.Builtin);
         public static readonly TangentType PotentiallyAnything = new TangentType(KindOfType.Builtin);
+        public static readonly TangentType DontCare = new TangentType(KindOfType.Builtin);
     }
 }
