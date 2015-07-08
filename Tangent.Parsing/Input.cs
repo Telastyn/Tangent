@@ -310,6 +310,7 @@ namespace Tangent.Parsing
                 yield break;
             }
 
+            // TODO: test this mess better.
             List<int> indexes = potentials.Select(p => 0).ToList();
             while (true) {
                 yield return potentials.Select((p, ix) => p[indexes[ix]]).ToList();

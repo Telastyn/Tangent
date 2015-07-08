@@ -26,5 +26,10 @@ namespace Tangent.Intermediate
             // for now?
             return this;
         }
+
+        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        {
+            return base.ContainedGenericReferences(tie);
+        }
     }
 }

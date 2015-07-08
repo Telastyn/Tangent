@@ -95,5 +95,10 @@ namespace Tangent.Intermediate
         {
             return BoundGenericType.For(this.GenericTypeDeclatation, this.TypeArguments.Select(ta => ta.ResolveGenericReferences(mapping)));
         }
+
+        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        {
+            yield break;
+        }
     }
 }

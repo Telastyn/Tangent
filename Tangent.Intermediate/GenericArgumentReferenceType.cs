@@ -32,5 +32,10 @@ namespace Tangent.Intermediate
         {
             return mapping(this.GenericParameter);
         }
+
+        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        {
+            if (tie == GenericTie.Reference) { yield return this.GenericParameter; }
+        }
     }
 }

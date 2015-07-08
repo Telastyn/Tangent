@@ -47,6 +47,7 @@
     <Compile Include="Errors\AmbiguousStatementError.cs" />
     <Compile Include="Errors\ExpectedLiteralParseError.cs" />
     <Compile Include="Errors\ExpectedTokenParseError.cs" />
+    <Compile Include="Errors\GenericSumTypeFunctionWithReturnTypeRelyingOnInference.cs" />
     <Compile Include="Errors\IncomprehensibleStatementError.cs" />
     <Compile Include="Errors\ThisAsGeneric.cs" />
     <Compile Include="Input.cs" />

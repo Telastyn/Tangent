@@ -72,33 +72,36 @@ namespace Tangent.Parsing
             }
 
             var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt))).ToList();
-            foreach (var sumTypeDeclaration in resolvedTypes.Result.Where(t => t.Returns.ImplementationType == KindOfType.Sum)) {
-                var sumType = (sumTypeDeclaration.Returns as SumType);
-                if (sumTypeDeclaration.IsGeneric) {
-                    var genericParams = sumTypeDeclaration.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
-                    var fnGenerics = genericParams.Select(pd => new ParameterDeclaration(pd.Takes, pd.Returns)).ToList();
-                    var inferences = fnGenerics.ToDictionary(p => p, p => GenericInferencePlaceholder.For(p));
-                    var genericReferences = fnGenerics.Select(pd => GenericArgumentReferenceType.For(pd)).ToList();
-                    var ctorReturnType = sumTypeDeclaration.Returns.ResolveGenericReferences(pd => genericReferences[genericParams.IndexOf(pd)]);
+            //// RMS: leaving this here for now, as I'll probably need it again.
+            //foreach (var sumTypeDeclaration in resolvedTypes.Result.Where(t => t.Returns.ImplementationType == KindOfType.Sum)) {
+            //    var sumType = (sumTypeDeclaration.Returns as SumType);
+            //    if (sumTypeDeclaration.IsGeneric) {
+            //        var genericParams = sumTypeDeclaration.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
+            //        var fnGenerics = genericParams.Select(pd => new ParameterDeclaration(pd.Takes, pd.Returns)).ToList();
+            //        var inferences = fnGenerics.ToDictionary(p => p, p => GenericInferencePlaceholder.For(p));
+            //        var genericReferences = fnGenerics.Select(pd => GenericArgumentReferenceType.For(pd)).ToList();
+            //        var ctorReturnType = sumTypeDeclaration.Returns.ResolveGenericReferences(pd => genericReferences[genericParams.IndexOf(pd)]);
 
-                    foreach (var type in sumType.Types) {
-                        List<ParameterDeclaration> inferredTypes = new List<ParameterDeclaration>();
-                        var paramType = type.ResolveGenericReferences(pd => { inferredTypes.Add(pd); return inferences[fnGenerics[genericParams.IndexOf(pd)]]; });
-                        var specificCtorType = sumTypeDeclaration.Returns.ResolveGenericReferences(pd => inferredTypes.Contains(pd) ? genericReferences[genericParams.IndexOf(pd)] : TangentType.DontCare);
+            //        foreach (var type in sumType.Types) {
+            //            List<ParameterDeclaration> inferredTypes = new List<ParameterDeclaration>();
+            //            var paramType = type.ResolveGenericReferences(pd => { inferredTypes.Add(pd); return inferences[fnGenerics[genericParams.IndexOf(pd)]]; });
+            //            var specificCtorType = sumTypeDeclaration.Returns.ResolveGenericReferences(pd => inferredTypes.Contains(pd) ? genericReferences[genericParams.IndexOf(pd)] : TangentType.DontCare);
 
-                        ctorCalls.Add(new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("_", paramType)) }, new CtorCall(specificCtorType as SumType), inferredTypes.Select(it => fnGenerics[genericParams.IndexOf(it)])));
-                    }
-                } else {
-                    foreach (var type in sumType.Types) {
-                        ctorCalls.Add(new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", type)), new CtorCall(sumType)));
-                    }
-                }
-            }
+            //            ctorCalls.Add(new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("_", paramType)) }, new CtorCall(specificCtorType as SumType), inferredTypes.Select(it => fnGenerics[genericParams.IndexOf(it)])));
+            //        }
+            //    } else {
+            //        foreach (var type in sumType.Types) {
+            //            ctorCalls.Add(new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", type)), new CtorCall(sumType)));
+            //        }
+            //    }
+            //}
 
             // And now Phase 3 - Statement parsing based on syntax.
             var lookup = new Dictionary<Function, Function>();
             var bad = new List<IncomprehensibleStatementError>();
             var ambiguous = new List<AmbiguousStatementError>();
+            resolvedFunctions = FanOutFunctionsWithSumTypes(resolvedFunctions.Result);
+            if (!resolvedFunctions.Success) { return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error); }
 
             foreach (var fn in resolvedFunctions.Result) {
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
@@ -552,6 +555,58 @@ namespace Tangent.Parsing
                 default:
                     return Enumerable.Empty<PartialReductionDeclaration>();
             }
+        }
+
+
+        private static ResultOrParseError<IEnumerable<ReductionDeclaration>> FanOutFunctionsWithSumTypes(IEnumerable<ReductionDeclaration> resolvedFunctions)
+        {
+            List<ReductionDeclaration> result = new List<ReductionDeclaration>(resolvedFunctions);
+            for (int ix = 0; ix < result.Count; ++ix) {
+                var entry = result[ix];
+
+                List<List<PhrasePart>> parts = entry.Takes.Select(pp =>
+                {
+                    if (!pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.Sum) {
+                        return ((SumType)pp.Parameter.Returns).Types.Select(tt => new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, tt))).ToList();
+                    } else if (!pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.BoundGeneric) {
+                        var conc = pp.Parameter.Returns;
+                        while (conc.ImplementationType == KindOfType.BoundGeneric) {
+                            conc = ((BoundGenericType)conc).ConcreteType;
+                        }
+
+                        if (conc.ImplementationType == KindOfType.Sum) {
+                            return ((SumType)conc).Types.Select(tt => new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, tt))).ToList();
+                        }
+
+                        return new List<PhrasePart>() { pp };
+
+                    } else {
+                        return new List<PhrasePart>() { pp };
+                    }
+                }).ToList();
+
+                if (!parts.All(p => p.Count == 1)) {
+                    foreach (var variant in parts.GetCombos()) {
+                        var trf = entry.Returns as TypeResolvedFunction;
+                        if (trf == null) { throw new NotImplementedException(); }
+                        var parameterGenerics = variant.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)).ToList();
+                        var returnGenericsTiedToInference = trf.EffectiveType.ContainedGenericReferences(GenericTie.Reference).Where(pd => entry.GenericParameters.Contains(pd));
+                        var badGenerics = returnGenericsTiedToInference.Where(pd => !parameterGenerics.Contains(pd)).ToList();
+                        if (badGenerics.Count == 1) {
+                            return new ResultOrParseError<IEnumerable<ReductionDeclaration>>(new GenericSumTypeFunctionWithReturnTypeRelyingOnInference(variant, badGenerics[0]));
+                        }
+
+                        if (badGenerics.Count > 1) {
+                            return new ResultOrParseError<IEnumerable<ReductionDeclaration>>(new AggregateParseError(badGenerics.Select(bg => new GenericSumTypeFunctionWithReturnTypeRelyingOnInference(variant, bg))));
+                        }
+
+                        result.Add(new ReductionDeclaration(variant, new TypeResolvedFunction(trf.EffectiveType, trf.Implementation, trf.Scope), parameterGenerics));
+                    }
+                }
+            }
+            
+
+            return result;
         }
     }
 }

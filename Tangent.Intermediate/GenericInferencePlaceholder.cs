@@ -45,5 +45,10 @@ namespace Tangent.Intermediate
             // Nothing?
             return this;
         }
+
+        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        {
+            if (tie == GenericTie.Inference) { yield return this.GenericArgument; }
+        }
     }
 }

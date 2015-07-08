@@ -49,5 +49,10 @@ namespace Tangent.Intermediate
         {
             return this;
         }
+
+        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        {
+            yield break;
+        }
     }
 }

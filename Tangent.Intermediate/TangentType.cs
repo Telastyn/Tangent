@@ -21,6 +21,11 @@ namespace Tangent.Intermediate
         Placeholder
     }
 
+    public enum GenericTie{
+        Reference,
+        Inference
+    }
+
     public class TangentType
     {
         public readonly KindOfType ImplementationType;
@@ -70,6 +75,11 @@ namespace Tangent.Intermediate
         public virtual TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
         {
             return this;
+        }
+
+        public virtual IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        {
+            yield break;
         }
 
         public static readonly TangentType Void = new TangentType(KindOfType.Builtin);

@@ -77,5 +77,10 @@ namespace Tangent.Intermediate
         {
             return SumType.For(this.Types.Select(t => t.ResolveGenericReferences(mapping)));
         }
+
+        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        {
+            return this.Types.SelectMany(tt => tt.ContainedGenericReferences(tie));
+        }
     }
 }
