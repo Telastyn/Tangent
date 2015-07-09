@@ -18,7 +18,7 @@ namespace Tangent.CilGeneration
             this.builder = builder;
         }
 
-        public Type Compile(TypeDeclaration typeDecl, Action<Type> placeholder, Func<TangentType, bool, Type> lookup)
+        public Type Compile(TypeDeclaration typeDecl, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup)
         {
             switch (typeDecl.Returns.ImplementationType) {
                 case KindOfType.Enum:
@@ -27,12 +27,14 @@ namespace Tangent.CilGeneration
                     return BuildClass(typeDecl, placeholder, lookup);
                 case KindOfType.Sum:
                     return BuildVariant(typeDecl, placeholder, lookup);
+                case KindOfType.BoundGeneric:
+                    return InstantiateGeneric(typeDecl, placeholder, lookup);
                 default:
                     throw new NotImplementedException();
             }
         }
 
-        private Type BuildEnum(TypeDeclaration target, Action<Type> placeholder, Func<TangentType, bool, Type> lookup)
+        private Type BuildEnum(TypeDeclaration target, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup)
         {
             var typeName = GetNameFor(target);
             var enumBuilder = builder.DefineEnum(typeName, System.Reflection.TypeAttributes.Public, typeof(int));
@@ -44,7 +46,7 @@ namespace Tangent.CilGeneration
             return enumBuilder.CreateType();
         }
 
-        private Type BuildClass(TypeDeclaration target, Action<Type> placeholder, Func<TangentType, bool, Type> lookup)
+        private Type BuildClass(TypeDeclaration target, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup)
         {
             var typeName = GetNameFor(target);
             var productType = (ProductType)target.Returns;
@@ -53,7 +55,7 @@ namespace Tangent.CilGeneration
             var me = lookup(target.Returns, false);
             if (me != null) { return me; }
             var classBuilder = builder.DefineType(typeName, System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Public);
-            placeholder(classBuilder);
+            placeholder(target.Returns, classBuilder);
             var ctor = classBuilder.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, dotnetCtorParamTypes.ToArray());
             var gen = ctor.GetILGenerator();
 
@@ -68,12 +70,22 @@ namespace Tangent.CilGeneration
             return classBuilder.CreateType();
         }
 
-        private Type BuildVariant(TypeDeclaration target, Action<Type> placeholder, Func<TangentType, bool, Type> lookup)
+        private Type BuildVariant(TypeDeclaration target, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup)
         {
             var typeName = GetNameFor(target);
             var sumType = (SumType)target.Returns;
             var classBuilder = builder.DefineType(typeName);
-            placeholder(classBuilder);
+            placeholder(target.Returns, classBuilder);
+            if (target.IsGeneric) {
+                var genericParamDefs = target.Takes.Where(pp => !pp.IsIdentifier).ToList();
+                var genericBuilders = classBuilder.DefineGenericParameters(genericParamDefs.Select(pp => CilScope.GetNameFor(pp.Parameter, tt => lookup(tt, true))).ToArray());
+                // TODO: constraints. Since `kind of any` is the only legal kind, skip for now.
+                foreach (var entry in genericParamDefs.Select(gpd => GenericArgumentReferenceType.For(gpd.Parameter)).Zip(genericBuilders, (a, b) => Tuple.Create(a, b))) {
+                    placeholder(entry.Item1, entry.Item2);
+                }
+            }
+
+            // And generic references should now resolve properly. I think.
             var variantTypes = sumType.Types.Select(tt => lookup(tt, true)).OrderBy(t => t.Name).ToArray();
             var variantContainer = typeof(Variant<,>).Module.GetTypes().FirstOrDefault(t => t.Name.StartsWith("Variant`" + variantTypes.Length));
             if (variantContainer == null) {
@@ -88,11 +100,21 @@ namespace Tangent.CilGeneration
 
                 gen.Emit(OpCodes.Ldarg_0);
                 gen.Emit(OpCodes.Ldarg_1);
-                gen.Emit(OpCodes.Call, parent.GetConstructor(new[] { variantType }));
+                // see https://msdn.microsoft.com/en-us/library/system.reflection.emit.generictypeparameterbuilder(v=vs.110).aspx
+                //  need to fetch things differently with generics?
+                gen.Emit(OpCodes.Call, parent.GetConstructor(new[] { variantType })); 
                 gen.Emit(OpCodes.Ret);
             }
 
             return classBuilder.CreateType();
+        }
+
+        private Type InstantiateGeneric(TypeDeclaration target, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup)
+        {
+            var boundGeneric = target.Returns as BoundGenericType;
+            Type genericType = lookup(boundGeneric.GenericTypeDeclatation.Returns, true);
+            var arguments = boundGeneric.TypeArguments.Select(tt => lookup(tt, true)).ToArray();
+            return genericType.MakeGenericType(arguments);
         }
 
         public static string GetNameFor(TypeDeclaration rule)

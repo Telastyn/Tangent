@@ -38,18 +38,20 @@ namespace Tangent.CilGeneration
                 case KindOfType.Enum:
                 case KindOfType.Product:
                 case KindOfType.Sum:
+                case KindOfType.BoundGeneric:
                     // This should already be declared in our types.
                     var result = declaredTypes.FirstOrDefault(td => td.Returns == t);
                     if (result == null) {
                         result = new TypeDeclaration((PhrasePart)null, t);
                     }
 
-                    var type = typeCompiler.Compile(result, placeholder => { if (!lookup.ContainsKey(result.Returns)) { lookup.Add(result.Returns, placeholder); } }, (tt, create) => { if (create) { return this[tt]; } else { if (lookup.ContainsKey(tt)) { return lookup[tt]; } else { return null; } } });
+                    var type = typeCompiler.Compile(result, (placeholderTarget, placeholder) => { if (!lookup.ContainsKey(placeholderTarget)) { lookup.Add(placeholderTarget, placeholder); } }, (tt, create) => { if (create) { return this[tt]; } else { if (lookup.ContainsKey(tt)) { return lookup[tt]; } else { return null; } } });
                     if (lookup.ContainsKey(result.Returns)) {
                         lookup[result.Returns] = type;
                     } else {
                         lookup.Add(result.Returns, type);
                     }
+
                     return;
 
                 case KindOfType.Lazy:
@@ -62,6 +64,7 @@ namespace Tangent.CilGeneration
                     } else {
                         lookup.Add(t, typeof(Func<>).MakeGenericType(target));
                     }
+
                     return;
 
                 case KindOfType.SingleValue:
@@ -75,6 +78,16 @@ namespace Tangent.CilGeneration
                     lookup.Add(TangentType.Bool, typeof(bool));
                     return;
 
+                case KindOfType.Kind:
+                    // For now, all we know is `kind of any`
+                    if (t == TangentType.Any.Kind) {
+                        lookup.Add(TangentType.Any.Kind, typeof(object));
+                    } else {
+                        throw new NotImplementedException();
+                    }
+
+                    return;
+                    
                 default:
                     throw new NotImplementedException();
             }

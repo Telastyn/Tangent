@@ -25,7 +25,7 @@ namespace Tangent.CilGeneration.UnitTests
             var typeDecl = new TypeDeclaration("foo", new EnumType(new Identifier[] { "bar" }));
             int times = 0;
             var mockCompiler = new Mock<ITypeCompiler>();
-            mockCompiler.Setup(c => c.Compile(typeDecl, It.IsAny<Action<Type>>(), It.IsAny<Func<TangentType, bool, Type>>())).Returns(typeof(DateTimeOffset)).Callback(() => times++);
+            mockCompiler.Setup(c => c.Compile(typeDecl, It.IsAny<Action<TangentType, Type>>(), It.IsAny<Func<TangentType, bool, Type>>())).Returns(typeof(DateTimeOffset)).Callback(() => times++);
             var lookup = new DelegatingTypeLookup(mockCompiler.Object, new[] { typeDecl });
 
             var result = lookup[typeDecl.Returns];
@@ -49,7 +49,7 @@ namespace Tangent.CilGeneration.UnitTests
         {
             var typeDecl = new TypeDeclaration("foo", new EnumType(new Identifier[] { "bar" }));
             var mockCompiler = new Mock<ITypeCompiler>();
-            mockCompiler.Setup(c => c.Compile(typeDecl, It.IsAny<Action<Type>>(), It.IsAny<Func<TangentType, bool, Type>>())).Returns(typeof(DateTimeOffset));
+            mockCompiler.Setup(c => c.Compile(typeDecl, It.IsAny<Action<TangentType, Type>>(), It.IsAny<Func<TangentType, bool, Type>>())).Returns(typeof(DateTimeOffset));
             var lookup = new DelegatingTypeLookup(mockCompiler.Object, new[] { typeDecl });
 
             var result = lookup[typeDecl.Returns.Lazy];
@@ -61,7 +61,7 @@ namespace Tangent.CilGeneration.UnitTests
         {
             var typeDecl = new TypeDeclaration("foo", new EnumType(new Identifier[] { "bar" }));
             var mockCompiler = new Mock<ITypeCompiler>();
-            mockCompiler.Setup(c => c.Compile(typeDecl, It.IsAny<Action<Type>>(), It.IsAny<Func<TangentType, bool, Type>>())).Returns(typeof(DateTimeOffset));
+            mockCompiler.Setup(c => c.Compile(typeDecl, It.IsAny<Action<TangentType, Type>>(), It.IsAny<Func<TangentType, bool, Type>>())).Returns(typeof(DateTimeOffset));
             var lookup = new DelegatingTypeLookup(mockCompiler.Object, new[] { typeDecl });
 
             var result = lookup[typeDecl.Returns.Lazy.Lazy];
