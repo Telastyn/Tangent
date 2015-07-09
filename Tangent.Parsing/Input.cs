@@ -104,7 +104,7 @@ namespace Tangent.Parsing
                 yield return typeTier.Select(td => buffer.Take(ix).Concat(new[] { new TypeAccessExpression(
                     (
                         td.IsGeneric?
-                        BoundGenericType.For(td, buffer.Skip(ix).Where(expr=>!(expr is IdentifierExpression)).Take(td.Takes.Where(pp=>!pp.IsIdentifier).Count()).Select(expr=>expr.EffectiveType)) :
+                        BoundGenericType.For(td, buffer.Skip(ix).Where(expr=>!(expr is IdentifierExpression)).Take(td.Takes.Where(pp=>!pp.IsIdentifier).Count()).Select(expr=>expr.EffectiveType.ImplementationType == KindOfType.TypeConstant? ((TypeConstant)expr.EffectiveType).Value: expr.EffectiveType)) :
                         td.Returns
                     ).TypeConstant, buffer[ix].SourceInfo) }).Concat(buffer.Skip(ix + td.Takes.Count)).ToList()).ToList();
             }
