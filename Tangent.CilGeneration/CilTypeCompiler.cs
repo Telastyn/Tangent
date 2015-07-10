@@ -94,16 +94,25 @@ namespace Tangent.CilGeneration
 
             var parent = variantContainer.MakeGenericType(variantTypes);
             classBuilder.SetParent(parent);
-            foreach(var variantType in variantTypes){
+            int ix = 0;
+            foreach (var variantType in variantTypes) {
                 var ctor = classBuilder.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, new[] { variantType });
                 var gen = ctor.GetILGenerator();
 
                 gen.Emit(OpCodes.Ldarg_0);
                 gen.Emit(OpCodes.Ldarg_1);
-                // see https://msdn.microsoft.com/en-us/library/system.reflection.emit.generictypeparameterbuilder(v=vs.110).aspx
-                //  need to fetch things differently with generics?
-                gen.Emit(OpCodes.Call, parent.GetConstructor(new[] { variantType })); 
+                if (target.IsGeneric) {
+                    // see https://msdn.microsoft.com/en-us/library/system.reflection.emit.generictypeparameterbuilder(v=vs.110).aspx
+                    // Generics are weird.
+                    var genericVariantCtor = variantContainer.GetConstructor(new[] { variantContainer.GetGenericArguments()[ix] });
+                    var baseCtor = TypeBuilder.GetConstructor(parent, genericVariantCtor);
+                    gen.Emit(OpCodes.Call, baseCtor);
+                } else {
+                    gen.Emit(OpCodes.Call, parent.GetConstructor(new[] { variantType }));
+                }
+
                 gen.Emit(OpCodes.Ret);
+                ix++;
             }
 
             return classBuilder.CreateType();
