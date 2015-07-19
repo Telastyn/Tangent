@@ -151,7 +151,7 @@ namespace Tangent.Parsing
                     if (partialTypes == null) { return new ExpectedTokenParseError(TokenIdentifier.ReductionDeclSeparator, separator); }
 
                     // Normalize generics
-                    phrase = phrase.Select(pp => pp.IsIdentifier ? pp : (pp.Parameter.Returns != null ? pp : new PartialPhrasePart(new PartialParameterDeclaration(pp.Parameter.Takes, new List<IdentifierExpression>() { new IdentifierExpression("any", null) })))).ToList();
+                    phrase = phrase.Select(pp => pp.IsIdentifier ? pp : (pp.Parameter.Returns != null ? pp : new PartialPhrasePart(new PartialParameterDeclaration(pp.Parameter.Takes, new List<Expression>() { new IdentifierExpression("any", null) })))).ToList();
                     if (phrase.All(pp => !pp.IsIdentifier)) { return new ExpectedTokenParseError(TokenIdentifier.Identifier, separator); }
                     if (phrase.Any(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.Takes.First() == "this")) { return new ThisAsGeneric(); }
 
@@ -220,8 +220,6 @@ namespace Tangent.Parsing
             switch (element.Type) {
                 case ElementType.Identifier:
                     return new IdentifierExpression(((IdentifierElement)element).Identifier, element.SourceInfo);
-                case ElementType.Parens:
-                    throw new NotImplementedException("Parens expressions not yet supported.");
                 case ElementType.Block:
                     var stmts = ((BlockElement)element).Block.Statements.ToList();
                     var last = stmts.Last();
@@ -265,6 +263,59 @@ namespace Tangent.Parsing
             }
         }
 
+        internal static ResultOrParseError<PartialParameterDeclaration> PartialParameterDecl(List<Token> tokens, bool classDecl)
+        {
+            var first = tokens.FirstOrDefault();
+            if (first != null && first.Identifier == TokenIdentifier.Symbol && first.Value == "(") {
+                tokens.RemoveAt(0);
+                var paramName = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => new IdentifierExpression(t.Value, t.SourceInfo)).ToList();
+                tokens.RemoveRange(0, paramName.Count);
+                if (paramName.Count == 0) {
+                    return new ResultOrParseError<PartialParameterDeclaration>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
+                }
+
+                if (classDecl && paramName.Count == 1 && paramName.First().Identifier.Value == "this" && tokens.Any() && tokens.First().Value == ")") {
+                    tokens.RemoveAt(0);
+                    return new PartialParameterDeclaration("this", paramName.Cast<Expression>().ToList());
+                } else {
+
+                    var possibleColon = tokens.FirstOrDefault();
+                    if (possibleColon != null && possibleColon.Value == ")") {
+                        // Something like List(T) - return null as the type info.
+                        tokens.RemoveAt(0);
+                        return new ResultOrParseError<PartialParameterDeclaration>(new PartialParameterDeclaration(paramName.Select(p => p.Identifier), null));
+                    }
+
+                    if (possibleColon == null || possibleColon.Value != ":") {
+                        return new ResultOrParseError<PartialParameterDeclaration>(new ExpectedLiteralParseError(":", possibleColon));
+                    }
+
+                    tokens.RemoveAt(0);
+
+                    var typeName = PartialStatement(tokens, ")");
+                    if (!typeName.Success) {
+                        return new ResultOrParseError<PartialParameterDeclaration>(typeName.Error);
+                    }
+
+                    return new PartialParameterDeclaration(paramName.Select(p => p.Identifier), typeName.Result.Select<PartialElement, Expression>(pe =>
+                    {
+                        if (pe.Type == ElementType.Identifier) {
+                            return new IdentifierExpression(((IdentifierElement)pe).Identifier, pe.SourceInfo);
+                        }
+
+                        if (pe.Type == ElementType.VarDecl) {
+                            var varDecl = (VarDeclElement)pe;
+                            return new TypeInferenceExpression(varDecl.ParameterDeclaration.Takes, varDecl.ParameterDeclaration.Returns ?? new List<Expression>(){ new IdentifierExpression("any", null)}, varDecl.SourceInfo);
+                        }
+
+                        throw new NotImplementedException(string.Format("Unsupported expression {0} in Type Declaration.", pe.Type));
+                    }).ToList());
+                }
+            } else {
+                return new ResultOrParseError<PartialParameterDeclaration>(new ExpectedLiteralParseError("(", first));
+            }
+        }
+
         internal static ResultOrParseError<PartialPhrasePart> TryPartialPhrasePart(List<Token> tokens, bool classDecl)
         {
             var first = tokens.FirstOrDefault();
@@ -278,43 +329,14 @@ namespace Tangent.Parsing
             }
 
             if (first.Identifier == TokenIdentifier.Symbol && first.Value == "(") {
-                tokens.RemoveAt(0);
-                var paramName = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => new IdentifierExpression(t.Value, t.SourceInfo)).ToList();
-                tokens.RemoveRange(0, paramName.Count);
-                if (paramName.Count == 0) {
-                    return new ResultOrParseError<PartialPhrasePart>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
-                }
-
-                if (classDecl && paramName.Count == 1 && paramName.First().Identifier.Value == "this" && tokens.Any() && tokens.First().Value == ")") {
-                    tokens.RemoveAt(0);
-                    return new PartialPhrasePart(new PartialParameterDeclaration("this", paramName));
+                var parameter = PartialParameterDecl(tokens, classDecl);
+                if (parameter.Success) {
+                    return new ResultOrParseError<PartialPhrasePart>(new PartialPhrasePart(parameter.Result));
                 } else {
-
-                    var possibleColon = tokens.FirstOrDefault();
-                    if (possibleColon != null && possibleColon.Value == ")") {
-                        // Something like List(T) - return null as the type info.
-                        tokens.RemoveAt(0);
-                        return new ResultOrParseError<PartialPhrasePart>(new PartialPhrasePart(new PartialParameterDeclaration(paramName.Select(p => p.Identifier), null)));
-                    }
-
-                    if (possibleColon == null || possibleColon.Value != ":") {
-                        return new ResultOrParseError<PartialPhrasePart>(new ExpectedLiteralParseError(":", possibleColon));
-                    }
-
-                    tokens.RemoveAt(0);
-
-                    var typeName = PartialStatement(tokens, ")");
-                    if (!typeName.Success) {
-                        return new ResultOrParseError<PartialPhrasePart>(typeName.Error);
-                    }
-
-                    if (!typeName.Result.All(pe => pe.Type == ElementType.Identifier)) {
-                        throw new NotImplementedException("sorry, non-identifier/symbols in type expressions is not currently supported.");
-                    }
-
-                    return new PartialPhrasePart(new PartialParameterDeclaration(paramName.Select(p => p.Identifier), typeName.Result.Select(pe => new IdentifierExpression(((IdentifierElement)pe).Identifier, pe.SourceInfo)).ToList()));
+                    return new ResultOrParseError<PartialPhrasePart>(parameter.Error);
                 }
             }
+
 
             if (first.Identifier == TokenIdentifier.Symbol && first.Value != "{" && first.Value != "|") {
                 if (first.Value == ";") {
@@ -501,14 +523,23 @@ namespace Tangent.Parsing
                     } else {
                         return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
                     }
-                } else if (first.Value == "{" || first.Value == "(") {
+                } else if (first.Value == "(") {
+                    var start = first.SourceInfo;
+                    var parameter = PartialParameterDecl(tokens, false);
+                    var end = tokens.FirstOrDefault();
+                    if (parameter.Success) {
+                        result.Add(new VarDeclElement(parameter.Result, end == null ? null : start.Combine(end.SourceInfo)));
+                    } else {
+                        return new ResultOrParseError<IEnumerable<PartialElement>>(parameter.Error);
+                    }
+                } else if (first.Value == "{") {
                     var block = PartialBlock(tokens);
                     if (block.Success) {
                         result.Add(new BlockElement(block.Result));
                     } else {
                         return new ResultOrParseError<IEnumerable<PartialElement>>(block.Error);
                     }
-                } else if (first.Value == "}" || first.Value == ")") {
+                } else if (first.Value == "}") {
                     // we're at end of block. Return statement for optional semi-colon.
                     return result;
                 } else if (first.Identifier == TokenIdentifier.Symbol) {
@@ -604,7 +635,7 @@ namespace Tangent.Parsing
                     }
                 }
             }
-            
+
 
             return result;
         }

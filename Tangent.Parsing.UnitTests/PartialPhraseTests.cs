@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Tangent.Intermediate;
 using Tangent.Tokenization;
 
 namespace Tangent.Parsing.UnitTests
@@ -31,7 +32,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual("x", x.Parameter.Takes.First().Value);
             Assert.AreEqual(1, x.Parameter.Takes.Count);
             Assert.AreEqual(1, x.Parameter.Returns.Count);
-            Assert.AreEqual("int", x.Parameter.Returns[0].Identifier.Value);
+            Assert.AreEqual("int", x.Parameter.Returns.Cast<IdentifierExpression>().First().Identifier.Value);
 
             Assert.AreEqual("plus", plus.Identifier.Value);
         }
@@ -58,7 +59,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual("this", x.Parameter.Takes.First().Value);
             Assert.AreEqual(1, x.Parameter.Takes.Count);
             Assert.AreEqual(1, x.Parameter.Returns.Count);
-            Assert.AreEqual("this", x.Parameter.Returns[0].Identifier.Value);
+            Assert.AreEqual("this", x.Parameter.Returns.Cast<IdentifierExpression>().First().Identifier.Value);
 
             Assert.AreEqual("plus", plus.Identifier.Value);
         }
@@ -85,7 +86,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual("x", x.Parameter.Takes.First().Value);
             Assert.AreEqual(1, x.Parameter.Takes.Count);
             Assert.AreEqual(1, x.Parameter.Returns.Count);
-            Assert.AreEqual("int", x.Parameter.Returns[0].Identifier.Value);
+            Assert.AreEqual("int", x.Parameter.Returns.Cast<IdentifierExpression>().First().Identifier.Value);
 
             Assert.AreEqual("+", plus.Identifier.Value);
         }
@@ -147,7 +148,128 @@ namespace Tangent.Parsing.UnitTests
             Assert.IsTrue(new[] { "x", "y", "z" }.SequenceEqual(x.Parameter.Takes.Select(id => id.Value)));
 
             Assert.AreEqual(2, x.Parameter.Returns.Count);
-            Assert.IsTrue(new[] { "unsigned", "int" }.SequenceEqual(x.Parameter.Returns.Select(id => id.Identifier.Value)));
+            Assert.IsTrue(new[] { "unsigned", "int" }.SequenceEqual(x.Parameter.Returns.Cast<IdentifierExpression>().Select(id => id.Identifier.Value)));
+        }
+
+        [TestMethod]
+        public void BasicInferencePath()
+        {
+            var test = "(x: int) plus (y: (T:any))";
+            var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
+
+            var result = Parse.PartialPhrase(tokens, false);
+
+            Assert.IsTrue(result.Success);
+            var partialPhrase = result.Result;
+            Assert.AreEqual(3, partialPhrase.Count);
+            var x = partialPhrase[0];
+            var plus = partialPhrase[1];
+            var y = partialPhrase[2];
+
+            Assert.IsFalse(x.IsIdentifier);
+            Assert.IsTrue(plus.IsIdentifier);
+            Assert.IsFalse(y.IsIdentifier);
+
+            Assert.AreEqual("x", x.Parameter.Takes.First().Value);
+            Assert.AreEqual(1, x.Parameter.Takes.Count);
+            Assert.AreEqual(1, x.Parameter.Returns.Count);
+            Assert.AreEqual("int", x.Parameter.Returns.Cast<IdentifierExpression>().First().Identifier.Value);
+
+            Assert.AreEqual("plus", plus.Identifier.Value);
+
+            Assert.AreEqual("y", y.Parameter.Takes.First().Value);
+            var inference = y.Parameter.Returns.First();
+            Assert.AreEqual(ExpressionNodeType.TypeInference, inference.NodeType);
+            var castInference = (TypeInferenceExpression)inference;
+            Assert.AreEqual(1, castInference.InferenceName.Count());
+            Assert.AreEqual("T", castInference.InferenceName.First().Value);
+            Assert.AreEqual(1, castInference.InferenceExpression.Count());
+            Assert.AreEqual(ExpressionNodeType.Identifier, castInference.InferenceExpression.First().NodeType);
+            Assert.AreEqual("any", castInference.InferenceExpression.Cast<IdentifierExpression>().First().Identifier.Value);
+        }
+
+        [TestMethod]
+        public void NestedInferencePath()
+        {
+            var test = "(x: int) plus (y: foo(T:any))";
+            var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
+
+            var result = Parse.PartialPhrase(tokens, false);
+
+            Assert.IsTrue(result.Success);
+            var partialPhrase = result.Result;
+            Assert.AreEqual(3, partialPhrase.Count);
+            var x = partialPhrase[0];
+            var plus = partialPhrase[1];
+            var y = partialPhrase[2];
+
+            Assert.IsFalse(x.IsIdentifier);
+            Assert.IsTrue(plus.IsIdentifier);
+            Assert.IsFalse(y.IsIdentifier);
+
+            Assert.AreEqual("x", x.Parameter.Takes.First().Value);
+            Assert.AreEqual(1, x.Parameter.Takes.Count);
+            Assert.AreEqual(1, x.Parameter.Returns.Count);
+            Assert.AreEqual("int", x.Parameter.Returns.Cast<IdentifierExpression>().First().Identifier.Value);
+
+            Assert.AreEqual("plus", plus.Identifier.Value);
+
+            Assert.AreEqual("y", y.Parameter.Takes.First().Value);
+            var typeExpr = y.Parameter.Returns;
+            Assert.AreEqual(2, typeExpr.Count);
+            Assert.AreEqual(ExpressionNodeType.Identifier, typeExpr[0].NodeType);
+            Assert.AreEqual("foo", ((IdentifierExpression)typeExpr[0]).Identifier.Value);
+            Assert.AreEqual(ExpressionNodeType.TypeInference, typeExpr[1].NodeType);
+            var inference = y.Parameter.Returns[1];
+            Assert.AreEqual(ExpressionNodeType.TypeInference, inference.NodeType);
+            var castInference = (TypeInferenceExpression)inference;
+            Assert.AreEqual(1, castInference.InferenceName.Count());
+            Assert.AreEqual("T", castInference.InferenceName.First().Value);
+            Assert.AreEqual(1, castInference.InferenceExpression.Count());
+            Assert.AreEqual(ExpressionNodeType.Identifier, castInference.InferenceExpression.First().NodeType);
+            Assert.AreEqual("any", castInference.InferenceExpression.Cast<IdentifierExpression>().First().Identifier.Value);
+        }
+
+        [TestMethod]
+        public void ImpliedAnyInferencePath()
+        {
+            var test = "(x: int) plus (y: foo(T))";
+            var tokens = Tokenize.ProgramFile(test, "test.tan").ToList();
+
+            var result = Parse.PartialPhrase(tokens, false);
+
+            Assert.IsTrue(result.Success);
+            var partialPhrase = result.Result;
+            Assert.AreEqual(3, partialPhrase.Count);
+            var x = partialPhrase[0];
+            var plus = partialPhrase[1];
+            var y = partialPhrase[2];
+
+            Assert.IsFalse(x.IsIdentifier);
+            Assert.IsTrue(plus.IsIdentifier);
+            Assert.IsFalse(y.IsIdentifier);
+
+            Assert.AreEqual("x", x.Parameter.Takes.First().Value);
+            Assert.AreEqual(1, x.Parameter.Takes.Count);
+            Assert.AreEqual(1, x.Parameter.Returns.Count);
+            Assert.AreEqual("int", x.Parameter.Returns.Cast<IdentifierExpression>().First().Identifier.Value);
+
+            Assert.AreEqual("plus", plus.Identifier.Value);
+
+            Assert.AreEqual("y", y.Parameter.Takes.First().Value);
+            var typeExpr = y.Parameter.Returns;
+            Assert.AreEqual(2, typeExpr.Count);
+            Assert.AreEqual(ExpressionNodeType.Identifier, typeExpr[0].NodeType);
+            Assert.AreEqual("foo", ((IdentifierExpression)typeExpr[0]).Identifier.Value);
+            Assert.AreEqual(ExpressionNodeType.TypeInference, typeExpr[1].NodeType);
+            var inference = y.Parameter.Returns[1];
+            Assert.AreEqual(ExpressionNodeType.TypeInference, inference.NodeType);
+            var castInference = (TypeInferenceExpression)inference;
+            Assert.AreEqual(1, castInference.InferenceName.Count());
+            Assert.AreEqual("T", castInference.InferenceName.First().Value);
+            Assert.AreEqual(1, castInference.InferenceExpression.Count());
+            Assert.AreEqual(ExpressionNodeType.Identifier, castInference.InferenceExpression.First().NodeType);
+            Assert.AreEqual("any", castInference.InferenceExpression.Cast<IdentifierExpression>().First().Identifier.Value);
         }
     }
 }

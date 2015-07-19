@@ -9,7 +9,7 @@ namespace Tangent.Parsing.Partial
     public enum ElementType
     {
         Identifier,
-        Parens,
+        VarDecl,
         Block,
         Constant
     }

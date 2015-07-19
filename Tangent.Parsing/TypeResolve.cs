@@ -264,7 +264,7 @@ namespace Tangent.Parsing
             return new ParameterDeclaration(partial.Takes, ctorGenericArguments == null ? type.Result : ConvertGenericReferencesToInferences(type.Result));
         }
 
-        internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<IdentifierExpression> identifiers, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
+        internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<Expression> identifiers, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
         {
             var input = new Input(identifiers, Scope.ForTypes(types, genericArguments), typeResolutionRules);
             var result = input.InterpretTowards(TangentType.Any.Kind);
