@@ -2,6 +2,7 @@
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tangent.Intermediate;
+using Tangent.Parsing.Partial;
 using Tangent.Tokenization;
 
 namespace Tangent.Parsing.UnitTests
@@ -180,7 +181,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual("y", y.Parameter.Takes.First().Value);
             var inference = y.Parameter.Returns.First();
             Assert.AreEqual(ExpressionNodeType.TypeInference, inference.NodeType);
-            var castInference = (TypeInferenceExpression)inference;
+            var castInference = (PartialTypeInferenceExpression)inference;
             Assert.AreEqual(1, castInference.InferenceName.Count());
             Assert.AreEqual("T", castInference.InferenceName.First().Value);
             Assert.AreEqual(1, castInference.InferenceExpression.Count());
@@ -222,7 +223,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(ExpressionNodeType.TypeInference, typeExpr[1].NodeType);
             var inference = y.Parameter.Returns[1];
             Assert.AreEqual(ExpressionNodeType.TypeInference, inference.NodeType);
-            var castInference = (TypeInferenceExpression)inference;
+            var castInference = (PartialTypeInferenceExpression)inference;
             Assert.AreEqual(1, castInference.InferenceName.Count());
             Assert.AreEqual("T", castInference.InferenceName.First().Value);
             Assert.AreEqual(1, castInference.InferenceExpression.Count());
@@ -264,7 +265,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(ExpressionNodeType.TypeInference, typeExpr[1].NodeType);
             var inference = y.Parameter.Returns[1];
             Assert.AreEqual(ExpressionNodeType.TypeInference, inference.NodeType);
-            var castInference = (TypeInferenceExpression)inference;
+            var castInference = (PartialTypeInferenceExpression)inference;
             Assert.AreEqual(1, castInference.InferenceName.Count());
             Assert.AreEqual("T", castInference.InferenceName.First().Value);
             Assert.AreEqual(1, castInference.InferenceExpression.Count());

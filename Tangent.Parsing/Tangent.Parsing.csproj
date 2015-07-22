@@ -66,6 +66,7 @@
     <Compile Include="Partial\PartialStatement.cs" />
     <Compile Include="Partial\PartialElement.cs" />
     <Compile Include="Partial\PartialTypeDeclaration.cs" />
+    <Compile Include="Partial\PartialTypeInferenceExpression.cs" />
     <Compile Include="Partial\PartialTypeReference.cs" />
     <Compile Include="Partial\PlaceholderType.cs" />
     <Compile Include="Partial\VarDeclElement.cs" />

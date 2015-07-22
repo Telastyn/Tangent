@@ -165,7 +165,7 @@ namespace Tangent.Parsing
                     break;
                 case TokenIdentifier.ReductionDeclSeparator:
                     if (shouldBePhrase.Result.Any(pp => !pp.IsIdentifier && pp.Parameter.Returns == null)) {
-                        throw new NotImplementedException("Sorry, generic functions are not currently supported.");
+                        throw new NotImplementedException("Sorry, unconstrained generic functions are not currently supported.");
                     }
 
                     var functionParts = PartialParseFunctionBits(tokens, scope);
@@ -305,7 +305,7 @@ namespace Tangent.Parsing
 
                         if (pe.Type == ElementType.VarDecl) {
                             var varDecl = (VarDeclElement)pe;
-                            return new TypeInferenceExpression(varDecl.ParameterDeclaration.Takes, varDecl.ParameterDeclaration.Returns ?? new List<Expression>(){ new IdentifierExpression("any", null)}, varDecl.SourceInfo);
+                            return new PartialTypeInferenceExpression(varDecl.ParameterDeclaration.Takes, varDecl.ParameterDeclaration.Returns ?? new List<Expression>(){ new IdentifierExpression("any", null)}, varDecl.SourceInfo);
                         }
 
                         throw new NotImplementedException(string.Format("Unsupported expression {0} in Type Declaration.", pe.Type));

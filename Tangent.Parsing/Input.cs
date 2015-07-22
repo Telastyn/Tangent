@@ -43,7 +43,7 @@ namespace Tangent.Parsing
             if (buffer.Count == 1) {
                 if (type == buffer[0].EffectiveType) {
                     return buffer;
-                } else if (type == TangentType.Any.Kind && (buffer[0].EffectiveType is KindType || buffer[0].EffectiveType is TypeConstant || buffer[0].EffectiveType is GenericArgumentReferenceType)) {
+                } else if (type == TangentType.Any.Kind && (buffer[0].EffectiveType is KindType || buffer[0].EffectiveType is TypeConstant || buffer[0].EffectiveType is GenericArgumentReferenceType || buffer[0].EffectiveType is GenericInferencePlaceholder)) {
                     // mild hack since there's no subtyping yet.
                     return buffer;
                 }
@@ -210,7 +210,7 @@ namespace Tangent.Parsing
                 } else {
                     var inType = inputEnum.Current.EffectiveType;
                     if (inType == null) { return false; }
-                    if (entry.Parameter.Returns == TangentType.Any.Kind && (inType.ImplementationType == KindOfType.Kind || inType.ImplementationType == KindOfType.TypeConstant || inType.ImplementationType == KindOfType.GenericReference)) {
+                    if (entry.Parameter.Returns == TangentType.Any.Kind && (inType.ImplementationType == KindOfType.Kind || inType.ImplementationType == KindOfType.TypeConstant || inType.ImplementationType == KindOfType.GenericReference || inType.ImplementationType == KindOfType.InferencePoint)) {
                         // good.
                     } else if (inType == TangentType.PotentiallyAnything) {
                         // good.

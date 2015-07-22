@@ -57,6 +57,7 @@
     <Compile Include="FunctionBindingExpression.cs" />
     <Compile Include="FunctionInvocationExpression.cs" />
     <Compile Include="GenericArgumentReferenceType.cs" />
+    <Compile Include="GenericInferenceParameterAccessExpression.cs" />
     <Compile Include="GenericInferencePlaceholder.cs" />
     <Compile Include="GenericParameterAccessExpression.cs" />
     <Compile Include="Identifier.cs" />
@@ -80,7 +81,6 @@
     <Compile Include="TypeConstant.cs" />
     <Compile Include="TypeDeclaration.cs" />
     <Compile Include="EnumValueAccessExpression.cs" />
-    <Compile Include="TypeInferenceExpression.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.Common\Tangent.Common.csproj">

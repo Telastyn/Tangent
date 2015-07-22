@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tangent.Intermediate;
 
-namespace Tangent.Intermediate
+namespace Tangent.Parsing.Partial
 {
-    public class TypeInferenceExpression:Expression
+    public class PartialTypeInferenceExpression : Expression
     {
         public readonly IEnumerable<Identifier> InferenceName;
         public readonly IEnumerable<Expression> InferenceExpression;
@@ -26,7 +27,7 @@ namespace Tangent.Intermediate
             get { return null; }
         }
 
-        public TypeInferenceExpression(IEnumerable<Identifier> name, IEnumerable<Expression> typeExpr, LineColumnRange sourceInfo)
+        public PartialTypeInferenceExpression(IEnumerable<Identifier> name, IEnumerable<Expression> typeExpr, LineColumnRange sourceInfo)
             : base(sourceInfo)
         {
             InferenceName = new List<Identifier>(name);

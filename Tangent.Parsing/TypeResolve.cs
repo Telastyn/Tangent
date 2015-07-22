@@ -189,6 +189,13 @@ namespace Tangent.Parsing
                 scope = (ProductType)conversions[partialFunction.Returns.Scope];
             }
 
+            var inferredTypes = ExtractAndCompileInferredTypes(partialFunction, types, scope == null ? Enumerable.Empty<ParameterDeclaration>() : scope == null ? Enumerable.Empty<ParameterDeclaration>() : scope.ContainedGenericReferences(GenericTie.Reference));
+            if (!inferredTypes.Success) {
+                return new ResultOrParseError<ReductionDeclaration>(inferredTypes.Error);
+            }
+
+            var genericFnParams = inferredTypes.Result.Select(kvp => kvp.Value.GenericArgument);
+
             foreach (var part in partialFunction.Takes) {
                 if (!part.IsIdentifier && part.Parameter.IsThisParam) {
                     if (thisFound) { // TODO: nicer error.
@@ -198,7 +205,7 @@ namespace Tangent.Parsing
                     phrase.Add(new PhrasePart(new ParameterDeclaration("this", scope)));
                     thisFound = true;
                 } else {
-                    var resolved = Resolve(part, types);
+                    var resolved = Resolve(FixInferences(part, inferredTypes.Result), types);
                     if (resolved.Success) {
                         phrase.Add(resolved.Result);
                     } else {
@@ -208,7 +215,7 @@ namespace Tangent.Parsing
             }
 
             var fn = partialFunction.Returns;
-            var effectiveType = ResolveType(fn.EffectiveType, types, Enumerable.Empty<ParameterDeclaration>());
+            var effectiveType = ResolveType(fn.EffectiveType, types, genericFnParams);
             if (!effectiveType.Success) {
                 errors = errors.Concat(effectiveType.Error);
             }
@@ -217,7 +224,7 @@ namespace Tangent.Parsing
                 return new ResultOrParseError<ReductionDeclaration>(errors);
             }
 
-            return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType.Result, fn.Implementation, scope)));
+            return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType.Result, fn.Implementation, scope), genericFnParams));
         }
 
         internal static ResultOrParseError<ProductType> PartialProductType(PartialProductType partialType, ProductType target, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
@@ -264,6 +271,18 @@ namespace Tangent.Parsing
             return new ParameterDeclaration(partial.Takes, ctorGenericArguments == null ? type.Result : ConvertGenericReferencesToInferences(type.Result));
         }
 
+
+        private static ResultOrParseError<GenericInferencePlaceholder> Resolve(PartialTypeInferenceExpression inference, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
+        {
+
+            var type = ResolveType(inference.InferenceExpression, types, ctorGenericArguments ?? Enumerable.Empty<ParameterDeclaration>());
+            if (!type.Success) {
+                return new ResultOrParseError<GenericInferencePlaceholder>(type.Error);
+            }
+
+            return GenericInferencePlaceholder.For(new ParameterDeclaration(inference.InferenceName, type.Result));
+        }
+
         internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<Expression> identifiers, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
         {
             var input = new Input(identifiers, Scope.ForTypes(types, genericArguments), typeResolutionRules);
@@ -306,7 +325,7 @@ namespace Tangent.Parsing
                     }
 
                     return resolvedType;
-                } else if (resolvedType.ImplementationType == KindOfType.GenericReference) {
+                } else if (resolvedType.ImplementationType == KindOfType.GenericReference || resolvedType.ImplementationType == KindOfType.InferencePoint) {
                     // some type reference. Just go with it?
                     return resolvedType;
                 } else {
@@ -362,6 +381,55 @@ namespace Tangent.Parsing
                     throw new NotImplementedException();
 
             }
+        }
+
+        private static ResultOrParseError<Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder>> ExtractAndCompileInferredTypes(PartialReductionDeclaration partialFunctionDecl, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> typeGenerics)
+        {
+            var inferenceParameters = partialFunctionDecl.Takes.Where(ppp => !ppp.IsIdentifier).SelectMany(ppp => ppp.Parameter.Returns.Where(expr => expr.NodeType == ExpressionNodeType.TypeInference)).Cast<PartialTypeInferenceExpression>().ToList();
+            var dependencyGraph = new Dictionary<PartialTypeInferenceExpression, HashSet<PartialTypeInferenceExpression>>();
+            foreach (var tie in inferenceParameters) {
+                BuildInferenceDependencyGraph(tie, dependencyGraph);
+            }
+
+            var result = new Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder>();
+            while (result.Count < dependencyGraph.Count) {
+                var workset = dependencyGraph.Where(kvp => !result.ContainsKey(kvp.Key) && kvp.Value.All(tie => result.ContainsKey(tie))).Select(kvp => kvp.Key).ToList();
+                foreach (var entry in workset) {
+                    var resolved = Resolve(entry, types, typeGenerics);
+                    if (!resolved.Success) {
+                        return new ResultOrParseError<Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder>>(resolved.Error);
+                    }
+
+                    result.Add(entry, resolved.Result);
+                }
+            }
+
+            return result;
+        }
+
+        private static void BuildInferenceDependencyGraph(PartialTypeInferenceExpression tie, Dictionary<PartialTypeInferenceExpression, HashSet<PartialTypeInferenceExpression>> graph)
+        {
+            if (graph.ContainsKey(tie)) { return; }
+            graph.Add(tie, new HashSet<PartialTypeInferenceExpression>());
+            foreach (var dep in tie.InferenceExpression.Where(expr => expr.NodeType == ExpressionNodeType.TypeInference).Cast<PartialTypeInferenceExpression>()) {
+                BuildInferenceDependencyGraph(dep, graph);
+                graph[tie].Add(dep);
+            }
+        }
+
+        private static PartialPhrasePart FixInferences(PartialPhrasePart part, Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder> inferredTypes)
+        {
+            if (part.IsIdentifier) { return part; }
+            Func<Expression, Expression> fixer =  expr=>{
+                var partial = expr as PartialTypeInferenceExpression;
+                if(partial == null){
+                     return expr;
+                }
+
+                return new GenericInferenceParameterAccessExpression( inferredTypes[partial], partial.SourceInfo);
+            };
+
+            return new PartialPhrasePart(new PartialParameterDeclaration(part.Parameter.Takes, part.Parameter.Returns.Select(fixer).ToList()));
         }
     }
 }
