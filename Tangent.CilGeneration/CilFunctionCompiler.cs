@@ -42,7 +42,7 @@ namespace Tangent.CilGeneration
             foreach (var specialization in specializations) {
                 Label next = gen.DefineLabel();
                 var specializationDetails = specialization.SpecializationAgainst(fn).Specializations;
-                var modes = new Dictionary<ParameterDeclaration, Tuple<Type,Type>>();
+                var modes = new Dictionary<ParameterDeclaration, Tuple<Type, Type>>();
                 foreach (var specializationParam in specializationDetails) {
                     switch (specializationParam.SpecializationType) {
                         case DispatchType.SingleValue:
@@ -76,12 +76,12 @@ namespace Tangent.CilGeneration
 
                 // Cool. Load parameters, call function and return.
                 foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
-                    
+
                     if (modes.ContainsKey(parameter.Parameter)) {
                         var valueFld = modes[parameter.Parameter].Item1.GetField("Value");
                         parameterAccessors[parameter.Parameter](gen);
                         gen.Emit(OpCodes.Ldfld, valueFld);
-                        
+
                         if (modes[parameter.Parameter].Item2.IsValueType) {
                             gen.Emit(OpCodes.Unbox_Any, modes[parameter.Parameter].Item2);
                         } else {
@@ -106,7 +106,7 @@ namespace Tangent.CilGeneration
         {
             var genericParams = variantType.BaseType.GetGenericArguments();
             for (int i = 1; i <= genericParams.Length; ++i) {
-                if (genericParams[i-1] == targetType) {
+                if (genericParams[i - 1] == targetType) {
                     return i;
                 }
             }
@@ -160,7 +160,7 @@ namespace Tangent.CilGeneration
 
                     var ctor = invoke.Bindings.FunctionDefinition.Returns as CtorCall;
                     if (ctor != null) {
-                        var ctorFn = typeLookup[ctor.EffectiveType].GetConstructor(invoke.Bindings.FunctionDefinition.Takes.Where(pp=>!pp.IsIdentifier).Select(pp=>typeLookup[pp.Parameter.Returns]).ToArray());
+                        var ctorFn = typeLookup[ctor.EffectiveType].GetConstructor(invoke.Bindings.FunctionDefinition.Takes.Where(pp => !pp.IsIdentifier).Select(pp => typeLookup[pp.Parameter.Returns]).ToArray());
                         gen.Emit(OpCodes.Newobj, ctorFn);
                         return;
                     }
@@ -173,7 +173,12 @@ namespace Tangent.CilGeneration
 
                     // else, MethodInfo invocation.
                     if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
-                    gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
+                    if (invoke.Bindings.GenericArguments.Any()) {
+                        var parameterizedFn = fnLookup[invoke.Bindings.FunctionDefinition].MakeGenericMethod(invoke.Bindings.GenericArguments.Select(tt => typeLookup[tt]).ToArray());
+                        gen.EmitCall(OpCodes.Call, parameterizedFn, null);
+                    } else {
+                        gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
+                    }
 
                     return;
 

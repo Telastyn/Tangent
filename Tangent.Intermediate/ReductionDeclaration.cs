@@ -76,6 +76,7 @@ namespace Tangent.Intermediate
                 }
                 else
                 {
+                    // TODO: generic -> concrete specializations.
                     if (!rhsEnum.Current.IsIdentifier && rhsEnum.Current.Parameter.Returns.ImplementationType == KindOfType.Sum) {
                         if (rhsEnum.Current.Parameter.Returns == thisEnum.Current.Parameter.Returns) {
                             break;

@@ -32,6 +32,19 @@ namespace Tangent.CilGeneration
             }
         }
 
+        public void AddGenericFunctionParameterMapping(ParameterDeclaration generic, GenericTypeParameterBuilder dotnetType)
+        {
+            var reference = GenericArgumentReferenceType.For(generic);
+            var inference = GenericInferencePlaceholder.For(generic);
+            if (!lookup.ContainsKey(reference)) {
+                lookup.Add(reference, dotnetType);
+            }
+
+            if (!lookup.ContainsKey(inference)) {
+                lookup.Add(inference, dotnetType);
+            }
+        }
+
         private void PopulateLookupWith(TangentType t)
         {
             switch (t.ImplementationType) {
