@@ -503,5 +503,65 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(1, invoke.Bindings.Arguments.Count());
             Assert.AreEqual(ExpressionNodeType.FunctionBinding, invoke.Bindings.Arguments.First().NodeType);
         }
+
+        [TestMethod]
+        public void SpecificOverloadPreferredOverInference()
+        {
+            // foo(x:(T))=>void;
+            // foo(x:int)=>void;
+            //   foo 42;
+            var T = new ParameterDeclaration("T", TangentType.Any.Kind);
+            var inferT = GenericInferencePlaceholder.For(T);
+            var fooT = new ReductionDeclaration(new[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("x", inferT)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())), new[] { T });
+            var fooInt = new ReductionDeclaration(new[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("x", TangentType.Int)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
+
+            var scope = new Scope(
+                TangentType.Void,
+                Enumerable.Empty<TypeDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
+                new[] { fooT, fooInt },
+                Enumerable.Empty<ParameterDeclaration>());
+
+            var tokens = new List<Expression>() { new IdentifierExpression("foo", null), new ConstantExpression<int>(TangentType.Int, 42, null) };
+
+            var result = new Input(tokens, scope).InterpretAsStatement();
+
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
+            var invoke = ((FunctionInvocationExpression)result.First());
+
+            Assert.AreEqual(fooInt, invoke.Bindings.FunctionDefinition);
+        }
+
+        [TestMethod]
+        public void GenericOverloadFallthroughInference()
+        {
+            // foo(x:(T))=>void;
+            // foo(x:int)=>void;
+            //   foo "cow";
+            var T = new ParameterDeclaration("T", TangentType.Any.Kind);
+            var inferT = GenericInferencePlaceholder.For(T);
+            var fooT = new ReductionDeclaration(new[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("x", inferT)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())), new[] { T });
+            var fooInt = new ReductionDeclaration(new[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("x", TangentType.Int)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
+
+            var scope = new Scope(
+                TangentType.Void,
+                Enumerable.Empty<TypeDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
+                Enumerable.Empty<ParameterDeclaration>(),
+                new[] { fooT, fooInt },
+                Enumerable.Empty<ParameterDeclaration>());
+
+            var tokens = new List<Expression>() { new IdentifierExpression("foo", null), new ConstantExpression<string>(TangentType.String, "cow", null) };
+
+            var result = new Input(tokens, scope).InterpretAsStatement();
+
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(ExpressionNodeType.FunctionInvocation, result.First().NodeType);
+            var invoke = ((FunctionInvocationExpression)result.First());
+
+            Assert.AreEqual(fooT, invoke.Bindings.FunctionDefinition);
+        }
     }
 }

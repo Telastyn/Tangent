@@ -280,7 +280,7 @@ namespace Tangent.Parsing
                 return new ResultOrParseError<GenericInferencePlaceholder>(type.Error);
             }
 
-            return GenericInferencePlaceholder.For(new ParameterDeclaration(inference.InferenceName, type.Result));
+            return GenericInferencePlaceholder.For(new ParameterDeclaration(inference.InferenceName, type.Result.Kind));
         }
 
         internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<Expression> identifiers, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)

@@ -294,9 +294,24 @@ namespace Tangent.Parsing
                                 }
                             }
                         }
+                    } else if (ppa.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference).Any()) {
+                        if (phraseB) {
+                            var ppb = ((PhrasePart)b);
+                            if (!ppb.IsIdentifier && !ppb.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference).Any()) {
+                                return 1;
+                            }
+                        }
+                    } else {
+                        if (phraseB) {
+                            var ppb = ((PhrasePart)b);
+                            if (!ppb.IsIdentifier && ppb.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference).Any()) {
+                                return -1;
+                            }
+                        }
                     }
                 }
             }
+
             return 0;
         }
 
