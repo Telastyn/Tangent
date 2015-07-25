@@ -98,7 +98,11 @@ namespace Tangent.Intermediate
 
         public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
         {
-            yield break;
+            foreach (var entry in this.TypeArguments) {
+                foreach (var genref in entry.ContainedGenericReferences(tie)) {
+                    yield return genref;
+                }
+            }
         }
     }
 }

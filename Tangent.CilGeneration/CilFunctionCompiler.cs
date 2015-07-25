@@ -38,6 +38,10 @@ namespace Tangent.CilGeneration
                 return;
             }
 
+            var objGetType = typeof(object).GetMethod("GetType"); 
+            var typeEquality = typeof(Type).GetMethod("op_Equality");
+            var getTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
+
             // For now, we can't have nested specializations, so just go in order, doing the checks.
             foreach (var specialization in specializations) {
                 Label next = gen.DefineLabel();
@@ -69,6 +73,20 @@ namespace Tangent.CilGeneration
                             gen.Emit(OpCodes.Brfalse, next);
                             break;
 
+                        case DispatchType.GenericSpecialization:
+                            // TODO: order specializations to prevent dispatching to something that is just going to dispatch again?
+                            //
+                            // if param.GetType() != specificType
+                            //
+                            var specificTargetType = typeLookup[specializationParam.SpecificFunctionParameter.Returns];
+                            parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
+                            gen.Emit(OpCodes.Callvirt, objGetType);
+                            gen.Emit(OpCodes.Ldtoken, specificTargetType);
+                            gen.Emit(OpCodes.Call, getTypeFromHandle);
+                            gen.Emit(OpCodes.Call, typeEquality);
+                            gen.Emit(OpCodes.Brfalse, next);
+                            break;
+
                         default:
                             throw new NotImplementedException();
                     }
@@ -92,8 +110,14 @@ namespace Tangent.CilGeneration
                     }
                 }
 
-                gen.Emit(OpCodes.Tailcall);
-                gen.EmitCall(OpCodes.Call, fnLookup[specialization], null);
+                if (specialization.GenericParameters.Any()) {
+                    // TODO: runtime infer generic params and invoke proper fn.
+                    throw new NotImplementedException("runtime generic inference not yet supported.");
+                } else {
+                    gen.Emit(OpCodes.Tailcall);
+                    gen.EmitCall(OpCodes.Call, fnLookup[specialization], null);
+                }
+                
                 gen.Emit(OpCodes.Ret);
 
                 // Otherwise, place next label for next specialization (or global version).

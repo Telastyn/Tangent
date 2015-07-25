@@ -49,35 +49,36 @@ namespace Tangent.Intermediate
             return new SpecializationDefinition(result);
         }
 
-        private IEnumerable<SpecializationEntry> SpecializationsFor(ReductionDeclaration rhs){
+        private IEnumerable<SpecializationEntry> SpecializationsFor(ReductionDeclaration rhs)
+        {
             if (this == rhs) { yield return null; yield break; }
             if (this.Returns.EffectiveType != rhs.Returns.EffectiveType) { yield return null; yield break; }
             if (this.Takes.Count != rhs.Takes.Count) { yield return null; yield break; }
 
             var thisEnum = this.Takes.GetEnumerator();
             var rhsEnum = rhs.Takes.GetEnumerator();
-            while (thisEnum.MoveNext() && rhsEnum.MoveNext())
-            {
-                if (thisEnum.Current.IsIdentifier)
-                {
-                    if (rhsEnum.Current.IsIdentifier)
-                    {
-                        if (thisEnum.Current.Identifier.Value != rhsEnum.Current.Identifier.Value)
-                        {
+            while (thisEnum.MoveNext() && rhsEnum.MoveNext()) {
+                if (thisEnum.Current.IsIdentifier) {
+                    if (rhsEnum.Current.IsIdentifier) {
+                        if (thisEnum.Current.Identifier.Value != rhsEnum.Current.Identifier.Value) {
                             yield return null;
                             yield break;
                         }
-                    }
-                    else
-                    {
+                    } else {
                         yield return null;
                         yield break;
                     }
-                }
-                else
-                {
-                    // TODO: generic -> concrete specializations.
-                    if (!rhsEnum.Current.IsIdentifier && rhsEnum.Current.Parameter.Returns.ImplementationType == KindOfType.Sum) {
+                } else {
+                    var rhsInferences = rhsEnum.Current.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : rhsEnum.Current.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference);
+                    if (!rhsEnum.Current.IsIdentifier && rhsInferences.Any()) {
+                        var necessaryInferences = new Dictionary<ParameterDeclaration, TangentType>();
+                        if (rhsEnum.Current.Parameter.Returns.CompatibilityMatches(thisEnum.Current.Parameter.Returns, necessaryInferences)) {
+                            yield return new SpecializationEntry(rhsEnum.Current.Parameter, thisEnum.Current.Parameter, necessaryInferences);
+                        } else {
+                            yield return null;
+                            yield break;
+                        }
+                    } else if (!rhsEnum.Current.IsIdentifier && rhsEnum.Current.Parameter.Returns.ImplementationType == KindOfType.Sum) {
                         if (rhsEnum.Current.Parameter.Returns == thisEnum.Current.Parameter.Returns) {
                             break;
                         }
