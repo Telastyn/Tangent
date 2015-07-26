@@ -38,7 +38,7 @@ namespace Tangent.CilGeneration
                 return;
             }
 
-            var objGetType = typeof(object).GetMethod("GetType"); 
+            var objGetType = typeof(object).GetMethod("GetType");
             var typeEquality = typeof(Type).GetMethod("op_Equality");
             var getTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
 
@@ -47,6 +47,7 @@ namespace Tangent.CilGeneration
                 Label next = gen.DefineLabel();
                 var specializationDetails = specialization.SpecializationAgainst(fn).Specializations;
                 var modes = new Dictionary<ParameterDeclaration, Tuple<Type, Type>>();
+                var specialCasts = new Dictionary<ParameterDeclaration, Type>();
                 foreach (var specializationParam in specializationDetails) {
                     switch (specializationParam.SpecializationType) {
                         case DispatchType.SingleValue:
@@ -79,10 +80,19 @@ namespace Tangent.CilGeneration
                             // if param.GetType() != specificType
                             //
                             var specificTargetType = typeLookup[specializationParam.SpecificFunctionParameter.Returns];
+                            specialCasts.Add(specializationParam.GeneralFunctionParameter, specificTargetType);
+                            //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
                             parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
+                            //
+                            // RMS: This call would be better as a Constrained opcode, but that requires a ldarga (ptr load) not a ldarg (value load), but we 
+                            //       don't know our parameter index at this point. Consider refactoring for perf.
+                            //
+                            gen.Emit(OpCodes.Box, typeLookup[specializationParam.GeneralFunctionParameter.Returns]);
                             gen.Emit(OpCodes.Callvirt, objGetType);
+                            //gen.EmitWriteLine("Specialization GetType success.");
                             gen.Emit(OpCodes.Ldtoken, specificTargetType);
                             gen.Emit(OpCodes.Call, getTypeFromHandle);
+                            //gen.EmitWriteLine("GetTypeFromHandleSuccess");
                             gen.Emit(OpCodes.Call, typeEquality);
                             gen.Emit(OpCodes.Brfalse, next);
                             break;
@@ -105,6 +115,14 @@ namespace Tangent.CilGeneration
                         } else {
                             gen.Emit(OpCodes.Castclass, modes[parameter.Parameter].Item2);
                         }
+                    } else if (specialCasts.ContainsKey(parameter.Parameter)) {
+                        parameterAccessors[parameter.Parameter](gen);
+                        gen.Emit(OpCodes.Box, typeLookup[parameter.Parameter.Returns]);
+                        if (specialCasts[parameter.Parameter].IsValueType) {
+                            gen.Emit(OpCodes.Unbox_Any, specialCasts[parameter.Parameter]);
+                        } else {
+                            gen.Emit(OpCodes.Castclass, specialCasts[parameter.Parameter]);
+                        }
                     } else {
                         parameterAccessors[parameter.Parameter](gen);
                     }
@@ -117,7 +135,7 @@ namespace Tangent.CilGeneration
                     gen.Emit(OpCodes.Tailcall);
                     gen.EmitCall(OpCodes.Call, fnLookup[specialization], null);
                 }
-                
+
                 gen.Emit(OpCodes.Ret);
 
                 // Otherwise, place next label for next specialization (or global version).
