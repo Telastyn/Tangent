@@ -10,7 +10,8 @@ namespace Tangent.Intermediate
     {
         SingleValue,
         SumType,
-        GenericSpecialization
+        GenericSpecialization,
+        PartialSpecialization
     }
 
     public class SpecializationEntry
@@ -24,7 +25,11 @@ namespace Tangent.Intermediate
             get
             {
                 if (InferenceSpecializations != null) {
-                    return DispatchType.GenericSpecialization;
+                    if (InferenceSpecializations.Any(kvp => kvp.Value.ContainedGenericReferences(GenericTie.Inference).Any())) {
+                        return DispatchType.PartialSpecialization;
+                    } else {
+                        return DispatchType.GenericSpecialization;
+                    }
                 }
 
                 switch (GeneralFunctionParameter.Returns.ImplementationType) {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.SymbolStore;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
@@ -41,6 +42,11 @@ namespace Tangent.CilGeneration
             var objGetType = typeof(object).GetMethod("GetType");
             var typeEquality = typeof(Type).GetMethod("op_Equality");
             var getTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
+            var isGenericType = typeof(Type).GetProperty("IsGenericType").GetGetMethod();
+            var getGenericTypeDefinition = typeof(Type).GetMethod("GetGenericTypeDefinition");
+            var getMethodFromHandle = typeof(MethodBase).GetMethods().Where(mi => mi.Name == "GetMethodFromHandle" && mi.GetParameters().Count() == 1).First();
+            var makeGenericMethod = typeof(MethodInfo).GetMethod("MakeGenericMethod");
+            var invoke = typeof(MethodInfo).GetMethods().Where(mi => mi.Name == "Invoke" && mi.GetParameters().Count() == 2).First();
 
             // For now, we can't have nested specializations, so just go in order, doing the checks.
             foreach (var specialization in specializations) {
@@ -76,13 +82,15 @@ namespace Tangent.CilGeneration
 
                         case DispatchType.GenericSpecialization:
                             // TODO: order specializations to prevent dispatching to something that is just going to dispatch again?
+                            var specificTargetType = typeLookup[specializationParam.SpecificFunctionParameter.Returns];
+                            //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
+                            parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
+
+
                             //
                             // if param.GetType() != specificType
                             //
-                            var specificTargetType = typeLookup[specializationParam.SpecificFunctionParameter.Returns];
                             specialCasts.Add(specializationParam.GeneralFunctionParameter, specificTargetType);
-                            //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
-                            parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
                             //
                             // RMS: This call would be better as a Constrained opcode, but that requires a ldarga (ptr load) not a ldarg (value load), but we 
                             //       don't know our parameter index at this point. Consider refactoring for perf.
@@ -95,43 +103,107 @@ namespace Tangent.CilGeneration
                             //gen.EmitWriteLine("GetTypeFromHandleSuccess");
                             gen.Emit(OpCodes.Call, typeEquality);
                             gen.Emit(OpCodes.Brfalse, next);
-                            break;
 
+                            break;
+                        case DispatchType.PartialSpecialization:
+                            var specificPartialTargetType = typeLookup[specializationParam.SpecificFunctionParameter.Returns];
+                            //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
+                            parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
+
+                            //
+                            // if param.GetType().IsGenericType && param.GetType().GetGenericTypeDefinition() == specificType (partial specialization)
+                            //
+                            gen.Emit(OpCodes.Box, typeLookup[specializationParam.GeneralFunctionParameter.Returns]);
+                            gen.Emit(OpCodes.Callvirt, objGetType);
+                            gen.Emit(OpCodes.Stloc_0);
+                            gen.Emit(OpCodes.Ldloc_0);
+                            gen.Emit(OpCodes.Call, isGenericType);
+                            gen.Emit(OpCodes.Brfalse, next);
+
+                            gen.Emit(OpCodes.Ldloc_0);
+                            gen.Emit(OpCodes.Call, getGenericTypeDefinition);
+                            gen.Emit(OpCodes.Ldtoken, specificPartialTargetType);
+                            gen.Emit(OpCodes.Call, getTypeFromHandle);
+                            gen.Emit(OpCodes.Call, typeEquality);
+                            gen.Emit(OpCodes.Brfalse, next);
+
+                            break;
                         default:
                             throw new NotImplementedException();
                     }
                 }
 
-                // Cool. Load parameters, call function and return.
-                foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
-
-                    if (modes.ContainsKey(parameter.Parameter)) {
-                        var valueFld = modes[parameter.Parameter].Item1.GetField("Value");
-                        parameterAccessors[parameter.Parameter](gen);
+                Action<ParameterDeclaration, bool> emitParameterDispatch = (parameter, unbox) =>
+                {
+                    if (modes.ContainsKey(parameter)) {
+                        var valueFld = modes[parameter].Item1.GetField("Value");
+                        parameterAccessors[parameter](gen);
                         gen.Emit(OpCodes.Ldfld, valueFld);
 
-                        if (modes[parameter.Parameter].Item2.IsValueType) {
-                            gen.Emit(OpCodes.Unbox_Any, modes[parameter.Parameter].Item2);
-                        } else {
-                            gen.Emit(OpCodes.Castclass, modes[parameter.Parameter].Item2);
+                        if (unbox) {
+                            if (modes[parameter].Item2.IsValueType) {
+                                gen.Emit(OpCodes.Unbox_Any, modes[parameter].Item2);
+                            } else {
+                                gen.Emit(OpCodes.Castclass, modes[parameter].Item2);
+                            }
                         }
-                    } else if (specialCasts.ContainsKey(parameter.Parameter)) {
-                        parameterAccessors[parameter.Parameter](gen);
-                        gen.Emit(OpCodes.Box, typeLookup[parameter.Parameter.Returns]);
-                        if (specialCasts[parameter.Parameter].IsValueType) {
-                            gen.Emit(OpCodes.Unbox_Any, specialCasts[parameter.Parameter]);
-                        } else {
-                            gen.Emit(OpCodes.Castclass, specialCasts[parameter.Parameter]);
+                    } else if (specialCasts.ContainsKey(parameter)) {
+                        parameterAccessors[parameter](gen);
+                        gen.Emit(OpCodes.Box, typeLookup[parameter.Returns]);
+                        if (unbox) {
+                            if (specialCasts[parameter].IsValueType) {
+                                gen.Emit(OpCodes.Unbox_Any, specialCasts[parameter]);
+                            } else {
+                                gen.Emit(OpCodes.Castclass, specialCasts[parameter]);
+                            }
                         }
                     } else {
-                        parameterAccessors[parameter.Parameter](gen);
+                        parameterAccessors[parameter](gen);
+                        if (!unbox) {
+                            gen.Emit(OpCodes.Box, typeof(object));
+                        }
                     }
-                }
+                };
 
+                // Cool. Load parameters, call function and return.
                 if (specialization.GenericParameters.Any()) {
+                    // Arg storage
+                    gen.Emit(OpCodes.Ldc_I4, fn.Takes.Where(pp => !pp.IsIdentifier).Count());
+                    gen.Emit(OpCodes.Newarr, typeof(object));
+                    gen.Emit(OpCodes.Stloc_2);
+
+                    int ix = 0;
+                    foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
+                        gen.Emit(OpCodes.Ldloc_2);
+                        gen.Emit(OpCodes.Ldc_I4, ix);
+                        emitParameterDispatch(parameter.Parameter, false);
+                        gen.Emit(OpCodes.Stelem_Ref);
+                        ix++;
+                    }
+
+                    // Type params
+                    gen.Emit(OpCodes.Ldc_I4, specialization.GenericParameters.Count());
+                    gen.Emit(OpCodes.Newarr, typeof(Type));
+                    gen.Emit(OpCodes.Stloc_1);
+                    throw new NotImplementedException("TODO: extract type args during runtime dispatch.");
+
+                    // Fix fn and go.
+                    gen.Emit(OpCodes.Ldtoken, fnLookup[specialization]);
+                    gen.Emit(OpCodes.Call, getMethodFromHandle);
+                    gen.Emit(OpCodes.Ldloc_1);
+                    gen.Emit(OpCodes.Call, makeGenericMethod); // fn = fn<typeArgs>
+
+                    gen.Emit(OpCodes.Ldnull);
+                    gen.Emit(OpCodes.Ldloc_2);
+                    gen.Emit(OpCodes.Call, invoke);  // fn.Invoke(null, args);
+
                     // TODO: runtime infer generic params and invoke proper fn.
                     throw new NotImplementedException("runtime generic inference not yet supported.");
                 } else {
+                    foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
+                        emitParameterDispatch(parameter.Parameter, true);
+                    }
+
                     gen.Emit(OpCodes.Tailcall);
                     gen.EmitCall(OpCodes.Call, fnLookup[specialization], null);
                 }
