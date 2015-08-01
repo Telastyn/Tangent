@@ -71,7 +71,7 @@ namespace Tangent.Parsing
                 }
             }
 
-            var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt))).ToList();
+            var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt), pt.DataConstructorParts.SelectMany(pp=>pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>(): pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)))).ToList();
             //// RMS: leaving this here for now, as I'll probably need it again.
             //foreach (var sumTypeDeclaration in resolvedTypes.Result.Where(t => t.Returns.ImplementationType == KindOfType.Sum)) {
             //    var sumType = (sumTypeDeclaration.Returns as SumType);
@@ -128,7 +128,7 @@ namespace Tangent.Parsing
             return new TangentProgram(resolvedTypes.Result, resolvedFunctions.Result.Select(fn =>
             {
                 if (fn.Returns is TypeResolvedFunction) {
-                    return new ReductionDeclaration(fn.Takes, lookup[fn.Returns]);
+                    return new ReductionDeclaration(fn.Takes, lookup[fn.Returns], fn.GenericParameters);
                 } else {
                     return fn;
                 }

@@ -50,12 +50,23 @@ namespace Tangent.CilGeneration
         {
             var typeName = GetNameFor(target);
             var productType = (ProductType)target.Returns;
-            var tangentCtorParams = productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).ToList();
-            var dotnetCtorParamTypes = tangentCtorParams.Select(pp => lookup(pp.Parameter.Returns, true)).ToList();
+
+
             var me = lookup(target.Returns, false);
             if (me != null) { return me; }
             var classBuilder = builder.DefineType(typeName, System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Public);
             placeholder(target.Returns, classBuilder);
+            if (target.IsGeneric) {
+                var genericRefs = target.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter);
+                var genericBuilders = classBuilder.DefineGenericParameters(genericRefs.Select(pd => CilScope.GetNameFor(pd, tt => lookup(tt, true))).ToArray());
+                foreach (var entry in genericRefs.Zip(genericBuilders, (pd, gb) => Tuple.Create(pd, gb))) {
+                    placeholder(GenericArgumentReferenceType.For(entry.Item1), entry.Item2);
+                    placeholder(GenericInferencePlaceholder.For(entry.Item1), entry.Item2);
+                }
+            }
+
+            var tangentCtorParams = productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).ToList();
+            var dotnetCtorParamTypes = tangentCtorParams.Select(pp => lookup(pp.Parameter.Returns, true)).ToList();
             var ctor = classBuilder.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, dotnetCtorParamTypes.ToArray());
             var gen = ctor.GetILGenerator();
 
@@ -68,6 +79,7 @@ namespace Tangent.CilGeneration
 
             gen.Emit(OpCodes.Ret);
             return classBuilder.CreateType();
+
         }
 
         private Type BuildVariant(TypeDeclaration target, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup)
