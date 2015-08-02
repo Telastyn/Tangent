@@ -70,6 +70,9 @@ namespace Tangent.CilGeneration
             var ctor = classBuilder.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, dotnetCtorParamTypes.ToArray());
             var gen = ctor.GetILGenerator();
 
+            gen.Emit(OpCodes.Ldarg_0);
+            gen.Emit(OpCodes.Call, classBuilder.BaseType.GetConstructor(new Type[0]));
+
             for (int ix = 0; ix < dotnetCtorParamTypes.Count; ++ix) {
                 var field = classBuilder.DefineField(string.Join(" ", tangentCtorParams[ix].Parameter.Takes.Select(id => id.Value)), dotnetCtorParamTypes[ix], System.Reflection.FieldAttributes.Public | System.Reflection.FieldAttributes.InitOnly);
                 gen.Emit(OpCodes.Ldarg_0);

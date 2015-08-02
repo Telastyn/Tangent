@@ -47,6 +47,9 @@ namespace Tangent.CilGeneration
             var getMethodFromHandle = typeof(MethodBase).GetMethods().Where(mi => mi.Name == "GetMethodFromHandle" && mi.GetParameters().Count() == 1).First();
             var makeGenericMethod = typeof(MethodInfo).GetMethod("MakeGenericMethod");
             var invoke = typeof(MethodInfo).GetMethods().Where(mi => mi.Name == "Invoke" && mi.GetParameters().Count() == 2).First();
+            var getGenericArguments = typeof(Type).GetMethod("GetGenericArguments");
+
+            var parameterTypeLocals = new Dictionary<ParameterDeclaration, LocalBuilder>();
 
             // For now, we can't have nested specializations, so just go in order, doing the checks.
             foreach (var specialization in specializations) {
@@ -105,6 +108,7 @@ namespace Tangent.CilGeneration
                             gen.Emit(OpCodes.Brfalse, next);
 
                             break;
+
                         case DispatchType.PartialSpecialization:
                             var specificPartialTargetType = typeLookup[specializationParam.SpecificFunctionParameter.Returns];
                             //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
@@ -115,13 +119,21 @@ namespace Tangent.CilGeneration
                             //
                             gen.Emit(OpCodes.Box, typeLookup[specializationParam.GeneralFunctionParameter.Returns]);
                             gen.Emit(OpCodes.Callvirt, objGetType);
-                            gen.Emit(OpCodes.Stloc_0);
-                            gen.Emit(OpCodes.Ldloc_0);
-                            gen.Emit(OpCodes.Call, isGenericType);
+                            LocalBuilder paramTypeLocal;
+                            if(!parameterTypeLocals.ContainsKey(specializationParam.GeneralFunctionParameter)){
+                                paramTypeLocal = gen.DeclareLocal(typeof(Type));
+                                parameterTypeLocals.Add(specializationParam.GeneralFunctionParameter, paramTypeLocal);
+                                gen.Emit(OpCodes.Stloc, paramTypeLocal);
+                            }else{
+                                paramTypeLocal = parameterTypeLocals[specializationParam.GeneralFunctionParameter];
+                            }
+
+                            gen.Emit(OpCodes.Ldloc, paramTypeLocal);
+                            gen.Emit(OpCodes.Callvirt, isGenericType);
                             gen.Emit(OpCodes.Brfalse, next);
 
-                            gen.Emit(OpCodes.Ldloc_0);
-                            gen.Emit(OpCodes.Call, getGenericTypeDefinition);
+                            gen.Emit(OpCodes.Ldloc, paramTypeLocal);
+                            gen.Emit(OpCodes.Callvirt, getGenericTypeDefinition);
                             gen.Emit(OpCodes.Ldtoken, specificPartialTargetType);
                             gen.Emit(OpCodes.Call, getTypeFromHandle);
                             gen.Emit(OpCodes.Call, typeEquality);
@@ -160,7 +172,8 @@ namespace Tangent.CilGeneration
                     } else {
                         parameterAccessors[parameter](gen);
                         if (!unbox) {
-                            gen.Emit(OpCodes.Box, typeof(object));
+                            gen.Emit(OpCodes.Box, typeLookup[parameter.Returns]);
+                            gen.Emit(OpCodes.Castclass, typeof(object));
                         }
                     }
                 };
@@ -168,13 +181,15 @@ namespace Tangent.CilGeneration
                 // Cool. Load parameters, call function and return.
                 if (specialization.GenericParameters.Any()) {
                     // Arg storage
+                    var argArray = gen.DeclareLocal(typeof(object[]));
+
                     gen.Emit(OpCodes.Ldc_I4, fn.Takes.Where(pp => !pp.IsIdentifier).Count());
                     gen.Emit(OpCodes.Newarr, typeof(object));
-                    gen.Emit(OpCodes.Stloc_2);
+                    gen.Emit(OpCodes.Stloc, argArray);
 
                     int ix = 0;
                     foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
-                        gen.Emit(OpCodes.Ldloc_2);
+                        gen.Emit(OpCodes.Ldloc, argArray);
                         gen.Emit(OpCodes.Ldc_I4, ix);
                         emitParameterDispatch(parameter.Parameter, false);
                         gen.Emit(OpCodes.Stelem_Ref);
@@ -182,23 +197,94 @@ namespace Tangent.CilGeneration
                     }
 
                     // Type params
+                    var typeArgArray = gen.DeclareLocal(typeof(Type[]));
+
                     gen.Emit(OpCodes.Ldc_I4, specialization.GenericParameters.Count());
                     gen.Emit(OpCodes.Newarr, typeof(Type));
-                    gen.Emit(OpCodes.Stloc_1);
-                    throw new NotImplementedException("TODO: extract type args during runtime dispatch.");
+                    gen.Emit(OpCodes.Stloc, typeArgArray);
+
+                    // Function to walk types and bind inferences:
+                    Action<TangentType, Action> inferenceTypeWalker = null;
+                    inferenceTypeWalker = new Action<TangentType, Action>((tt, typeAccessor) =>
+                    {
+                        switch (tt.ImplementationType) {
+                            case KindOfType.BoundGeneric:
+                                // List<T>, List<int>, something.
+                                // Get args and work with them.
+                                var genericArgArray = gen.DeclareLocal(typeof(Type[])); 
+
+                                typeAccessor();
+                                gen.Emit(OpCodes.Callvirt, getGenericArguments);
+                                gen.Emit(OpCodes.Stloc, genericArgArray);
+
+                                int argumentIndex = 0;
+                                foreach (var boundGenericArgument in ((BoundGenericType)tt).TypeArguments) {
+                                    switch (boundGenericArgument.ImplementationType) {
+                                        case KindOfType.BoundGeneric:
+                                        case KindOfType.InferencePoint:
+                                            // Nested type.
+                                            inferenceTypeWalker(boundGenericArgument, () =>
+                                            {
+                                                gen.Emit(OpCodes.Ldloc, genericArgArray);
+                                                gen.Emit(OpCodes.Ldc_I4, argumentIndex);
+                                                gen.Emit(OpCodes.Ldelem_Ref);
+                                            });
+
+                                            break;
+
+                                        default:
+                                            // Something else. Probably a concrete bound argument.
+                                            // Skip it.
+                                            break;
+                                    }
+
+                                    argumentIndex++;
+                                }
+
+                                break;
+
+                            case KindOfType.InferencePoint:
+                                // Awesome. What we're actually looking for add it to the type arg array.
+                                // Load type array, target index, found type arg from array then store.
+                                gen.Emit(OpCodes.Ldloc, typeArgArray);
+                                gen.Emit(OpCodes.Ldc_I4, specialization.GenericParameters.IndexOf(((GenericInferencePlaceholder)tt).GenericArgument));
+
+                                typeAccessor();
+
+                                gen.Emit(OpCodes.Stelem_Ref);
+                                break;
+
+                            default:
+                                // Something else. Probably a concrete bound argument.
+                                // Skip it.
+                                break;
+                        }
+                    });
+
+                    // Now, bind them.
+                    foreach (var partialSpecialization in specializationDetails.Where(s => s.SpecializationType == DispatchType.PartialSpecialization)) {
+                        inferenceTypeWalker(partialSpecialization.SpecificFunctionParameter.Returns, () =>
+                        {
+                            // We already stored param.GetType() to a local. Use that.
+                            gen.Emit(OpCodes.Ldloc, parameterTypeLocals[partialSpecialization.GeneralFunctionParameter]);
+                        });
+                    }
 
                     // Fix fn and go.
                     gen.Emit(OpCodes.Ldtoken, fnLookup[specialization]);
                     gen.Emit(OpCodes.Call, getMethodFromHandle);
-                    gen.Emit(OpCodes.Ldloc_1);
-                    gen.Emit(OpCodes.Call, makeGenericMethod); // fn = fn<typeArgs>
+                    gen.Emit(OpCodes.Castclass, typeof(MethodInfo));
+                    gen.Emit(OpCodes.Ldloc, typeArgArray);
+                    gen.Emit(OpCodes.Callvirt, makeGenericMethod); // fn = fn<typeArgs>
 
                     gen.Emit(OpCodes.Ldnull);
-                    gen.Emit(OpCodes.Ldloc_2);
+                    gen.Emit(OpCodes.Ldloc, argArray);
                     gen.Emit(OpCodes.Call, invoke);  // fn.Invoke(null, args);
-
-                    // TODO: runtime infer generic params and invoke proper fn.
-                    throw new NotImplementedException("runtime generic inference not yet supported.");
+                    if (specialization.Returns.EffectiveType == TangentType.Void) {
+                        gen.Emit(OpCodes.Pop);
+                    } else {
+                        gen.Emit(OpCodes.Castclass, typeLookup[specialization.Returns.EffectiveType]);
+                    }
                 } else {
                     foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
                         emitParameterDispatch(parameter.Parameter, true);
@@ -274,9 +360,17 @@ namespace Tangent.CilGeneration
 
                     var ctor = invoke.Bindings.FunctionDefinition.Returns as CtorCall;
                     if (ctor != null) {
-                        var ctorFn = typeLookup[ctor.EffectiveType].GetConstructor(invoke.Bindings.FunctionDefinition.Takes.Where(pp => !pp.IsIdentifier).Select(pp => typeLookup[pp.Parameter.Returns]).ToArray());
-                        gen.Emit(OpCodes.Newobj, ctorFn);
-                        return;
+                        if (invoke.Bindings.GenericArguments.Any()) {
+                            var concreteType = typeLookup[ctor.EffectiveType].MakeGenericType(invoke.Bindings.GenericArguments.Select(tt => typeLookup[tt]).ToArray());
+                            //var concreteType = ctor.EffectiveType.ResolveGenericReferences(pd => invoke.Bindings.FunctionDefinition.GenericParameters.Zip(invoke.Bindings.GenericArguments, (def, arg) => Tuple.Create(def, arg)).Where(pair => pair.Item1 == pd).Select(pair => pair.Item2).First());
+                            var ctorFn = concreteType.GetConstructor(invoke.Bindings.GenericArguments.Select(tt=>typeLookup[tt]).ToArray());
+                            gen.Emit(OpCodes.Newobj, ctorFn);
+                            return;
+                        } else {
+                            var ctorFn = typeLookup[ctor.EffectiveType].GetConstructor(invoke.Bindings.FunctionDefinition.Takes.Where(pp => !pp.IsIdentifier).Select(pp => typeLookup[pp.Parameter.Returns]).ToArray());
+                            gen.Emit(OpCodes.Newobj, ctorFn);
+                            return;
+                        }
                     }
 
                     var opcode = invoke.Bindings.FunctionDefinition.Returns as DirectOpCode;

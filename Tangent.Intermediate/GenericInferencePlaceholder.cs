@@ -25,6 +25,8 @@ namespace Tangent.Intermediate
 
         public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
         {
+            if (other.ImplementationType == KindOfType.Lazy) { return false; }
+
             // TODO: verify generic constraint.
             if (necessaryTypeInferences.ContainsKey(GenericArgument)) {
                 if (necessaryTypeInferences[GenericArgument] != other) {

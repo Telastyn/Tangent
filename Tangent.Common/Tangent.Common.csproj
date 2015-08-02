@@ -42,6 +42,7 @@
     <Compile Include="Combine.cs" />
     <Compile Include="LineColumnPosition.cs" />
     <Compile Include="LineColumnRange.cs" />
+    <Compile Include="EnumerableExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
