@@ -283,6 +283,7 @@ namespace Tangent.CilGeneration
                     if (specialization.Returns.EffectiveType == TangentType.Void) {
                         gen.Emit(OpCodes.Pop);
                     } else {
+                        // TODO: verify that return type isn't impacted by inference.
                         gen.Emit(OpCodes.Castclass, typeLookup[specialization.Returns.EffectiveType]);
                     }
                 } else {
@@ -361,13 +362,14 @@ namespace Tangent.CilGeneration
                     var ctor = invoke.Bindings.FunctionDefinition.Returns as CtorCall;
                     if (ctor != null) {
                         if (invoke.Bindings.GenericArguments.Any()) {
-                            var concreteType = typeLookup[ctor.EffectiveType].MakeGenericType(invoke.Bindings.GenericArguments.Select(tt => typeLookup[tt]).ToArray());
+                            var concreteType = typeLookup[invoke.EffectiveType].MakeGenericType(invoke.Bindings.GenericArguments.Select(tt => typeLookup[tt]).ToArray());
                             //var concreteType = ctor.EffectiveType.ResolveGenericReferences(pd => invoke.Bindings.FunctionDefinition.GenericParameters.Zip(invoke.Bindings.GenericArguments, (def, arg) => Tuple.Create(def, arg)).Where(pair => pair.Item1 == pd).Select(pair => pair.Item2).First());
-                            var ctorFn = concreteType.GetConstructor(invoke.Bindings.GenericArguments.Select(tt=>typeLookup[tt]).ToArray());
+                            var ctorFn = concreteType.GetConstructor(invoke.Bindings.Arguments.Select(a => typeLookup[a.EffectiveType]).ToArray());
                             gen.Emit(OpCodes.Newobj, ctorFn);
                             return;
                         } else {
-                            var ctorFn = typeLookup[ctor.EffectiveType].GetConstructor(invoke.Bindings.FunctionDefinition.Takes.Where(pp => !pp.IsIdentifier).Select(pp => typeLookup[pp.Parameter.Returns]).ToArray());
+                            var ctorParamTypes = invoke.Bindings.FunctionDefinition.Takes.Where(pp => !pp.IsIdentifier).Select(pp => typeLookup[pp.Parameter.Returns]).ToArray();
+                            var ctorFn = typeLookup[invoke.EffectiveType].GetConstructor(ctorParamTypes);
                             gen.Emit(OpCodes.Newobj, ctorFn);
                             return;
                         }
@@ -382,7 +384,8 @@ namespace Tangent.CilGeneration
                     // else, MethodInfo invocation.
                     if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
                     if (invoke.Bindings.GenericArguments.Any()) {
-                        var parameterizedFn = fnLookup[invoke.Bindings.FunctionDefinition].MakeGenericMethod(invoke.Bindings.GenericArguments.Select(tt => typeLookup[tt]).ToArray());
+                        // LASTWORKED: this isn't being parameterized properly because we're getting a product type not a bound generic.
+                        var parameterizedFn = fnLookup[invoke.Bindings.FunctionDefinition].MakeGenericMethod(invoke.Bindings.Arguments.Select(a => typeLookup[a.EffectiveType]).ToArray());
                         gen.EmitCall(OpCodes.Call, parameterizedFn, null);
                     } else {
                         gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
@@ -463,7 +466,7 @@ namespace Tangent.CilGeneration
             }
 
             // Build actual function in anonymous type.
-            var returnType = typeLookup[binding.FunctionDefinition.Returns.EffectiveType];
+            var returnType = typeLookup[binding.ReturnType];
             var closureFn = closure.DefineMethod("Implementation", System.Reflection.MethodAttributes.Public, returnType, Enumerable.Empty<Type>().ToArray());
             var closureGen = closureFn.GetILGenerator();
 

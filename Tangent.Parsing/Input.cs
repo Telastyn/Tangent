@@ -297,8 +297,22 @@ namespace Tangent.Parsing
                     } else if (ppa.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference).Any()) {
                         if (phraseB) {
                             var ppb = ((PhrasePart)b);
-                            if (!ppb.IsIdentifier && !ppb.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference).Any()) {
-                                return 1;
+                            if (!ppb.IsIdentifier){
+                                if (!ppb.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference).Any()) {
+                                    return 1;
+                                }
+
+                                var aCanInferB = ppa.Parameter.Returns.CompatibilityMatches(ppb.Parameter.Returns, new Dictionary<ParameterDeclaration, TangentType>());
+                                var bCanInferA = ppb.Parameter.Returns.CompatibilityMatches(ppa.Parameter.Returns, new Dictionary<ParameterDeclaration, TangentType>());
+                                if (aCanInferB) {
+                                    if (bCanInferA) {
+                                        // continue.
+                                    } else {
+                                        return 1;
+                                    }
+                                } else if (bCanInferA) {
+                                    return -1;
+                                }
                             }
                         }
                     } else {

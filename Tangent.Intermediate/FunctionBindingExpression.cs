@@ -26,7 +26,7 @@ namespace Tangent.Intermediate
 
         private TangentType returnType = null;
 
-        internal TangentType ReturnType
+        public TangentType ReturnType
         {
             get
             {

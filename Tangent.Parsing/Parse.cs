@@ -63,15 +63,22 @@ namespace Tangent.Parsing
             }
 
             HashSet<ProductType> allProductTypes = new HashSet<ProductType>();
+            HashSet<BoundGenericType> allBoundGenerics = new HashSet<BoundGenericType>();
             foreach (var t in resolvedTypes.Result) {
                 if (t.Returns.ImplementationType == KindOfType.Product) {
-                    allProductTypes.Add((ProductType)t.Returns);
+                    if (t.IsGeneric) {
+                        allBoundGenerics.Add(BoundGenericType.For(t, t.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter.Returns)));
+                    } else {
+                        allProductTypes.Add((ProductType)t.Returns);
+                    }
                 } else if (t.Returns.ImplementationType == KindOfType.Sum) {
                     allProductTypes.UnionWith(((SumType)t.Returns).Types.Where(tt => tt.ImplementationType == KindOfType.Product).Cast<ProductType>());
                 }
             }
 
-            var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt), pt.DataConstructorParts.SelectMany(pp=>pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>(): pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)))).ToList();
+            var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt), pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference))))//.ToList();
+                .Concat(allBoundGenerics.Select(bg=> new ReductionDeclaration(((ProductType)bg.GenericTypeDeclatation.Returns).DataConstructorParts, new CtorCall(bg), bg.ContainedGenericReferences(GenericTie.Reference)))).ToList();
+
             //// RMS: leaving this here for now, as I'll probably need it again.
             //foreach (var sumTypeDeclaration in resolvedTypes.Result.Where(t => t.Returns.ImplementationType == KindOfType.Sum)) {
             //    var sumType = (sumTypeDeclaration.Returns as SumType);
