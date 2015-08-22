@@ -9,8 +9,7 @@ namespace Tangent.Intermediate
     public class ProductType : TangentType
     {
         public readonly List<PhrasePart> DataConstructorParts;
-        //private IEnumerable<ParameterDeclaration> genericElements = null;
-        //private readonly Dictionary<List<TangentType>, ProductType> concreteTypes = new Dictionary<List<TangentType>, ProductType>();
+        private IEnumerable<ParameterDeclaration> genericElements = null;
 
         public ProductType(IEnumerable<PhrasePart> dataConstructorParts)
             : base(KindOfType.Product)
@@ -25,27 +24,22 @@ namespace Tangent.Intermediate
 
         public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
         {
-            return this;
-            //genericElements = genericElements ?? ContainedGenericReferences(GenericTie.Inference).Concat(ContainedGenericReferences(GenericTie.Reference));
-            //if (!genericElements.Any()) {
-            //    return this;
-            //}
+            // Doing this lazily since we don't have generic info at ctor time.
+            genericElements = genericElements ?? ContainedGenericReferences(GenericTie.Inference);
+            if (!genericElements.Any()) {
+                return this;
+            }
 
-            //var bindings = genericElements.Select(pd => mapping(pd)).ToList();
-            //foreach (var entry in concreteTypes) {
-            //    if (entry.Key.Count == bindings.Count && entry.Key.SequenceEqual(bindings)) {
-            //        return entry.Value;
-            //    }
-            //}
-
-            //var concreteType = new ProductType(DataConstructorParts.Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns.ResolveGenericReferences(mapping)))));
-            //concreteTypes.Add(bindings, concreteType);
-            //return concreteType;
+            var bindings = genericElements.Select(pd => mapping(pd)).ToList();
+           
+            return BoundGenericProductType.For(this, bindings);
         }
 
         public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
         {
-            return DataConstructorParts.Where(pp => !pp.IsIdentifier).SelectMany(pp => pp.Parameter.Returns.ContainedGenericReferences(tie));
+            // For product types, generic references are also inferences.
+            genericElements = genericElements ?? DataConstructorParts.Where(pp => !pp.IsIdentifier).SelectMany(pp => pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference));
+            return genericElements;
         }
     }
 }

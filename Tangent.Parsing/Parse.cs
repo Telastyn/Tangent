@@ -63,45 +63,15 @@ namespace Tangent.Parsing
             }
 
             HashSet<ProductType> allProductTypes = new HashSet<ProductType>();
-            HashSet<BoundGenericType> allBoundGenerics = new HashSet<BoundGenericType>();
             foreach (var t in resolvedTypes.Result) {
                 if (t.Returns.ImplementationType == KindOfType.Product) {
-                    if (t.IsGeneric) {
-                        allBoundGenerics.Add(BoundGenericType.For(t, t.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter.Returns)));
-                    } else {
-                        allProductTypes.Add((ProductType)t.Returns);
-                    }
+                    allProductTypes.Add((ProductType)t.Returns);
                 } else if (t.Returns.ImplementationType == KindOfType.Sum) {
                     allProductTypes.UnionWith(((SumType)t.Returns).Types.Where(tt => tt.ImplementationType == KindOfType.Product).Cast<ProductType>());
                 }
             }
 
-            var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt), pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference))))//.ToList();
-                .Concat(allBoundGenerics.Select(bg=> new ReductionDeclaration(((ProductType)bg.GenericTypeDeclatation.Returns).DataConstructorParts, new CtorCall(bg), bg.ContainedGenericReferences(GenericTie.Reference)))).ToList();
-
-            //// RMS: leaving this here for now, as I'll probably need it again.
-            //foreach (var sumTypeDeclaration in resolvedTypes.Result.Where(t => t.Returns.ImplementationType == KindOfType.Sum)) {
-            //    var sumType = (sumTypeDeclaration.Returns as SumType);
-            //    if (sumTypeDeclaration.IsGeneric) {
-            //        var genericParams = sumTypeDeclaration.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
-            //        var fnGenerics = genericParams.Select(pd => new ParameterDeclaration(pd.Takes, pd.Returns)).ToList();
-            //        var inferences = fnGenerics.ToDictionary(p => p, p => GenericInferencePlaceholder.For(p));
-            //        var genericReferences = fnGenerics.Select(pd => GenericArgumentReferenceType.For(pd)).ToList();
-            //        var ctorReturnType = sumTypeDeclaration.Returns.ResolveGenericReferences(pd => genericReferences[genericParams.IndexOf(pd)]);
-
-            //        foreach (var type in sumType.Types) {
-            //            List<ParameterDeclaration> inferredTypes = new List<ParameterDeclaration>();
-            //            var paramType = type.ResolveGenericReferences(pd => { inferredTypes.Add(pd); return inferences[fnGenerics[genericParams.IndexOf(pd)]]; });
-            //            var specificCtorType = sumTypeDeclaration.Returns.ResolveGenericReferences(pd => inferredTypes.Contains(pd) ? genericReferences[genericParams.IndexOf(pd)] : TangentType.DontCare);
-
-            //            ctorCalls.Add(new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("_", paramType)) }, new CtorCall(specificCtorType as SumType), inferredTypes.Select(it => fnGenerics[genericParams.IndexOf(it)])));
-            //        }
-            //    } else {
-            //        foreach (var type in sumType.Types) {
-            //            ctorCalls.Add(new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", type)), new CtorCall(sumType)));
-            //        }
-            //    }
-            //}
+            var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt), pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)))).ToList();
 
             // And now Phase 3 - Statement parsing based on syntax.
             var lookup = new Dictionary<Function, Function>();

@@ -67,6 +67,13 @@ namespace Tangent.CilGeneration
 
                     return;
 
+                case KindOfType.BoundGenericProduct:
+                    var binding = t as BoundGenericProductType;
+                    var genericType = lookup[binding.GenericProductType];
+                    var arguments = binding.TypeArguments.Select(a => lookup[a]);
+                    lookup.Add(t, genericType.MakeGenericType(arguments.ToArray()));
+                    return;
+
                 case KindOfType.Lazy:
                     // The target of the type constructor needs to be already declared in our types.
                     var lazyType = t as LazyType;

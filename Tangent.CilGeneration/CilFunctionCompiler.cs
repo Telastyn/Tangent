@@ -111,6 +111,7 @@ namespace Tangent.CilGeneration
 
                         case DispatchType.PartialSpecialization:
                             var specificPartialTargetType = typeLookup[specializationParam.SpecificFunctionParameter.Returns];
+                            specificPartialTargetType = specificPartialTargetType.GetGenericTypeDefinition();
                             //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
                             parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
 
@@ -120,11 +121,11 @@ namespace Tangent.CilGeneration
                             gen.Emit(OpCodes.Box, typeLookup[specializationParam.GeneralFunctionParameter.Returns]);
                             gen.Emit(OpCodes.Callvirt, objGetType);
                             LocalBuilder paramTypeLocal;
-                            if(!parameterTypeLocals.ContainsKey(specializationParam.GeneralFunctionParameter)){
+                            if (!parameterTypeLocals.ContainsKey(specializationParam.GeneralFunctionParameter)) {
                                 paramTypeLocal = gen.DeclareLocal(typeof(Type));
                                 parameterTypeLocals.Add(specializationParam.GeneralFunctionParameter, paramTypeLocal);
                                 gen.Emit(OpCodes.Stloc, paramTypeLocal);
-                            }else{
+                            } else {
                                 paramTypeLocal = parameterTypeLocals[specializationParam.GeneralFunctionParameter];
                             }
 
@@ -211,7 +212,7 @@ namespace Tangent.CilGeneration
                             case KindOfType.BoundGeneric:
                                 // List<T>, List<int>, something.
                                 // Get args and work with them.
-                                var genericArgArray = gen.DeclareLocal(typeof(Type[])); 
+                                var genericArgArray = gen.DeclareLocal(typeof(Type[]));
 
                                 typeAccessor();
                                 gen.Emit(OpCodes.Callvirt, getGenericArguments);
@@ -361,18 +362,10 @@ namespace Tangent.CilGeneration
 
                     var ctor = invoke.Bindings.FunctionDefinition.Returns as CtorCall;
                     if (ctor != null) {
-                        if (invoke.Bindings.GenericArguments.Any()) {
-                            var concreteType = typeLookup[invoke.EffectiveType].MakeGenericType(invoke.Bindings.GenericArguments.Select(tt => typeLookup[tt]).ToArray());
-                            //var concreteType = ctor.EffectiveType.ResolveGenericReferences(pd => invoke.Bindings.FunctionDefinition.GenericParameters.Zip(invoke.Bindings.GenericArguments, (def, arg) => Tuple.Create(def, arg)).Where(pair => pair.Item1 == pd).Select(pair => pair.Item2).First());
-                            var ctorFn = concreteType.GetConstructor(invoke.Bindings.Arguments.Select(a => typeLookup[a.EffectiveType]).ToArray());
-                            gen.Emit(OpCodes.Newobj, ctorFn);
-                            return;
-                        } else {
-                            var ctorParamTypes = invoke.Bindings.FunctionDefinition.Takes.Where(pp => !pp.IsIdentifier).Select(pp => typeLookup[pp.Parameter.Returns]).ToArray();
-                            var ctorFn = typeLookup[invoke.EffectiveType].GetConstructor(ctorParamTypes);
-                            gen.Emit(OpCodes.Newobj, ctorFn);
-                            return;
-                        }
+                        var ctorParamTypes = invoke.Bindings.Arguments.Select(a => typeLookup[a.EffectiveType]).ToArray();
+                        var ctorFn = typeLookup[invoke.EffectiveType].GetConstructor(ctorParamTypes);
+                        gen.Emit(OpCodes.Newobj, ctorFn);
+                        return;
                     }
 
                     var opcode = invoke.Bindings.FunctionDefinition.Returns as DirectOpCode;

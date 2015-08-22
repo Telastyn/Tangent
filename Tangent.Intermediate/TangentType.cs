@@ -17,6 +17,7 @@ namespace Tangent.Intermediate
         TypeConstant,
         GenericReference,
         BoundGeneric,
+        BoundGenericProduct,
         InferencePoint,
         Placeholder
     }
