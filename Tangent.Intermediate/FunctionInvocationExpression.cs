@@ -34,5 +34,10 @@ namespace Tangent.Intermediate
             workset.Add(this);
             Bindings.ReplaceTypeResolvedFunctions(replacements, workset);
         }
+
+        public override string ToString()
+        {
+            return string.Format("invoke({0})", string.Join(", ", Bindings.Arguments));
+        }
     }
 }

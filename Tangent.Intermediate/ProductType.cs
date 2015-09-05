@@ -35,10 +35,13 @@ namespace Tangent.Intermediate
             return BoundGenericProductType.For(this, bindings);
         }
 
-        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
+            if (alreadyProcessed.Contains(this)) { return Enumerable.Empty<ParameterDeclaration>(); }
+            alreadyProcessed.Add(this);
+
             // For product types, generic references are also inferences.
-            genericElements = genericElements ?? DataConstructorParts.Where(pp => !pp.IsIdentifier).SelectMany(pp => pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference));
+            genericElements = genericElements ?? DataConstructorParts.Where(pp => !pp.IsIdentifier).SelectMany(pp => pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference, alreadyProcessed));
             return genericElements;
         }
     }

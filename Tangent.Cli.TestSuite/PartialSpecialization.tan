@@ -1,0 +1,23 @@
+﻿foo(T) :> f(x: T){}
+
+do(x: (T)) => void {
+  print "in generic";
+}
+
+do(x: foo(T)) => void {
+  print "in foo generic";
+}
+
+do(x: foo int) => void {
+  print "in foo int";
+}
+
+bar(x: (T))=> void{
+  do x;
+}
+
+entrypoint => void {
+  bar "bar";
+  bar f "bar";
+  bar f 42;
+}

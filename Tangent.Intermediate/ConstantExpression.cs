@@ -30,6 +30,11 @@ namespace Tangent.Intermediate
             this.effectiveType = type;
             this.Value = value;
         }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
     }
 
     public class ConstantExpression<T> : ConstantExpression

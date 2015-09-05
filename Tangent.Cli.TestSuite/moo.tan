@@ -1,0 +1,3 @@
+﻿entrypoint => void {
+    print "moo.";
+}

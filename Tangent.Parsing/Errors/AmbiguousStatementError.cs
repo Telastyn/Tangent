@@ -18,7 +18,7 @@ namespace Tangent.Parsing.Errors
 
         public override string ToString()
         {
-            return string.Format("Ambiguous statement: {0}", string.Join(" ", base.ErrorLocation));
+            return string.Format("Ambiguous statement: {0}{1}{2}", string.Join(" ", base.ErrorLocation), Environment.NewLine, string.Join(Environment.NewLine, PossibleInterpretations.Select(expr=> "  " + expr.ToString())));
         }
     }
 }

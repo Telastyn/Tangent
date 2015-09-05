@@ -47,9 +47,11 @@ namespace Tangent.Intermediate
             return true;
         }
 
-        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
-            return TypeArguments.SelectMany(t => t.ContainedGenericReferences(tie));
+            if (alreadyProcessed.Contains(this)) { return Enumerable.Empty<ParameterDeclaration>(); }
+            alreadyProcessed.Add(this);
+            return TypeArguments.SelectMany(t => t.ContainedGenericReferences(tie, alreadyProcessed));
         }
 
         public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)

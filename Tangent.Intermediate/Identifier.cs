@@ -30,7 +30,7 @@ namespace Tangent.Intermediate
 
         public override bool Equals(object obj)
         {
-            if (object.Equals(obj, null)) { return false; }
+            if (object.ReferenceEquals(obj, null)) { return false; }
             Identifier objIdentifier = obj as Identifier;
             if (!object.ReferenceEquals(objIdentifier, null)) {
                 return this.Value == objIdentifier.Value;

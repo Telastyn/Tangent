@@ -1,0 +1,9 @@
+﻿foo :> int;
+
+do(x: foo) => void {
+  print x;
+}
+
+entrypoint => void {
+  do 42;
+}

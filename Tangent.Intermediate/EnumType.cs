@@ -50,7 +50,7 @@ namespace Tangent.Intermediate
             return this;
         }
 
-        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
             yield break;
         }

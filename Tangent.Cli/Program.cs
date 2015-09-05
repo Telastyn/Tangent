@@ -10,11 +10,11 @@ using Tangent.Tokenization;
 
 namespace Tangent.Cli
 {
-    class Program
+    public class Program
     {
         public static readonly string Usage = "Tangent.Cli.Exe <SourceFile> [DestFile]";
         
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             var timer = Stopwatch.StartNew();
             if(args.Length == 0){

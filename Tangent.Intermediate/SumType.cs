@@ -78,9 +78,12 @@ namespace Tangent.Intermediate
             return SumType.For(this.Types.Select(t => t.ResolveGenericReferences(mapping)));
         }
 
-        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
-            return this.Types.SelectMany(tt => tt.ContainedGenericReferences(tie));
+            if (alreadyProcessed.Contains(this)) { return Enumerable.Empty<ParameterDeclaration>(); }
+            alreadyProcessed.Add(this);
+
+            return this.Types.SelectMany(tt => tt.ContainedGenericReferences(tie,alreadyProcessed));
         }
     }
 }

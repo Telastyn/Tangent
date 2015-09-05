@@ -96,10 +96,12 @@ namespace Tangent.Intermediate
             return BoundGenericType.For(this.GenericTypeDeclatation, this.TypeArguments.Select(ta => ta.ResolveGenericReferences(mapping)));
         }
 
-        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
+            if (alreadyProcessed.Contains(this)) { yield break; }
+            alreadyProcessed.Add(this);
             foreach (var entry in this.TypeArguments) {
-                foreach (var genref in entry.ContainedGenericReferences(tie)) {
+                foreach (var genref in entry.ContainedGenericReferences(tie, alreadyProcessed)) {
                     yield return genref;
                 }
             }

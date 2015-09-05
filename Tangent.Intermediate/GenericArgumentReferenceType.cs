@@ -33,7 +33,7 @@ namespace Tangent.Intermediate
             return mapping(this.GenericParameter);
         }
 
-        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
             if (tie == GenericTie.Reference) { yield return this.GenericParameter; }
         }

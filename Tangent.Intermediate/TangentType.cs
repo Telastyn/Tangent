@@ -78,7 +78,12 @@ namespace Tangent.Intermediate
             return this;
         }
 
-        public virtual IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        public IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        {
+            return ContainedGenericReferences(tie, new HashSet<TangentType>());
+        }
+
+        protected internal virtual IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
             yield break;
         }

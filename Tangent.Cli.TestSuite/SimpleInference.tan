@@ -1,0 +1,12 @@
+﻿foo (x: (T)) => void {
+  print "in inference";
+}
+
+foo (x: int) => void {
+  print "in int.";
+}
+
+entrypoint => void {
+  foo "bar";
+  foo 42;
+}

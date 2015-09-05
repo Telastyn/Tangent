@@ -25,9 +25,12 @@ namespace Tangent.Intermediate
             return Value.ResolveGenericReferences(mapping).TypeConstant;
         }
 
-        public override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
-            foreach (var entry in Value.ContainedGenericReferences(tie)) {
+            if (alreadyProcessed.Contains(this)) { yield break; }
+            alreadyProcessed.Add(this);
+
+            foreach (var entry in Value.ContainedGenericReferences(tie, alreadyProcessed)) {
                 yield return entry;
             }
         }

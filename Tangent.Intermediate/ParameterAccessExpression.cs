@@ -24,5 +24,10 @@ namespace Tangent.Intermediate
         {
             Parameter = decl;
         }
+
+        public override string ToString()
+        {
+            return string.Format("param '{0}'", string.Join(" ", Parameter.Takes));
+        }
     }
 }

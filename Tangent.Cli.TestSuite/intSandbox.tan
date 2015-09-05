@@ -1,0 +1,10 @@
+﻿(a: int) ~+ (b: int) => void {
+  print a+b;
+}
+
+entrypoint => void {
+  1 ~+ 2;
+  print 42 = 42;
+  
+  print 42 = 41 or 41 = 42;
+}

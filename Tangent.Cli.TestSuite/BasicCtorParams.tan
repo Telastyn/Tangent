@@ -1,0 +1,9 @@
+﻿foo :> new foo(x: int){
+  do(this) => void {
+    print x;
+  }
+}
+
+entrypoint => void {
+  do new foo 42;
+}  
