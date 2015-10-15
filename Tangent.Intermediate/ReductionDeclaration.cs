@@ -36,6 +36,31 @@ namespace Tangent.Intermediate
             get { return "=>"; }
         }
 
+        public bool MatchesSignatureOf(ReductionDeclaration rhs)
+        {
+            // TODO: generic returns.
+            if (this.Returns.EffectiveType != rhs.Returns.EffectiveType) { return false; }
+            if (this.Takes.Count != rhs.Takes.Count) { return false; }
+            if (GenericParameters.Count() != rhs.GenericParameters.Count()) { return false; }
+            if (!GenericParameters.SequenceEqual(rhs.GenericParameters, (a, b) => a.Returns == b.Returns)) { return false; }
+
+            var genericMap = GenericParameters.Zip(rhs.GenericParameters, (a, b) => Tuple.Create(a, b)).ToDictionary(x => x.Item1, x => x.Item2);
+
+            foreach (var entry in this.Takes.Zip(rhs.Takes, (a, b) => Tuple.Create(a, b))) {
+                if (entry.Item1.IsIdentifier != entry.Item2.IsIdentifier) { return false; }
+                if (entry.Item1.IsIdentifier) {
+                    if (entry.Item1.Identifier.Value != entry.Item2.Identifier.Value) {
+                        return false;
+                    }
+                } else {
+                    // TODO: generic mappings.
+                    if (entry.Item1.Parameter.Returns != entry.Item2.Parameter.Returns) { return false; }
+                }
+            }
+
+            return true;
+        }
+
         public bool IsSpecializationOf(ReductionDeclaration rhs)
         {
             return SpecializationAgainst(rhs) != null;

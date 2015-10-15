@@ -16,11 +16,11 @@ namespace Tangent.CilGeneration
         private readonly ITypeLookup typeLookup;
         private readonly TypeBuilder scope;
 
-        public CilScope(TypeBuilder scope, IEnumerable<ReductionDeclaration> functions, IEnumerable<ReductionDeclaration> builtIns, ITypeLookup typeLookup)
+        public CilScope(TypeBuilder scope, IEnumerable<ReductionDeclaration> functions, ITypeLookup typeLookup)
         {
             this.typeLookup = typeLookup;
 
-            functionStubs = functions
+            functionStubs = functions.Where(fn => fn.Returns.Implementation != null)
                 .ToDictionary(fn => fn, fn =>
                 {
                     var dotnetFn = scope.DefineMethod(
@@ -48,7 +48,7 @@ namespace Tangent.CilGeneration
                 });
 
             foreach (var fn in functionStubs.Keys.ToList()) {
-                var fnSpecializations = functions.Concat(builtIns).Where(fnsp => fnsp.IsSpecializationOf(fn)).ToList();
+                var fnSpecializations = functions.Where(fnsp => fnsp.IsSpecializationOf(fn)).ToList();
                 this.specializations.Add(fn, fnSpecializations);
             }
 

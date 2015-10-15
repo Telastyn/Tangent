@@ -116,15 +116,15 @@ namespace Tangent.CilGeneration
 
                 gen.Emit(OpCodes.Ldarg_0);
                 gen.Emit(OpCodes.Ldarg_1);
-                if (target.IsGeneric) {
+                //if (target.IsGeneric) {
                     // see https://msdn.microsoft.com/en-us/library/system.reflection.emit.generictypeparameterbuilder(v=vs.110).aspx
                     // Generics are weird.
                     var genericVariantCtor = variantContainer.GetConstructor(new[] { variantContainer.GetGenericArguments()[ix] });
                     var baseCtor = TypeBuilder.GetConstructor(parent, genericVariantCtor);
                     gen.Emit(OpCodes.Call, baseCtor);
-                } else {
-                    gen.Emit(OpCodes.Call, parent.GetConstructor(new[] { variantType }));
-                }
+                //} else {
+                //    gen.Emit(OpCodes.Call, parent.GetConstructor(new[] { variantType }));
+                //}
 
                 gen.Emit(OpCodes.Ret);
                 ix++;

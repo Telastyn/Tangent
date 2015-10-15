@@ -37,7 +37,7 @@ namespace Tangent.Intermediate
 
         public override string ToString()
         {
-            return string.Format("invoke({0})", string.Join(", ", Bindings.Arguments));
+            return string.Format("invoke {1} with ({0})", string.Join(", ", Bindings.Arguments), Bindings.FunctionDefinition);
         }
     }
 }

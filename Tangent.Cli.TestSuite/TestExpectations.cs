@@ -12,7 +12,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void Entrypoint()
         {
-            var result = Test.ProgramFile("Entrypoint.tan");
+            var result = Test.DebugProgramFile("Entrypoint.tan");
             // No boom? Good.
         }
 

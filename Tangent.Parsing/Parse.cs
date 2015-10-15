@@ -71,24 +71,31 @@ namespace Tangent.Parsing
                 }
             }
 
+            HashSet<SumType> allSumTypes = new HashSet<SumType>(resolvedTypes.Result.Where(t=>t.Returns.ImplementationType == KindOfType.Sum).Select(t=>t.Returns).Cast<SumType>());
+
             var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt), pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)))).ToList();
+            foreach(var sum in allSumTypes){
+                foreach(var entry in sum.Types){
+                    ctorCalls.Add(new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", entry)), new CtorCall(sum)));
+                }
+            }
+ 
 
             // And now Phase 3 - Statement parsing based on syntax.
             var lookup = new Dictionary<Function, Function>();
             var bad = new List<IncomprehensibleStatementError>();
             var ambiguous = new List<AmbiguousStatementError>();
+            resolvedFunctions =  new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(BuiltinFunctions.All));
             resolvedFunctions = FanOutFunctionsWithSumTypes(resolvedFunctions.Result);
             if (!resolvedFunctions.Success) { return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error); }
 
             foreach (var fn in resolvedFunctions.Result) {
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
                 if (partialFunction != null) {
-                    var scope = new Scope(partialFunction.EffectiveType, resolvedTypes.Result, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), partialFunction.Scope != null ? partialFunction.Scope.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter) : Enumerable.Empty<ParameterDeclaration>(), resolvedFunctions.Result.Concat(BuiltinFunctions.All).Concat(ctorCalls), Enumerable.Empty<ParameterDeclaration>());
+                    var scope = new Scope(partialFunction.EffectiveType, resolvedTypes.Result, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), partialFunction.Scope != null ? partialFunction.Scope.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter) : Enumerable.Empty<ParameterDeclaration>(), resolvedFunctions.Result.Concat(ctorCalls), Enumerable.Empty<ParameterDeclaration>());
                     Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
 
                     lookup.Add(partialFunction, newb);
-                } else {
-                    throw new NotImplementedException("We shouldn't get here... No optimizations exist to fully resolve functions in one step.");
                 }
             }
 
@@ -282,7 +289,7 @@ namespace Tangent.Parsing
 
                         if (pe.Type == ElementType.VarDecl) {
                             var varDecl = (VarDeclElement)pe;
-                            return new PartialTypeInferenceExpression(varDecl.ParameterDeclaration.Takes, varDecl.ParameterDeclaration.Returns ?? new List<Expression>(){ new IdentifierExpression("any", null)}, varDecl.SourceInfo);
+                            return new PartialTypeInferenceExpression(varDecl.ParameterDeclaration.Takes, varDecl.ParameterDeclaration.Returns ?? new List<Expression>() { new IdentifierExpression("any", null) }, varDecl.SourceInfo);
                         }
 
                         throw new NotImplementedException(string.Format("Unsupported expression {0} in Type Declaration.", pe.Type));
@@ -608,7 +615,11 @@ namespace Tangent.Parsing
                             return new ResultOrParseError<IEnumerable<ReductionDeclaration>>(new AggregateParseError(badGenerics.Select(bg => new GenericSumTypeFunctionWithReturnTypeRelyingOnInference(variant, bg))));
                         }
 
-                        result.Add(new ReductionDeclaration(variant, new TypeResolvedFunction(trf.EffectiveType, trf.Implementation, trf.Scope), parameterGenerics));
+                        var newb = new ReductionDeclaration(variant, new TypeResolvedFunction(trf.EffectiveType, trf.Implementation, trf.Scope), parameterGenerics);
+                        // Check if some specialization already exists for this variant.
+                        if (!result.Any(fn => fn.MatchesSignatureOf(newb))) {
+                            result.Add(newb);
+                        }
                     }
                 }
             }

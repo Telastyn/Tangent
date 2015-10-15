@@ -32,7 +32,7 @@ namespace Tangent.CilGeneration
             ITypeLookup typeLookup = new DelegatingTypeLookup(new CilTypeCompiler(moduleBuilder), program.TypeDeclarations);
             
             var rootClass = moduleBuilder.DefineType("_");
-            var fnLookup = new CilScope(rootClass, program.Functions, BuiltinFunctions.All, typeLookup);
+            var fnLookup = new CilScope(rootClass, program.Functions, typeLookup);
             var compiler = new CilFunctionCompiler(BuiltinFunctionLookup.Common, debuggingSymbolLookup);
 
             fnLookup.Compile(compiler);

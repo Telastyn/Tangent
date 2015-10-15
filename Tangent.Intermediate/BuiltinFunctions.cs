@@ -21,7 +21,7 @@ namespace Tangent.Intermediate
         public static ReductionDeclaration MulInt = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Int), new Identifier("*"), new ParameterDeclaration("b", TangentType.Int) }, new DirectOpCode(OpCodes.Mul, TangentType.Int));
         public static ReductionDeclaration EqInt = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Int), new Identifier("="), new ParameterDeclaration("b", TangentType.Int) }, new DirectOpCode(OpCodes.Ceq, TangentType.Bool));
         public static ReductionDeclaration GtInt = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Int), new Identifier(">"), new ParameterDeclaration("b", TangentType.Int) }, new DirectOpCode(OpCodes.Cgt, TangentType.Bool));
-        public static ReductionDeclaration LtInt = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Int), new Identifier(">"), new ParameterDeclaration("b", TangentType.Int) }, new DirectOpCode(OpCodes.Cgt, TangentType.Bool));
+        public static ReductionDeclaration LtInt = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Int), new Identifier("<"), new ParameterDeclaration("b", TangentType.Int) }, new DirectOpCode(OpCodes.Clt, TangentType.Bool));
 
         public static ReductionDeclaration AndBool = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Bool), new Identifier("and"), new ParameterDeclaration("b", TangentType.Bool) }, new DirectOpCode(OpCodes.And, TangentType.Bool));
         public static ReductionDeclaration OrBool = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Bool), new Identifier("or"), new ParameterDeclaration("b", TangentType.Bool) }, new DirectOpCode(OpCodes.Or, TangentType.Bool));
@@ -33,7 +33,7 @@ namespace Tangent.Intermediate
         public static ReductionDeclaration MulDouble = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Double), new Identifier("*"), new ParameterDeclaration("b", TangentType.Double) }, new DirectOpCode(OpCodes.Mul, TangentType.Double));
         public static ReductionDeclaration EqDouble = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Double), new Identifier("="), new ParameterDeclaration("b", TangentType.Double) }, new DirectOpCode(OpCodes.Ceq, TangentType.Bool));
         public static ReductionDeclaration GtDouble = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Double), new Identifier(">"), new ParameterDeclaration("b", TangentType.Double) }, new DirectOpCode(OpCodes.Cgt, TangentType.Bool));
-        public static ReductionDeclaration LtDouble = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Double), new Identifier(">"), new ParameterDeclaration("b", TangentType.Double) }, new DirectOpCode(OpCodes.Cgt, TangentType.Bool));
+        public static ReductionDeclaration LtDouble = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Double), new Identifier("<"), new ParameterDeclaration("b", TangentType.Double) }, new DirectOpCode(OpCodes.Clt, TangentType.Bool));
 
         private static readonly Dictionary<ReductionDeclaration, MethodInfo> lookup = new Dictionary<ReductionDeclaration, MethodInfo>(){
             {PrintString, typeof(Console).GetMethod("WriteLine", new[]{typeof(string)})},

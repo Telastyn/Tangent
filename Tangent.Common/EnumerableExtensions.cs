@@ -17,5 +17,10 @@ namespace System.Collections.Generic
 
             throw new InvalidOperationException("Specified value does not exist in collection.");
         }
+
+        public static bool SequenceEqual<A, B>(this IEnumerable<A> lhs, IEnumerable<B> rhs, Func<A, B, bool> comparer)
+        {
+            return lhs.Zip(rhs, (a, b) => Tuple.Create(a, b)).All(t => comparer(t.Item1, t.Item2));
+        }
     }
 }

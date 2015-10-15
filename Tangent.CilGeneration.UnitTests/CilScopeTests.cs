@@ -31,7 +31,7 @@ namespace Tangent.CilGeneration.UnitTests
             var module = assembly.DefineDynamicModule("BasicMethodHappyPath");
             var t = module.DefineType("BasicMethodHappyPath");
             var fn = new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
-            var scope = new CilScope(t, new[] { fn }, Enumerable.Empty<ReductionDeclaration>(), emptyTypeLookup);
+            var scope = new CilScope(t, new[] { fn }, emptyTypeLookup);
 
             scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common, emptyDebuggingDocWriter));
             t.CreateType();
@@ -54,7 +54,7 @@ namespace Tangent.CilGeneration.UnitTests
             var module = assembly.DefineDynamicModule("MethodWithParamsHappyPath");
             var t = module.DefineType("MethodWithParamsHappyPath");
             var fn = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
-            var scope = new CilScope(t, new[] { fn }, Enumerable.Empty<ReductionDeclaration>(), mockLookup.Object);
+            var scope = new CilScope(t, new[] { fn }, mockLookup.Object);
 
             scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common, emptyDebuggingDocWriter));
             t.CreateType();
@@ -79,7 +79,7 @@ namespace Tangent.CilGeneration.UnitTests
             var t = module.DefineType("MethodWithParamsHappyPath");
             var fn = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
             var fn2 = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT.SingleValueTypeFor("b"))) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
-            var scope = new CilScope(t, new[] { fn, fn2 }, Enumerable.Empty<ReductionDeclaration>(), mockLookup.Object);
+            var scope = new CilScope(t, new[] { fn, fn2 }, mockLookup.Object);
 
             scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common, emptyDebuggingDocWriter));
             t.CreateType();
@@ -111,7 +111,7 @@ namespace Tangent.CilGeneration.UnitTests
                         BuiltinFunctions.PrintString, 
                         new[]{new ConstantExpression<string>(TangentType.String, "moo.", null)}, null))})));
 
-            var scope = new CilScope(t, new[] { fn }, Enumerable.Empty<ReductionDeclaration>(), emptyTypeLookup);
+            var scope = new CilScope(t, new[] { fn }, emptyTypeLookup);
 
             scope.Compile(new CilFunctionCompiler(BuiltinFunctionLookup.Common, emptyDebuggingDocWriter));
 

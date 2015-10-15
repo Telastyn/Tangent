@@ -13,19 +13,19 @@ namespace Tangent.Cli
     public class Program
     {
         public static readonly string Usage = "Tangent.Cli.Exe <SourceFile> [DestFile]";
-        
+
         public static void Main(string[] args)
         {
             var timer = Stopwatch.StartNew();
-            if(args.Length == 0){
+            if (args.Length == 0) {
                 Console.Error.WriteLine(Usage);
             }
 
             var dest = "";
 
-            if(args.Length == 1){
+            if (args.Length == 1) {
                 dest = Path.Combine(Path.GetDirectoryName(args[0]), Path.GetFileNameWithoutExtension(args[0]));
-            }else{
+            } else {
                 dest = args[1];
             }
 

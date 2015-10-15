@@ -29,6 +29,7 @@ namespace Tangent.Intermediate
 
     public class TangentType
     {
+        public readonly Guid Tracer = Guid.NewGuid();
         public readonly KindOfType ImplementationType;
 
         protected TangentType(KindOfType impl)
@@ -96,5 +97,10 @@ namespace Tangent.Intermediate
         public static readonly TangentType Any = new TangentType(KindOfType.Builtin);
         public static readonly TangentType PotentiallyAnything = new TangentType(KindOfType.Builtin);
         public static readonly TangentType DontCare = new TangentType(KindOfType.Builtin);
+
+        public override string ToString()
+        {
+            return string.Format("{0}({1})", base.ToString(), Tracer);
+        }
     }
 }

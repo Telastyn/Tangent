@@ -16,7 +16,7 @@ namespace Tangent.Intermediate
         {
             get
             {
-                return !Takes.All(pp => pp.IsIdentifier);
+                return !Takes.All(pp => pp == null || pp.IsIdentifier);
             }
         }
 

@@ -77,5 +77,10 @@ namespace Tangent.Intermediate
                 return this.FunctionDefinition.Returns.EffectiveType;
             }
         }
+
+        public override string ToString()
+        {
+            return string.Format("{0}{1}", GenericArguments.Any() ? string.Format("[{0}]", GenericArguments.Count()) : "", string.Join(" ", FunctionDefinition.Takes));
+        }
     }
 }
