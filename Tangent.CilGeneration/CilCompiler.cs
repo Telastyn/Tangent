@@ -29,20 +29,21 @@ namespace Tangent.CilGeneration
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(filename + (entrypoint == null ? ".dll" : ".exe"), Path.GetFileName(targetPath) + (entrypoint == null ? ".dll" : ".exe"), true);
 
             Dictionary<string, ISymbolDocumentWriter> debuggingSymbolLookup = program.InputLabels.ToDictionary(l => l, l => moduleBuilder.DefineDocument(l, Guid.Empty, Guid.Empty, Guid.Empty));
-            ITypeLookup typeLookup = new DelegatingTypeLookup(new CilTypeCompiler(moduleBuilder), program.TypeDeclarations);
-            
-            var rootClass = moduleBuilder.DefineType("_");
-            var fnLookup = new CilScope(rootClass, program.Functions, typeLookup);
-            var compiler = new CilFunctionCompiler(BuiltinFunctionLookup.Common, debuggingSymbolLookup);
+            using (var typeLookup = new DelegatingTypeLookup(new CilTypeCompiler(moduleBuilder), program.TypeDeclarations, AppDomain.CurrentDomain)) {
 
-            fnLookup.Compile(compiler);
+                var rootClass = moduleBuilder.DefineType("_");
+                var fnLookup = new CilScope(rootClass, program.Functions, typeLookup);
+                var compiler = new CilFunctionCompiler(BuiltinFunctionLookup.Common, debuggingSymbolLookup);
 
-            rootClass.CreateType();
+                typeLookup.BakeTypes();
+                fnLookup.Compile(compiler);
 
-            if (entrypoint != null)
-            {
-                var entrypointMethod = fnLookup[entrypoint];
-                assemblyBuilder.SetEntryPoint(entrypointMethod);
+                rootClass.CreateType();
+
+                if (entrypoint != null) {
+                    var entrypointMethod = fnLookup[entrypoint];
+                    assemblyBuilder.SetEntryPoint(entrypointMethod);
+                }
             }
 
             assemblyBuilder.Save(targetPath + (entrypoint == null ? ".dll" : ".exe"));

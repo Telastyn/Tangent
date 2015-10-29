@@ -308,7 +308,7 @@ namespace Tangent.CilGeneration
         {
             var genericParams = variantType.BaseType.GetGenericArguments();
             for (int i = 1; i <= genericParams.Length; ++i) {
-                if (genericParams[i - 1] == targetType) {
+                if (genericParams[i - 1].AssemblyQualifiedName == targetType.AssemblyQualifiedName) {
                     return i;
                 }
             }

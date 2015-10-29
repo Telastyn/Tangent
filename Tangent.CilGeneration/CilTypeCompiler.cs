@@ -51,7 +51,6 @@ namespace Tangent.CilGeneration
             var typeName = GetNameFor(target);
             var productType = (ProductType)target.Returns;
 
-
             var me = lookup(target.Returns, false);
             if (me != null) { return me; }
             var classBuilder = builder.DefineType(typeName, System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Public);
@@ -81,8 +80,7 @@ namespace Tangent.CilGeneration
             }
 
             gen.Emit(OpCodes.Ret);
-            return classBuilder.CreateType();
-
+            return classBuilder;
         }
 
         private Type BuildVariant(TypeDeclaration target, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup)
@@ -130,7 +128,7 @@ namespace Tangent.CilGeneration
                 ix++;
             }
 
-            return classBuilder.CreateType();
+            return classBuilder;
         }
 
         private Type InstantiateGeneric(TypeDeclaration target, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup)
@@ -156,6 +154,5 @@ namespace Tangent.CilGeneration
 
             return result;
         }
-
     }
 }

@@ -31,34 +31,34 @@ namespace Tangent.Cli.TestSuite
             Assert.IsTrue(results.SequenceEqual(new[] { "3", "True", "False" }));
         }
 
-        [TestMethod]
-        public void IfEqualsFalseCase()
-        {
-            var result = Test.ProgramFile("IfEqualsFalseCase.tan");
-            Assert.AreEqual("zzz.", result.Trim());
-        }
+        //[TestMethod]
+        //public void IfEqualsFalseCase()
+        //{
+        //    var result = Test.ProgramFile("IfEqualsFalseCase.tan");
+        //    Assert.AreEqual("zzz.", result.Trim());
+        //}
 
 
-        [TestMethod]
-        public void IfEqualsTrueCase()
-        {
-            var result = Test.ProgramFile("IfEqualsTrueCase.tan");
-            Assert.AreEqual("w00t.", result.Trim());
-        }
+        //[TestMethod]
+        //public void IfEqualsTrueCase()
+        //{
+        //    var result = Test.ProgramFile("IfEqualsTrueCase.tan");
+        //    Assert.AreEqual("w00t.", result.Trim());
+        //}
 
-        [TestMethod]
-        public void IfTrueCase()
-        {
-            var result = Test.ProgramFile("IfTrue.tan");
-            Assert.AreEqual("w00t.", result.Trim());
-        }
+        //[TestMethod]
+        //public void IfTrueCase()
+        //{
+        //    var result = Test.ProgramFile("IfTrue.tan");
+        //    Assert.AreEqual("w00t.", result.Trim());
+        //}
 
-        [TestMethod]
-        public void IfFalseCase()
-        {
-            var result = Test.ProgramFile("IfFalse.tan");
-            Assert.AreEqual("zzz.", result.Trim());
-        }
+        //[TestMethod]
+        //public void IfFalseCase()
+        //{
+        //    var result = Test.ProgramFile("IfFalse.tan");
+        //    Assert.AreEqual("zzz.", result.Trim());
+        //}
 
         [TestMethod]
         public void BasicCtorParams()
@@ -77,7 +77,6 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void BasicAlgebraicDataTypes()
         {
-            // RMS: note that this is currently failing due to an ambiguous parse due to specialization failure between print(int list) and print(product type)
             TimeSpan compileDuration;
             TimeSpan programDuration;
             var result = Test.DebugProgramFile("adt.tan", out compileDuration, out programDuration);

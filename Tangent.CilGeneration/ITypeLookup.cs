@@ -11,6 +11,7 @@ namespace Tangent.CilGeneration
     public interface ITypeLookup
     {
         Type this[TangentType t] { get; }
+        void BakeTypes();
         void AddGenericFunctionParameterMapping(ParameterDeclaration generic, GenericTypeParameterBuilder dotnetType);
     }
 }
