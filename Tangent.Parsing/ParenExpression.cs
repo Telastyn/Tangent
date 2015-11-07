@@ -41,33 +41,16 @@ namespace Tangent.Parsing
         {
             var input = new Input(LastStatement, scope);
 
-            if (towardsType is LazyType)
-            {
-                var targetType = ((LazyType)towardsType).Type;
-                var result = input.InterpretTowards(targetType);
-
-                if (result.Any())
-                {
-                    return result.Select(interpretation =>
-                        new FunctionBindingExpression(
-                        new ReductionDeclaration(
-                            Enumerable.Empty<PhrasePart>(),
-                            new Function(
-                                targetType,
-                                new Block(VoidStatements.Statements.Concat(new[] { interpretation })))),
-                        Enumerable.Empty<Expression>(), SourceInfo));
-                }
-            }
-
             return input.InterpretTowards(towardsType).Select(interpretation =>
                 new FunctionInvocationExpression(
-                    new FunctionBindingExpression(
                     new ReductionDeclaration(
                         Enumerable.Empty<PhrasePart>(),
                         new Function(
                             towardsType,
                             new Block(VoidStatements.Statements.Concat(new[] { interpretation })))),
-                    Enumerable.Empty<Expression>(), SourceInfo)));
+                    Enumerable.Empty<Expression>(),
+                    Enumerable.Empty<TangentType>(),
+                    SourceInfo));
         }
     }
 }

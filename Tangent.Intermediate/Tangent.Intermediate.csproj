@@ -55,7 +55,6 @@
     <Compile Include="EnumWideningExpression.cs" />
     <Compile Include="Expression.cs" />
     <Compile Include="Function.cs" />
-    <Compile Include="FunctionBindingExpression.cs" />
     <Compile Include="FunctionInvocationExpression.cs" />
     <Compile Include="GenericArgumentReferenceType.cs" />
     <Compile Include="GenericInferenceParameterAccessExpression.cs" />

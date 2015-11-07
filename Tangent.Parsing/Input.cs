@@ -53,8 +53,8 @@ namespace Tangent.Parsing
                 foreach (var reductionCandidatePool in TryReduce(ix)) {
                     List<Expression> successes = new List<Expression>();
                     foreach (var candidate in reductionCandidatePool) {
-                        if (candidate[ix].NodeType == ExpressionNodeType.FunctionInvocation && ((FunctionInvocationExpression)candidate[ix]).Bindings.FunctionDefinition.IsConversion) {
-                            successes.AddRange(new Input(candidate, Scope, conversionsTaken.Concat(new[] { new ConversionHistory(((FunctionInvocationExpression)candidate[ix]).Bindings.FunctionDefinition, buffer.Count, ix) }), customTransformations).InterpretTowards(type));
+                        if (candidate[ix].NodeType == ExpressionNodeType.FunctionInvocation && ((FunctionInvocationExpression)candidate[ix]).FunctionDefinition.IsConversion) {
+                            successes.AddRange(new Input(candidate, Scope, conversionsTaken.Concat(new[] { new ConversionHistory(((FunctionInvocationExpression)candidate[ix]).FunctionDefinition, buffer.Count, ix) }), customTransformations).InterpretTowards(type));
                         } else {
                             successes.AddRange(new Input(candidate, Scope, conversionsTaken, customTransformations).InterpretTowards(type));
                         }
@@ -128,7 +128,7 @@ namespace Tangent.Parsing
                         legalFunctionTypeInferences[candidate]);
 
                     foreach (var paramSet in bindings) {
-                        pool.Add(buffer.Take(ix).Concat(new[] { new FunctionBindingExpression(candidate, paramSet, candidate.GenericParameters.Select(p => legalFunctionTypeInferences[candidate][p]), LineColumnRange.Combine(buffer[ix].SourceInfo, paramSet.Select(ps => ps.SourceInfo))) }).Concat(buffer.Skip(ix + candidate.Takes.Count)).ToList());
+                        pool.Add(buffer.Take(ix).Concat(new[] { new FunctionInvocationExpression(candidate, paramSet, candidate.GenericParameters.Select(p => legalFunctionTypeInferences[candidate][p]), LineColumnRange.Combine(buffer[ix].SourceInfo, paramSet.Select(ps => ps.SourceInfo))) }).Concat(buffer.Skip(ix + candidate.Takes.Count)).ToList());
                     }
                 }
 
@@ -148,11 +148,6 @@ namespace Tangent.Parsing
             // Enum constant -> Enum type
             if (buffer[ix].NodeType == ExpressionNodeType.EnumValueAccess) {
                 yield return new List<List<Expression>>() { buffer.Take(ix).Concat(new[] { new EnumWideningExpression(buffer[ix] as EnumValueAccessExpression) }).Concat(buffer.Skip(ix + 1)).ToList() };
-            }
-
-            // Bound function -> function invocation.
-            if (buffer[ix].NodeType == ExpressionNodeType.FunctionBinding) {
-                yield return new List<List<Expression>>() { buffer.Take(ix).Concat(new[] { new FunctionInvocationExpression(buffer[ix] as FunctionBindingExpression) }).Concat(buffer.Skip(ix + 1)).ToList() };
             }
 
             // Param accessed delegate -> delegate invocation.
@@ -356,7 +351,7 @@ namespace Tangent.Parsing
             return parenExpr.TryResolve(Scope, phrasePart.Parameter.Returns).ToList();
         }
 
-        private FunctionBindingExpression InferGenerics(ReductionDeclaration candidate, List<Expression> paramSet, LineColumnRange sourceInfo)
+        private FunctionInvocationExpression InferGenerics(ReductionDeclaration candidate, List<Expression> paramSet, LineColumnRange sourceInfo)
         {
             Dictionary<ParameterDeclaration, TangentType> inferences = new Dictionary<ParameterDeclaration, TangentType>();
             foreach (var pair in candidate.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).Zip(paramSet, (p, expr) => Tuple.Create(p, expr))) {
@@ -364,7 +359,7 @@ namespace Tangent.Parsing
             }
 
             if (!candidate.GenericParameters.All(p => inferences.ContainsKey(p))) { return null; }
-            return new FunctionBindingExpression(candidate, paramSet, candidate.GenericParameters.Select(p => inferences[p]).ToList(), sourceInfo);
+            return new FunctionInvocationExpression(candidate, paramSet, candidate.GenericParameters.Select(p => inferences[p]).ToList(), sourceInfo);
         }
 
         private static void Infer(TangentType parameterType, TangentType effectiveType, Dictionary<ParameterDeclaration, TangentType> results)

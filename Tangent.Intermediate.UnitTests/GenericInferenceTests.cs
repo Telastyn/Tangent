@@ -164,11 +164,8 @@ namespace Tangent.Intermediate.UnitTests
             var genericReference = GenericArgumentReferenceType.For(genericParam);
             var identityFn = new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("input", inferencePlaceholder)) }, new Function(genericReference, null), new[] { genericParam });
 
-            var binding = new FunctionBindingExpression(identityFn, new Expression[] { new ConstantExpression<int>(TangentType.Int, 42, new LineColumnRange("test", "test", 0, 0)) }, new[] { TangentType.Int }, new LineColumnRange("test", "test", 0, 0));
-            Assert.AreEqual(TangentType.Int.Lazy, binding.EffectiveType);
-
-            var invocation = new FunctionInvocationExpression(binding);
-            Assert.AreEqual(TangentType.Int, invocation.EffectiveType);
+            var binding = new FunctionInvocationExpression(identityFn, new Expression[] { new ConstantExpression<int>(TangentType.Int, 42, new LineColumnRange("test", "test", 0, 0)) }, new[] { TangentType.Int }, new LineColumnRange("test", "test", 0, 0));
+            Assert.AreEqual(TangentType.Int, binding.EffectiveType);
         }
     }
 }

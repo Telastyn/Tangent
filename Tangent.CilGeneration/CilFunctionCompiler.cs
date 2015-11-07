@@ -345,30 +345,22 @@ namespace Tangent.CilGeneration
                     gen.EmitCall(OpCodes.Call, typeLookup[((ParameterAccessExpression)dinvoke.Delegate).Parameter.Returns].GetMethod("Invoke", new Type[0]), null);
                     return;
 
-                case ExpressionNodeType.FunctionBinding:
-
-                    var binding = (FunctionBindingExpression)expr;
-                    // Closure time.
-                    BuildClosure(gen, binding, fnLookup, typeLookup, closureScope, parameterCodes);
-
-                    return;
-
                 case ExpressionNodeType.FunctionInvocation:
                     var invoke = (FunctionInvocationExpression)expr;
                     AddDebuggingInfo(gen, expr);
-                    foreach (var p in invoke.Bindings.Arguments) {
+                    foreach (var p in invoke.Arguments) {
                         AddExpression(p, gen, fnLookup, typeLookup, closureScope, parameterCodes, false);
                     }
 
-                    var ctor = invoke.Bindings.FunctionDefinition.Returns as CtorCall;
+                    var ctor = invoke.FunctionDefinition.Returns as CtorCall;
                     if (ctor != null) {
-                        var ctorParamTypes = invoke.Bindings.Arguments.Select(a => typeLookup[a.EffectiveType]).ToArray();
+                        var ctorParamTypes = invoke.Arguments.Select(a => typeLookup[a.EffectiveType]).ToArray();
                         var ctorFn = typeLookup[invoke.EffectiveType].GetConstructor(ctorParamTypes);
                         gen.Emit(OpCodes.Newobj, ctorFn);
                         return;
                     }
 
-                    var opcode = invoke.Bindings.FunctionDefinition.Returns as DirectOpCode;
+                    var opcode = invoke.FunctionDefinition.Returns as DirectOpCode;
                     if (opcode != null) {
                         gen.Emit(opcode.OpCode);
                         return;
@@ -376,12 +368,12 @@ namespace Tangent.CilGeneration
 
                     // else, MethodInfo invocation.
                     if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
-                    if (invoke.Bindings.GenericArguments.Any()) {
+                    if (invoke.GenericArguments.Any()) {
                         // LASTWORKED: this isn't being parameterized properly because we're getting a product type not a bound generic.
-                        var parameterizedFn = fnLookup[invoke.Bindings.FunctionDefinition].MakeGenericMethod(invoke.Bindings.Arguments.Select(a => typeLookup[a.EffectiveType]).ToArray());
+                        var parameterizedFn = fnLookup[invoke.FunctionDefinition].MakeGenericMethod(invoke.Arguments.Select(a => typeLookup[a.EffectiveType]).ToArray());
                         gen.EmitCall(OpCodes.Call, parameterizedFn, null);
                     } else {
-                        gen.EmitCall(OpCodes.Call, fnLookup[invoke.Bindings.FunctionDefinition], null);
+                        gen.EmitCall(OpCodes.Call, fnLookup[invoke.FunctionDefinition], null);
                     }
 
                     return;
@@ -434,55 +426,55 @@ namespace Tangent.CilGeneration
             }
         }
 
-        /// <summary>
-        /// Build closure, pushing the action onto the top of the stack.
-        /// </summary>
-        private void BuildClosure(ILGenerator gen, FunctionBindingExpression binding, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, Action<ILGenerator>> parameterCodes)
-        {
-            // Build the anonymous type.
-            var closure = closureScope.DefineNestedType("closure" + closureCounter++);
-            var closureCtor = closure.DefineDefaultConstructor(System.Reflection.MethodAttributes.Public);
+        ///// <summary>
+        ///// Build closure, pushing the action onto the top of the stack.
+        ///// </summary>
+        //private void BuildClosure(ILGenerator gen, FunctionBindingExpression binding, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, Action<ILGenerator>> parameterCodes)
+        //{
+        //    // Build the anonymous type.
+        //    var closure = closureScope.DefineNestedType("closure" + closureCounter++);
+        //    var closureCtor = closure.DefineDefaultConstructor(System.Reflection.MethodAttributes.Public);
 
-            // Push type creation and parameter assignment onto the stack.
-            var obj = gen.DeclareLocal(closure);
-            gen.Emit(OpCodes.Newobj, closureCtor);
-            gen.Emit(OpCodes.Stloc, obj);
+        //    // Push type creation and parameter assignment onto the stack.
+        //    var obj = gen.DeclareLocal(closure);
+        //    gen.Emit(OpCodes.Newobj, closureCtor);
+        //    gen.Emit(OpCodes.Stloc, obj);
 
-            var closureReferences = new Dictionary<ParameterDeclaration, Action<ILGenerator>>();
-            foreach (var parameter in parameterCodes) {
-                gen.Emit(OpCodes.Ldloc, obj);
-                var fld = closure.DefineField(CilScope.GetNameFor(parameter.Key, typeLookup), typeLookup[parameter.Key.Returns], System.Reflection.FieldAttributes.Public);
-                parameter.Value(gen);
-                gen.Emit(OpCodes.Stfld, fld);
+        //    var closureReferences = new Dictionary<ParameterDeclaration, Action<ILGenerator>>();
+        //    foreach (var parameter in parameterCodes) {
+        //        gen.Emit(OpCodes.Ldloc, obj);
+        //        var fld = closure.DefineField(CilScope.GetNameFor(parameter.Key, typeLookup), typeLookup[parameter.Key.Returns], System.Reflection.FieldAttributes.Public);
+        //        parameter.Value(gen);
+        //        gen.Emit(OpCodes.Stfld, fld);
 
-                closureReferences.Add(parameter.Key, g => { g.Emit(OpCodes.Ldarg_0); g.Emit(OpCodes.Ldfld, fld); });
-            }
+        //        closureReferences.Add(parameter.Key, g => { g.Emit(OpCodes.Ldarg_0); g.Emit(OpCodes.Ldfld, fld); });
+        //    }
 
-            // Build actual function in anonymous type.
-            var returnType = typeLookup[binding.ReturnType];
-            var closureFn = closure.DefineMethod("Implementation", System.Reflection.MethodAttributes.Public, returnType, Enumerable.Empty<Type>().ToArray());
-            var closureGen = closureFn.GetILGenerator();
+        //    // Build actual function in anonymous type.
+        //    var returnType = typeLookup[binding.ReturnType];
+        //    var closureFn = closure.DefineMethod("Implementation", System.Reflection.MethodAttributes.Public, returnType, Enumerable.Empty<Type>().ToArray());
+        //    var closureGen = closureFn.GetILGenerator();
 
-            if (!binding.FunctionDefinition.Takes.Any()) {
-                // Block.
-                AddFunctionCode(closureGen, binding.FunctionDefinition.Returns.Implementation, fnLookup, typeLookup, closure, closureReferences);
-                closureGen.Emit(OpCodes.Ret);
-            } else {
-                // Bound function.
-                AddExpression(new FunctionInvocationExpression(binding), closureGen, fnLookup, typeLookup, closure, closureReferences, true);
-                closureGen.Emit(OpCodes.Ret);
-            }
+        //    if (!binding.FunctionDefinition.Takes.Any()) {
+        //        // Block.
+        //        AddFunctionCode(closureGen, binding.FunctionDefinition.Returns.Implementation, fnLookup, typeLookup, closure, closureReferences);
+        //        closureGen.Emit(OpCodes.Ret);
+        //    } else {
+        //        // Bound function.
+        //        AddExpression(new FunctionInvocationExpression(binding), closureGen, fnLookup, typeLookup, closure, closureReferences, true);
+        //        closureGen.Emit(OpCodes.Ret);
+        //    }
 
-            closure.CreateType();
+        //    closure.CreateType();
 
-            // Push action creation onto stack.
-            gen.Emit(OpCodes.Ldloc, obj);
-            gen.Emit(OpCodes.Ldftn, closureFn);
-            if (returnType == typeof(void)) {
-                gen.Emit(OpCodes.Newobj, typeof(Action).GetConstructors().First());
-            } else {
-                gen.Emit(OpCodes.Newobj, typeof(Func<>).MakeGenericType(returnType).GetConstructors().First());
-            }
-        }
+        //    // Push action creation onto stack.
+        //    gen.Emit(OpCodes.Ldloc, obj);
+        //    gen.Emit(OpCodes.Ldftn, closureFn);
+        //    if (returnType == typeof(void)) {
+        //        gen.Emit(OpCodes.Newobj, typeof(Action).GetConstructors().First());
+        //    } else {
+        //        gen.Emit(OpCodes.Newobj, typeof(Func<>).MakeGenericType(returnType).GetConstructors().First());
+        //    }
+        //}
     }
 }

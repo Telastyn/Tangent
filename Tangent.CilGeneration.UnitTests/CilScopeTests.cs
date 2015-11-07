@@ -107,9 +107,10 @@ namespace Tangent.CilGeneration.UnitTests
             var t = module.DefineType("PrintStringBuiltinCompiles");
             var fn = new ReductionDeclaration("test", new Function(TangentType.Void, new Block(new[]{ 
                 new FunctionInvocationExpression(
-                    new FunctionBindingExpression( 
                         BuiltinFunctions.PrintString, 
-                        new[]{new ConstantExpression<string>(TangentType.String, "moo.", null)}, null))})));
+                        new[]{new ConstantExpression<string>(TangentType.String, "moo.", null)},
+                        new TangentType[]{},
+                        null)})));
 
             var scope = new CilScope(t, new[] { fn }, emptyTypeLookup);
 

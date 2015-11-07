@@ -10,7 +10,7 @@ namespace Tangent.Intermediate
         Unknown = 0,
         Identifier = 1,
         ParameterAccess = 2,
-        FunctionBinding = 3,
+        //FunctionBinding = 3,
         FunctionInvocation = 4,
         TypeAccess = 5,
         //HalfBoundExpression = 6,
