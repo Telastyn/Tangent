@@ -10,8 +10,9 @@ namespace Tangent.Tokenization
         Identifier,
         Symbol,
 
-        TypeDeclSeparator,
-        ReductionDeclSeparator,
+        TypeArrow,
+        FunctionArrow,
+        Colon,
         
         LazyOperator,
         StringConstant,

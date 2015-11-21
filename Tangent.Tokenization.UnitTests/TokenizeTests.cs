@@ -82,7 +82,7 @@ bar";
             var result = Tokenize.ProgramFile(test, "test.tan");
 
             Assert.AreEqual(1, result.Count());
-            Assert.AreEqual(TokenIdentifier.ReductionDeclSeparator, result.First().Identifier);
+            Assert.AreEqual(TokenIdentifier.FunctionArrow, result.First().Identifier);
         }
 
         [TestMethod]
@@ -92,7 +92,7 @@ bar";
             var result = Tokenize.ProgramFile(test, "test.tan");
 
             Assert.AreEqual(1, result.Count());
-            Assert.AreEqual(TokenIdentifier.TypeDeclSeparator, result.First().Identifier);
+            Assert.AreEqual(TokenIdentifier.TypeArrow, result.First().Identifier);
         }
 
         [TestMethod]

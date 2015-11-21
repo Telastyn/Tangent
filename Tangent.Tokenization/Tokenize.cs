@@ -17,9 +17,10 @@ namespace Tangent.Tokenization
                     yield break;
                 }
 
-                var token = Match("=>", TokenIdentifier.ReductionDeclSeparator, input, ix, inputLabel) ??
-                    Match(":>", TokenIdentifier.TypeDeclSeparator, input, ix, inputLabel) ??
+                var token = Match("=>", TokenIdentifier.FunctionArrow, input, ix, inputLabel) ??
+                    Match(":>", TokenIdentifier.TypeArrow, input, ix, inputLabel) ??
                     Match("~>", TokenIdentifier.LazyOperator, input, ix, inputLabel) ??
+                    Match(":", TokenIdentifier.Colon, input, ix, inputLabel) ??
                     Identifier(inputLabel, input, ix) ??
                     String(inputLabel, input, ix) ??
                     IntegerConstant(inputLabel, input, ix) ??

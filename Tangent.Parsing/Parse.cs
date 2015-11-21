@@ -131,8 +131,8 @@ namespace Tangent.Parsing
             var separator = tokens.First();
             tokens.RemoveAt(0);
             switch (separator.Identifier) {
-                case TokenIdentifier.TypeDeclSeparator:
-                    if (partialTypes == null) { return new ExpectedTokenParseError(TokenIdentifier.ReductionDeclSeparator, separator); }
+                case TokenIdentifier.TypeArrow:
+                    if (partialTypes == null) { return new ExpectedTokenParseError(TokenIdentifier.FunctionArrow, separator); }
 
                     // Normalize generics
                     phrase = phrase.Select(pp => pp.IsIdentifier ? pp : (pp.Parameter.Returns != null ? pp : new PartialPhrasePart(new PartialParameterDeclaration(pp.Parameter.Takes, new List<Expression>() { new IdentifierExpression("any", null) })))).ToList();
@@ -147,7 +147,7 @@ namespace Tangent.Parsing
                     partialFunctions.AddRange(ExtractPartialFunctions(typeDecl.Result));
                     partialTypes.Add(new PartialTypeDeclaration(phrase, typeDecl.Result));
                     break;
-                case TokenIdentifier.ReductionDeclSeparator:
+                case TokenIdentifier.FunctionArrow:
                     if (shouldBePhrase.Result.Any(pp => !pp.IsIdentifier && pp.Parameter.Returns == null)) {
                         throw new NotImplementedException("Sorry, unconstrained generic functions are not currently supported.");
                     }
@@ -160,7 +160,7 @@ namespace Tangent.Parsing
                     partialFunctions.Add(new PartialReductionDeclaration(phrase, functionParts.Result));
                     break;
                 default:
-                    return new ExpectedTokenParseError(TokenIdentifier.ReductionDeclSeparator, separator);
+                    return new ExpectedTokenParseError(TokenIdentifier.FunctionArrow, separator);
             }
 
             return null;
