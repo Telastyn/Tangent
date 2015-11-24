@@ -5,11 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Tangent.Intermediate;
 
-namespace Tangent.Parsing.Transformations
+namespace Tangent.Intermediate
 {
     public class LazyOperator : TransformationRule
     {
-        public override TransformationResult TryReduce(List<Expression> buffer)
+        public TransformationResult TryReduce(List<Expression> buffer)
         {
             // ~> (type) => type.Lazy
 
@@ -22,9 +22,20 @@ namespace Tangent.Parsing.Transformations
                 }
             }
 
-            return null;
+            return TransformationResult.Failure;
         }
 
         public static readonly LazyOperator Common = new LazyOperator();
+
+
+        public TransformationType Type
+        {
+            get { return TransformationType.BuiltIn; }
+        }
+
+        public int MaxTakeCount
+        {
+            get { return 2; }
+        }
     }
 }

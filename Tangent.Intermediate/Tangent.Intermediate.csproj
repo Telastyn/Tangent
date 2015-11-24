@@ -54,6 +54,7 @@
     <Compile Include="EnumType.cs" />
     <Compile Include="EnumWideningExpression.cs" />
     <Compile Include="Expression.cs" />
+    <Compile Include="ExpressionDeclaration.cs" />
     <Compile Include="Function.cs" />
     <Compile Include="FunctionInvocationExpression.cs" />
     <Compile Include="GenericArgumentReferenceType.cs" />
@@ -65,6 +66,8 @@
     <Compile Include="LazyType.cs" />
     <Compile Include="ParameterAccessExpression.cs" />
     <Compile Include="ParameterDeclaration.cs" />
+    <Compile Include="Phrase.cs" />
+    <Compile Include="PhraseMatchResult.cs" />
     <Compile Include="PhrasePart.cs" />
     <Compile Include="ProductType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -77,6 +80,11 @@
     <Compile Include="KindType.cs" />
     <Compile Include="TangentProgram.cs" />
     <Compile Include="TangentType.cs" />
+    <Compile Include="TransformationResult.cs" />
+    <Compile Include="Transformations\LazyOperator.cs" />
+    <Compile Include="Transformations\SingleValueAccessor.cs" />
+    <Compile Include="TransformationType.cs" />
+    <Compile Include="TransformationRule.cs" />
     <Compile Include="TypeAccessExpression.cs" />
     <Compile Include="TypeConstant.cs" />
     <Compile Include="TypeDeclaration.cs" />
@@ -88,6 +96,7 @@
       <Name>Tangent.Common</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

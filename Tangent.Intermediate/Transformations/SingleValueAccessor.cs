@@ -5,11 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Tangent.Intermediate;
 
-namespace Tangent.Parsing.Transformations
+namespace Tangent.Intermediate
 {
     public class SingleValueAccessor : TransformationRule
     {
-        public override TransformationResult TryReduce(List<Expression> buffer)
+        public TransformationResult TryReduce(List<Expression> buffer)
         {
             // (enum).<identifier that is a legal enum value> => SingleValueType
 
@@ -32,9 +32,20 @@ namespace Tangent.Parsing.Transformations
                 }
             }
 
-            return null;
+            return TransformationResult.Failure;
         }
 
         public static readonly SingleValueAccessor Common = new SingleValueAccessor();
+
+
+        public TransformationType Type
+        {
+            get { return TransformationType.BuiltIn; }
+        }
+
+        public int MaxTakeCount
+        {
+            get { return 3; }
+        }
     }
 }

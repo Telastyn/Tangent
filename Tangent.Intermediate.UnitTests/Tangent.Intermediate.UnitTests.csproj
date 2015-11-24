@@ -42,6 +42,10 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="Moq">
+      <HintPath>..\..\Moq.4.0.10827\NET40\Moq.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -60,6 +64,7 @@
     <Compile Include="IdentifierTests.cs" />
     <Compile Include="ReductionDeclarationTests.cs" />
     <Compile Include="GenericInferenceTests.cs" />
+    <Compile Include="TransformationOrderingTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.Common\Tangent.Common.csproj">

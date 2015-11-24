@@ -75,10 +75,6 @@
     <Compile Include="Errors\ResultOrParseError.cs" />
     <Compile Include="Scope.cs" />
     <Compile Include="Errors\StatementGrokErrors.cs" />
-    <Compile Include="TransformationResult.cs" />
-    <Compile Include="TransformationRule.cs" />
-    <Compile Include="Transformations\LazyOperator.cs" />
-    <Compile Include="Transformations\SingleValueAccessor.cs" />
     <Compile Include="TypeResolve.cs" />
     <Compile Include="TypeResolved\TypeResolvedFunction.cs" />
   </ItemGroup>
@@ -96,7 +92,9 @@
       <Name>Tangent.Tokenization</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Transformations\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

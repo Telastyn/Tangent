@@ -5,7 +5,6 @@ using System.Text;
 using Tangent.Intermediate;
 using Tangent.Parsing.Errors;
 using Tangent.Parsing.Partial;
-using Tangent.Parsing.Transformations;
 using Tangent.Parsing.TypeResolved;
 
 namespace Tangent.Parsing
