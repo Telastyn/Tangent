@@ -65,6 +65,7 @@
     <Compile Include="ReductionDeclarationTests.cs" />
     <Compile Include="GenericInferenceTests.cs" />
     <Compile Include="TransformationOrderingTests.cs" />
+    <Compile Include="PhraseTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.Common\Tangent.Common.csproj">
