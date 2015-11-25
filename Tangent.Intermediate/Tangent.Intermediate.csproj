@@ -81,8 +81,12 @@
     <Compile Include="TangentProgram.cs" />
     <Compile Include="TangentType.cs" />
     <Compile Include="TransformationResult.cs" />
+    <Compile Include="Transformations\ConstructorParameterAccess.cs" />
+    <Compile Include="Transformations\GenericParameterAccess.cs" />
     <Compile Include="Transformations\LazyOperator.cs" />
+    <Compile Include="Transformations\ParameterAccess.cs" />
     <Compile Include="Transformations\SingleValueAccessor.cs" />
+    <Compile Include="Transformations\TypeAccess.cs" />
     <Compile Include="TransformationType.cs" />
     <Compile Include="TransformationRule.cs" />
     <Compile Include="TypeAccessExpression.cs" />

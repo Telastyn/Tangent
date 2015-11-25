@@ -27,7 +27,7 @@ namespace Tangent.Intermediate.UnitTests
             var result = phrase.TryMatch(input);
 
             Assert.IsTrue(result.Success);
-            Assert.AreEqual(3, result.Length);
+            Assert.AreEqual(3, result.TokenMatchLength);
             Assert.AreEqual(2, result.IncomingParameters.Count());
             Assert.AreEqual(1, result.GenericInferences.Count());
 
@@ -57,7 +57,7 @@ namespace Tangent.Intermediate.UnitTests
             var result = phrase.TryMatch(input);
 
             Assert.IsTrue(result.Success);
-            Assert.AreEqual(3, result.Length);
+            Assert.AreEqual(3, result.TokenMatchLength);
             Assert.AreEqual(2, result.IncomingParameters.Count());
             Assert.AreEqual(1, result.GenericInferences.Count());
 
