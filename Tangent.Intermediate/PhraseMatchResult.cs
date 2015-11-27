@@ -9,7 +9,7 @@ namespace Tangent.Intermediate
     public class PhraseMatchResult
     {
         public readonly int TokenMatchLength;
-        public readonly IEnumerable<Expression> IncomingParameters;
+        public readonly IEnumerable<Expression> IncomingArguments;
         public readonly Dictionary<ParameterDeclaration, TangentType> GenericInferences;
         public readonly LineColumnRange MatchLocation;
 
@@ -26,7 +26,7 @@ namespace Tangent.Intermediate
         private PhraseMatchResult() { }
         public PhraseMatchResult(int tokensMatched, LineColumnRange matchLocation, IEnumerable<Expression> matchedParameters = null, Dictionary<ParameterDeclaration, TangentType> genericInferences = null)
         {
-            IncomingParameters = matchedParameters ?? Enumerable.Empty<Expression>();
+            IncomingArguments = matchedParameters ?? Enumerable.Empty<Expression>();
             GenericInferences = genericInferences == null ? new Dictionary<ParameterDeclaration, TangentType>() : new Dictionary<ParameterDeclaration, TangentType>(genericInferences);
             TokenMatchLength = tokensMatched;
             MatchLocation = matchLocation;

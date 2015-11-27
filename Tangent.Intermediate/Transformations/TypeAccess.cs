@@ -18,11 +18,11 @@ namespace Tangent.Intermediate.Transformations
         public override Expression Reduce(PhraseMatchResult input)
         {
             if (Declaration.IsGeneric) {
-                var genericBindingArgs = input.IncomingParameters.Select(expr => expr.EffectiveType.ImplementationType == KindOfType.TypeConstant ? ((TypeConstant)expr.EffectiveType).Value : expr.EffectiveType).ToList();
+                var genericBindingArgs = input.IncomingArguments.Select(expr => expr.EffectiveType.ImplementationType == KindOfType.TypeConstant ? ((TypeConstant)expr.EffectiveType).Value : expr.EffectiveType).ToList();
                 var genericBinding = BoundGenericType.For(Declaration, genericBindingArgs);
                 return new TypeAccessExpression(genericBinding.TypeConstant, input.MatchLocation);
             } else {
-                if (input.IncomingParameters.Any() || input.GenericInferences.Any()) {
+                if (input.IncomingArguments.Any() || input.GenericInferences.Any()) {
                     throw new ApplicationException("Unexpected input to Type Access.");
                 }
 
