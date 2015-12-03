@@ -11,8 +11,6 @@ namespace Tangent.Parsing
 {
     public static class TypeResolve
     {
-        private static readonly IEnumerable<TransformationRule> typeResolutionRules = new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common };
-
         public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllPartialTypeDeclarations(IEnumerable<PartialTypeDeclaration> partialTypes, IEnumerable<TypeDeclaration> builtInTypes, out Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping)
         {
             List<TypeDeclaration> types = new List<TypeDeclaration>(builtInTypes);
@@ -59,14 +57,13 @@ namespace Tangent.Parsing
 
         public static ResultOrParseError<TypeDeclaration> TryPartialTypeDeclaration(PartialTypeDeclaration partial, IEnumerable<TypeDeclaration> types, bool hardError)
         {
-            var scope = Scope.ForTypes(types, Enumerable.Empty<ParameterDeclaration>());
+            var scope = new TransformationScope(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => new TypeAccess(td))));
             List<PhrasePart> takes = new List<PhrasePart>();
             foreach (var t in partial.Takes) {
                 if (t.IsIdentifier) {
                     takes.Add(new PhrasePart(t.Identifier));
                 } else {
-                    var input = new Input(t.Parameter.Returns, scope);
-                    var interpretResults = input.InterpretTowards(TangentType.Any.Kind);
+                    var interpretResults = scope.InterpretTowards(TangentType.Any.Kind, t.Parameter.Returns);
                     if (interpretResults.Count == 1) {
                         takes.Add(new PhrasePart(new ParameterDeclaration(t.Parameter.Takes, interpretResults.Cast<TypeAccessExpression>().First().TypeConstant.Value.Kind)));
                     } else if (interpretResults.Count == 0) {
@@ -284,8 +281,8 @@ namespace Tangent.Parsing
 
         internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<Expression> identifiers, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
         {
-            var input = new Input(identifiers, Scope.ForTypes(types, genericArguments), typeResolutionRules);
-            var result = input.InterpretTowards(TangentType.Any.Kind);
+            var scope = new TransformationScope(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => (TransformationRule)new TypeAccess(td))).Concat(genericArguments.Select(ga => new GenericParameterAccess(ga))));
+            var result = scope.InterpretTowards(TangentType.Any.Kind, identifiers.ToList());
             if (result.Count == 1) {
                 var resolvedType = result[0].EffectiveType;
 
@@ -419,13 +416,14 @@ namespace Tangent.Parsing
         private static PartialPhrasePart FixInferences(PartialPhrasePart part, Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder> inferredTypes)
         {
             if (part.IsIdentifier) { return part; }
-            Func<Expression, Expression> fixer =  expr=>{
+            Func<Expression, Expression> fixer = expr =>
+            {
                 var partial = expr as PartialTypeInferenceExpression;
-                if(partial == null){
-                     return expr;
+                if (partial == null) {
+                    return expr;
                 }
 
-                return new GenericInferenceParameterAccessExpression( inferredTypes[partial], partial.SourceInfo);
+                return new GenericInferenceParameterAccessExpression(inferredTypes[partial], partial.SourceInfo);
             };
 
             return new PartialPhrasePart(new PartialParameterDeclaration(part.Parameter.Takes, part.Parameter.Returns.Select(fixer).ToList()));

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Tangent.Intermediate;
 
-namespace Tangent.Parsing
+namespace Tangent.Intermediate
 {
     public class ParenExpression : Expression
     {
@@ -37,11 +37,10 @@ namespace Tangent.Parsing
             get { return TangentType.PotentiallyAnything; }
         }
 
-        public IEnumerable<Expression> TryResolve(Scope scope, TangentType towardsType)
+        public IEnumerable<Expression> TryResolve(TransformationScope scope, TangentType towardsType)
         {
-            var input = new Input(LastStatement, scope);
-
-            return input.InterpretTowards(towardsType).Select(interpretation =>
+            // Does this work? How do the void statements get interpreted?
+            return scope.InterpretTowards(towardsType, LastStatement).Select(interpretation =>
                 new FunctionInvocationExpression(
                     new ReductionDeclaration(
                         Enumerable.Empty<PhrasePart>(),

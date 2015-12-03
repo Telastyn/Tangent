@@ -62,7 +62,6 @@
     <Compile Include="PartialBlockParseTests.cs" />
     <Compile Include="PartialPhraseTests.cs" />
     <Compile Include="TypeResolveTests.cs" />
-    <Compile Include="InputTests.cs" />
     <Compile Include="EnumTests.cs" />
   </ItemGroup>
   <ItemGroup>

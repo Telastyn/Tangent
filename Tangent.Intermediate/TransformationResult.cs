@@ -10,7 +10,7 @@ namespace Tangent.Intermediate
     public class TransformationResult
     {
         public readonly int Takes;
-        public readonly Expression ReplacesWith;
+        public Expression ReplacesWith;
         public bool Success
         {
             get

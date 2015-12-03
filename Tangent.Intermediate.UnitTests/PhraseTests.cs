@@ -24,7 +24,7 @@ namespace Tangent.Intermediate.UnitTests
                 new ConstantExpression<int>(TangentType.Int, 42, null),
                 new ConstantExpression<string>(TangentType.String, "moo", null)};
 
-            var result = phrase.TryMatch(input);
+            var result = phrase.TryMatch(input, new TransformationScope(Enumerable.Empty<TransformationRule>()));
 
             Assert.IsTrue(result.Success);
             Assert.AreEqual(3, result.TokenMatchLength);
@@ -54,7 +54,7 @@ namespace Tangent.Intermediate.UnitTests
                 new IdentifierExpression(new Identifier("fooooo"), null)
             };
 
-            var result = phrase.TryMatch(input);
+            var result = phrase.TryMatch(input, new TransformationScope(Enumerable.Empty<TransformationRule>()));
 
             Assert.IsTrue(result.Success);
             Assert.AreEqual(3, result.TokenMatchLength);
@@ -81,7 +81,7 @@ namespace Tangent.Intermediate.UnitTests
                 new IdentifierExpression(new Identifier("foo"), null),
                 new ConstantExpression<int>(TangentType.Int, 42, null)};
 
-            var result = phrase.TryMatch(input);
+            var result = phrase.TryMatch(input, new TransformationScope(Enumerable.Empty<TransformationRule>()));
 
             Assert.IsFalse(result.Success);
         }
@@ -100,7 +100,7 @@ namespace Tangent.Intermediate.UnitTests
                 new ConstantExpression<string>(TangentType.String, "42", null),
                 new ConstantExpression<string>(TangentType.String, "moo", null)};
 
-            var result = phrase.TryMatch(input);
+            var result = phrase.TryMatch(input, new TransformationScope(Enumerable.Empty<TransformationRule>()));
 
             Assert.IsFalse(result.Success);
         }
@@ -119,7 +119,7 @@ namespace Tangent.Intermediate.UnitTests
                 new ConstantExpression<int>(TangentType.Int, 42, null),
                 new IdentifierExpression(new Identifier("foo"), null)};
 
-            var result = phrase.TryMatch(input);
+            var result = phrase.TryMatch(input, new TransformationScope(Enumerable.Empty<TransformationRule>()));
 
             Assert.IsFalse(result.Success);
         }

@@ -63,7 +63,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void BasicCtorParams()
         {
-            var result = Test.ProgramFile("BasicCtorParams.tan");
+            var result = Test.DebugProgramFile("BasicCtorParams.tan");
             Assert.AreEqual("42", result.Trim());
         }
 

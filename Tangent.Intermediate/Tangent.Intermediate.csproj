@@ -42,6 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AmbiguousExpression.cs" />
     <Compile Include="Block.cs" />
     <Compile Include="BoundGenericProductType.cs" />
     <Compile Include="BoundGenericType.cs" />
@@ -66,9 +67,11 @@
     <Compile Include="LazyType.cs" />
     <Compile Include="ParameterAccessExpression.cs" />
     <Compile Include="ParameterDeclaration.cs" />
+    <Compile Include="ParenExpression.cs" />
     <Compile Include="Phrase.cs" />
     <Compile Include="PhraseMatchResult.cs" />
     <Compile Include="PhrasePart.cs" />
+    <Compile Include="PhrasePriorityComparer.cs" />
     <Compile Include="ProductType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReductionDeclaration.cs" />
@@ -81,6 +84,7 @@
     <Compile Include="TangentProgram.cs" />
     <Compile Include="TangentType.cs" />
     <Compile Include="TransformationResult.cs" />
+    <Compile Include="TransformationScope.cs" />
     <Compile Include="Transformations\ConstructorParameterAccess.cs" />
     <Compile Include="Transformations\FunctionInvocation.cs" />
     <Compile Include="Transformations\GenericParameterAccess.cs" />

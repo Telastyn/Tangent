@@ -9,7 +9,7 @@ namespace Tangent.Intermediate
 {
     public class LazyOperator : TransformationRule
     {
-        public TransformationResult TryReduce(List<Expression> buffer)
+        public TransformationResult TryReduce(List<Expression> buffer, TransformationScope scope)
         {
             // ~> (type) => type.Lazy
 

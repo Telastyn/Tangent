@@ -8,16 +8,8 @@ namespace Tangent.Intermediate
 {
     public interface TransformationRule
     {
-        TransformationResult TryReduce(List<Expression> input);
+        TransformationResult TryReduce(List<Expression> input, TransformationScope scope);
         TransformationType Type { get; }
         int MaxTakeCount { get; }
-    }
-
-    public static class ExtendTransformationRule
-    {
-        public static IEnumerable<TransformationRule> Sort(this IEnumerable<TransformationRule> input)
-        {
-            return input.OrderBy(r => (int)r.Type).OrderByDescending(r => r.MaxTakeCount);
-        }
     }
 }

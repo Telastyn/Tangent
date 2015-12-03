@@ -92,7 +92,12 @@ namespace Tangent.Parsing
             foreach (var fn in resolvedFunctions.Result) {
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
                 if (partialFunction != null) {
-                    var scope = new Scope(partialFunction.EffectiveType, resolvedTypes.Result, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), partialFunction.Scope != null ? partialFunction.Scope.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter) : Enumerable.Empty<ParameterDeclaration>(), resolvedFunctions.Result.Concat(ctorCalls), Enumerable.Empty<ParameterDeclaration>());
+                    var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td=>new TypeAccess(td)))
+                        .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
+                        .Concat(partialFunction.Scope != null ? ConstructorParameterAccess.For(fn.Takes.First(pp=>!pp.IsIdentifier && pp.Parameter.Takes.Count==1 && pp.Parameter.Takes.First().Value == "this").Parameter, partialFunction.Scope.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp=>pp.Parameter)) : Enumerable.Empty<TransformationRule>())
+                        .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f=>new FunctionInvocation(f)))
+                        .Concat(new TransformationRule[]{ LazyOperator.Common, SingleValueAccessor.Common}));
+
                     Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
 
                     lookup.Add(partialFunction, newb);
@@ -167,14 +172,14 @@ namespace Tangent.Parsing
 
         }
 
-        private static Function BuildBlock(Scope scope, TangentType effectiveType, PartialBlock partialBlock, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
+        private static Function BuildBlock(TransformationScope scope, TangentType effectiveType, PartialBlock partialBlock, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
         {
             var block = BuildBlock(scope, effectiveType, partialBlock.Statements, bad, ambiguous);
 
             return new Function(effectiveType, block);
         }
 
-        private static Block BuildBlock(Scope scope, TangentType effectiveType, IEnumerable<PartialStatement> elements, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
+        private static Block BuildBlock(TransformationScope scope, TangentType effectiveType, IEnumerable<PartialStatement> elements, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
         {
             List<Expression> statements = new List<Expression>();
             if (!elements.Any()) {
@@ -185,8 +190,8 @@ namespace Tangent.Parsing
             var allElements = elements.ToList();
             for (int ix = 0; ix < allElements.Count; ++ix) {
                 var line = allElements[ix];
-                var statementBits = line.FlatTokens.Select(t => ElementToExpression(scope, t, bad, ambiguous));
-                var statement = new Input(statementBits, scope).InterpretTowards((effectiveType != null && ix == allElements.Count - 1) ? effectiveType : TangentType.Void);
+                var statementBits = line.FlatTokens.Select(t => ElementToExpression(scope, t, bad, ambiguous)).ToList();
+                var statement = scope.InterpretTowards((effectiveType != null && ix == allElements.Count - 1) ? effectiveType : TangentType.Void, statementBits);
                 if (statement.Count == 0) {
                     bad.Add(new IncomprehensibleStatementError(statementBits));
                 } else if (statement.Count > 1) {
@@ -199,7 +204,7 @@ namespace Tangent.Parsing
             return new Block(statements);
         }
 
-        private static Expression ElementToExpression(Scope scope, PartialElement element, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
+        private static Expression ElementToExpression(TransformationScope scope, PartialElement element, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
         {
             switch (element.Type) {
                 case ElementType.Identifier:

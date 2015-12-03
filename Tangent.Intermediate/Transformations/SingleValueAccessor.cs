@@ -9,7 +9,7 @@ namespace Tangent.Intermediate
 {
     public class SingleValueAccessor : TransformationRule
     {
-        public TransformationResult TryReduce(List<Expression> buffer)
+        public TransformationResult TryReduce(List<Expression> buffer, TransformationScope scope)
         {
             // (enum).<identifier that is a legal enum value> => SingleValueType
 

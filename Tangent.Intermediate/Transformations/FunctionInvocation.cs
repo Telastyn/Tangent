@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Tangent.Intermediate.Transformations
+namespace Tangent.Intermediate
 {
-    public class FunctionInvocation:ExpressionDeclaration
+    public class FunctionInvocation : ExpressionDeclaration
     {
         public readonly ReductionDeclaration Declaration;
 

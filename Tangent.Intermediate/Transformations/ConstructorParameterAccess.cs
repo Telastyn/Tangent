@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Tangent.Intermediate.Transformations
+namespace Tangent.Intermediate
 {
     public class ConstructorParameterAccess : ExpressionDeclaration
     {
@@ -30,6 +30,11 @@ namespace Tangent.Intermediate.Transformations
         public override TransformationType Type
         {
             get { return TransformationType.ConstructorReference; }
+        }
+
+        public static IEnumerable<ConstructorParameterAccess> For(ParameterDeclaration thisParam, IEnumerable<ParameterDeclaration> ctorParams)
+        {
+            return ctorParams.Select(pd => new ConstructorParameterAccess(thisParam, pd));
         }
     }
 }

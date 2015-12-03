@@ -17,7 +17,16 @@ namespace Tangent.Intermediate
         {
             get
             {
-                return GenericInferences != null;
+                return GenericInferences != null && !IsAmbiguous;
+            }
+        }
+
+        public bool IsAmbiguous
+        {
+            get
+            {
+                if (IncomingArguments == null) { return false; }
+                return IncomingArguments.Any(expr => expr.NodeType == ExpressionNodeType.Ambiguity);
             }
         }
 
