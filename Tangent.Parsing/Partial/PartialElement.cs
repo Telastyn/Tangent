@@ -11,7 +11,8 @@ namespace Tangent.Parsing.Partial
         Identifier,
         VarDecl,
         Block,
-        Constant
+        Constant,
+        Lambda
     }
 
     public abstract class PartialElement

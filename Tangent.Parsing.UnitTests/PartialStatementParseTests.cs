@@ -75,5 +75,44 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.IsFalse(result.Success);
         }
+
+        [TestMethod]
+        public void LambdasPullLeadingIdentifier()
+        {
+            var test = Tokenize.ProgramFile("x=>{};", "test.tan");
+
+            var result = Parse.PartialStatement(test.ToList());
+
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(1, result.Result.Count());
+            Assert.AreEqual(ElementType.Lambda, result.Result.First().Type);
+            var l = (LambdaElement)result.Result.First();
+            Assert.AreEqual(1, l.Takes.Count);
+            Assert.AreEqual("x", l.Takes.First().ParameterDeclaration.Takes.First());
+            Assert.AreEqual(null, l.Takes.First().ParameterDeclaration.Returns);
+        }
+
+        [TestMethod]
+        public void LambdasPullManyVardecls()
+        {
+            var test = Tokenize.ProgramFile("(x)(x y)(x y z)=>{};", "test.tan");
+
+            var result = Parse.PartialStatement(test.ToList());
+
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(1, result.Result.Count());
+            Assert.AreEqual(ElementType.Lambda, result.Result.First().Type);
+            var l = (LambdaElement)result.Result.First();
+            Assert.AreEqual(3, l.Takes.Count);
+            Assert.AreEqual("x", l.Takes.First().ParameterDeclaration.Takes.First());
+            Assert.AreEqual(null, l.Takes.First().ParameterDeclaration.Returns);
+            Assert.AreEqual("x", l.Takes.First().ParameterDeclaration.Takes.First());
+            Assert.AreEqual("y", l.Takes.First().ParameterDeclaration.Takes.Skip(1).First());
+            Assert.AreEqual(null, l.Takes.First().ParameterDeclaration.Returns);
+            Assert.AreEqual("x", l.Takes.First().ParameterDeclaration.Takes.First());
+            Assert.AreEqual("y", l.Takes.First().ParameterDeclaration.Takes.Skip(1).First());
+            Assert.AreEqual("z", l.Takes.First().ParameterDeclaration.Takes.Skip(2).First());
+            Assert.AreEqual(null, l.Takes.First().ParameterDeclaration.Returns);
+        }
     }
 }

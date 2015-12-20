@@ -51,6 +51,7 @@
     <Compile Include="CtorCall.cs" />
     <Compile Include="CtorParameterAccessExpression.cs" />
     <Compile Include="DelegateInvocationExpression.cs" />
+    <Compile Include="DelegateType.cs" />
     <Compile Include="DirectOpCode.cs" />
     <Compile Include="EnumType.cs" />
     <Compile Include="EnumWideningExpression.cs" />

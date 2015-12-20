@@ -71,32 +71,32 @@ namespace Tangent.Parsing
                 }
             }
 
-            HashSet<SumType> allSumTypes = new HashSet<SumType>(resolvedTypes.Result.Where(t=>t.Returns.ImplementationType == KindOfType.Sum).Select(t=>t.Returns).Cast<SumType>());
+            HashSet<SumType> allSumTypes = new HashSet<SumType>(resolvedTypes.Result.Where(t => t.Returns.ImplementationType == KindOfType.Sum).Select(t => t.Returns).Cast<SumType>());
 
             var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt), pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)))).ToList();
-            foreach(var sum in allSumTypes){
-                foreach(var entry in sum.Types){
+            foreach (var sum in allSumTypes) {
+                foreach (var entry in sum.Types) {
                     ctorCalls.Add(new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", entry)), new CtorCall(sum)));
                 }
             }
- 
+
 
             // And now Phase 3 - Statement parsing based on syntax.
             var lookup = new Dictionary<Function, Function>();
             var bad = new List<IncomprehensibleStatementError>();
             var ambiguous = new List<AmbiguousStatementError>();
-            resolvedFunctions =  new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(BuiltinFunctions.All));
+            resolvedFunctions = new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(BuiltinFunctions.All));
             resolvedFunctions = FanOutFunctionsWithSumTypes(resolvedFunctions.Result);
             if (!resolvedFunctions.Success) { return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error); }
 
             foreach (var fn in resolvedFunctions.Result) {
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
                 if (partialFunction != null) {
-                    var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td=>new TypeAccess(td)))
+                    var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
                         .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
-                        .Concat(partialFunction.Scope != null ? ConstructorParameterAccess.For(fn.Takes.First(pp=>!pp.IsIdentifier && pp.Parameter.Takes.Count==1 && pp.Parameter.Takes.First().Value == "this").Parameter, partialFunction.Scope.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp=>pp.Parameter)) : Enumerable.Empty<TransformationRule>())
-                        .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f=>new FunctionInvocation(f)))
-                        .Concat(new TransformationRule[]{ LazyOperator.Common, SingleValueAccessor.Common}));
+                        .Concat(partialFunction.Scope != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.Takes.First().Value == "this").Parameter, partialFunction.Scope.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
+                        .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f => new FunctionInvocation(f)))
+                        .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }));
 
                     Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
 
@@ -534,6 +534,33 @@ namespace Tangent.Parsing
                 } else if (first.Identifier == TokenIdentifier.Symbol) {
                     tokens.RemoveAt(0);
                     result.Add(new IdentifierElement(first.Value, first.SourceInfo));
+                } else if (first.Identifier == TokenIdentifier.FunctionArrow) {
+                    // lambda.
+                    if (!result.Any()) {
+                        return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, null));
+                    }
+
+                    var preceeding = new List<VarDeclElement>();
+                    var last = result.Last();
+                    if (last.Type == ElementType.Identifier) {
+                        preceeding.Add(new VarDeclElement(new PartialParameterDeclaration(((IdentifierElement)last).Identifier, null), last.SourceInfo));
+                        result.RemoveAt(result.Count - 1);
+                    } else if (last.Type == ElementType.VarDecl) {
+                        while (result.Any() && result.Last().Type == ElementType.VarDecl) {
+                            preceeding.Add((VarDeclElement)result.Last());
+                            result.RemoveAt(result.Count - 1);
+                        }
+                    } else {
+                        return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, null));
+                    }
+
+                    tokens.RemoveAt(0);
+                    var body = PartialBlock(tokens);
+                    if (body.Success) {
+                        result.Add(new LambdaElement(preceeding, new BlockElement(body.Result)));
+                    } else {
+                        return new ResultOrParseError<IEnumerable<PartialElement>>(body.Error);
+                    }
                 } else {
                     return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
                 }

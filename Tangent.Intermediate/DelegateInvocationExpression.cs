@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Tangent.Intermediate
 {
-    public class DelegateInvocationExpression : Expression
+    public class LazyInvocationExpression : Expression
     {
         public readonly Expression Delegate;
 
@@ -15,7 +15,7 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.DelegateInvocation; }
         }
 
-        public DelegateInvocationExpression(Expression d)
+        public LazyInvocationExpression(Expression d)
             : base(d.SourceInfo)
         {
             Delegate = d;
