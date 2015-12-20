@@ -103,7 +103,7 @@ namespace Tangent.Parsing.UnitTests
 
             Assert.IsTrue(result.Success);
             Assert.AreEqual(foo, result.Result.Returns);
-            Assert.AreEqual(new Identifier("x"), result.Result.Takes.First());
+            Assert.AreEqual(new Identifier("x"), result.Result.Takes.First().Identifier);
         }
 
 
@@ -136,7 +136,7 @@ namespace Tangent.Parsing.UnitTests
 
             var x = result.Result.Takes.First().Parameter;
             Assert.AreEqual(foo, x.Returns);
-            Assert.AreEqual(new Identifier("x"), x.Takes.First());
+            Assert.AreEqual(new Identifier("x"), x.Takes.First().Identifier);
 
             Assert.AreEqual(foo, result.Result.Returns.EffectiveType);
         }

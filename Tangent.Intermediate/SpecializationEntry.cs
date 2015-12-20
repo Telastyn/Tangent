@@ -32,7 +32,7 @@ namespace Tangent.Intermediate
                     }
                 }
 
-                switch (GeneralFunctionParameter.Returns.ImplementationType) {
+                switch (GeneralFunctionParameter.RequiredArgumentType.ImplementationType) {
                     case KindOfType.Sum:
                         return DispatchType.SumType;
                     case KindOfType.Enum:
@@ -47,7 +47,7 @@ namespace Tangent.Intermediate
         {
             GeneralFunctionParameter = general;
             SpecificFunctionParameter = specific;
-            if (inferences != null && !general.Returns.ContainedGenericReferences(GenericTie.Inference).All(pd => inferences.ContainsKey(pd))) {
+            if (inferences != null && !general.RequiredArgumentType.ContainedGenericReferences(GenericTie.Inference).All(pd => inferences.ContainsKey(pd))) {
                 throw new InvalidOperationException("Specialization Entry being created with inferences that do not match general version.");
             }
 

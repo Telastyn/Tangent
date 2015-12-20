@@ -94,21 +94,21 @@ namespace Tangent.Intermediate
                         yield break;
                     }
                 } else {
-                    var rhsInferences = rhsEnum.Current.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : rhsEnum.Current.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference);
+                    var rhsInferences = rhsEnum.Current.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : rhsEnum.Current.Parameter.RequiredArgumentType.ContainedGenericReferences(GenericTie.Inference);
                     if (!rhsEnum.Current.IsIdentifier && rhsInferences.Any()) {
                         var necessaryInferences = new Dictionary<ParameterDeclaration, TangentType>();
-                        if (rhsEnum.Current.Parameter.Returns.CompatibilityMatches(thisEnum.Current.Parameter.Returns, necessaryInferences)) {
+                        if (rhsEnum.Current.Parameter.RequiredArgumentType.CompatibilityMatches(thisEnum.Current.Parameter.RequiredArgumentType, necessaryInferences)) {
                             yield return new SpecializationEntry(rhsEnum.Current.Parameter, thisEnum.Current.Parameter, necessaryInferences);
                         } else {
                             yield return null;
                             yield break;
                         }
-                    } else if (!rhsEnum.Current.IsIdentifier && rhsEnum.Current.Parameter.Returns.ImplementationType == KindOfType.Sum) {
-                        if (rhsEnum.Current.Parameter.Returns == thisEnum.Current.Parameter.Returns) {
+                    } else if (!rhsEnum.Current.IsIdentifier && rhsEnum.Current.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Sum) {
+                        if (rhsEnum.Current.Parameter.RequiredArgumentType == thisEnum.Current.Parameter.RequiredArgumentType) {
                             break;
                         }
 
-                        if (!((SumType)rhsEnum.Current.Parameter.Returns).Types.Contains(thisEnum.Current.Parameter.Returns)) {
+                        if (!((SumType)rhsEnum.Current.Parameter.RequiredArgumentType).Types.Contains(thisEnum.Current.Parameter.RequiredArgumentType)) {
                             yield return null;
                             yield break;
                         } else {
@@ -117,12 +117,12 @@ namespace Tangent.Intermediate
 
                         break;
                     } else {
-                        switch (thisEnum.Current.Parameter.Returns.ImplementationType) {
+                        switch (thisEnum.Current.Parameter.RequiredArgumentType.ImplementationType) {
                             case KindOfType.SingleValue:
-                                var single = (SingleValueType)thisEnum.Current.Parameter.Returns;
-                                switch (rhsEnum.Current.Parameter.Returns.ImplementationType) {
+                                var single = (SingleValueType)thisEnum.Current.Parameter.RequiredArgumentType;
+                                switch (rhsEnum.Current.Parameter.RequiredArgumentType.ImplementationType) {
                                     case KindOfType.SingleValue:
-                                        var rhsSingle = (SingleValueType)rhsEnum.Current.Parameter.Returns;
+                                        var rhsSingle = (SingleValueType)rhsEnum.Current.Parameter.RequiredArgumentType;
                                         if (rhsSingle.ValueType != single.ValueType || rhsSingle.Value != single.Value) {
                                             yield return null;
                                             yield break;
@@ -133,7 +133,7 @@ namespace Tangent.Intermediate
                                         break;
 
                                     case KindOfType.Enum:
-                                        if (single.ValueType != rhsEnum.Current.Parameter.Returns) {
+                                        if (single.ValueType != rhsEnum.Current.Parameter.RequiredArgumentType) {
                                             yield return null;
                                             yield break;
                                         } else {
@@ -150,7 +150,7 @@ namespace Tangent.Intermediate
                                 break;
 
                             default:
-                                if (thisEnum.Current.Parameter.Returns != rhsEnum.Current.Parameter.Returns) {
+                                if (thisEnum.Current.Parameter.RequiredArgumentType != rhsEnum.Current.Parameter.RequiredArgumentType) {
                                     yield return null;
                                     yield break;
                                 }

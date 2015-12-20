@@ -98,7 +98,7 @@ namespace Tangent.CilGeneration
                             // RMS: This call would be better as a Constrained opcode, but that requires a ldarga (ptr load) not a ldarg (value load), but we 
                             //       don't know our parameter index at this point. Consider refactoring for perf.
                             //
-                            gen.Emit(OpCodes.Box, typeLookup[specializationParam.GeneralFunctionParameter.Returns]);
+                            gen.Emit(OpCodes.Box, typeLookup[specializationParam.GeneralFunctionParameter.RequiredArgumentType]);
                             gen.Emit(OpCodes.Callvirt, objGetType);
                             //gen.EmitWriteLine("Specialization GetType success.");
                             gen.Emit(OpCodes.Ldtoken, specificTargetType);
@@ -110,7 +110,7 @@ namespace Tangent.CilGeneration
                             break;
 
                         case DispatchType.PartialSpecialization:
-                            var specificPartialTargetType = typeLookup[specializationParam.SpecificFunctionParameter.Returns];
+                            var specificPartialTargetType = typeLookup[specializationParam.SpecificFunctionParameter.RequiredArgumentType];
                             specificPartialTargetType = specificPartialTargetType.GetGenericTypeDefinition();
                             //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
                             parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
@@ -118,7 +118,7 @@ namespace Tangent.CilGeneration
                             //
                             // if param.GetType().IsGenericType && param.GetType().GetGenericTypeDefinition() == specificType (partial specialization)
                             //
-                            gen.Emit(OpCodes.Box, typeLookup[specializationParam.GeneralFunctionParameter.Returns]);
+                            gen.Emit(OpCodes.Box, typeLookup[specializationParam.GeneralFunctionParameter.RequiredArgumentType]);
                             gen.Emit(OpCodes.Callvirt, objGetType);
                             LocalBuilder paramTypeLocal;
                             if (!parameterTypeLocals.ContainsKey(specializationParam.GeneralFunctionParameter)) {
@@ -162,7 +162,7 @@ namespace Tangent.CilGeneration
                         }
                     } else if (specialCasts.ContainsKey(parameter)) {
                         parameterAccessors[parameter](gen);
-                        gen.Emit(OpCodes.Box, typeLookup[parameter.Returns]);
+                        gen.Emit(OpCodes.Box, typeLookup[parameter.RequiredArgumentType]);
                         if (unbox) {
                             if (specialCasts[parameter].IsValueType) {
                                 gen.Emit(OpCodes.Unbox_Any, specialCasts[parameter]);
@@ -173,7 +173,7 @@ namespace Tangent.CilGeneration
                     } else {
                         parameterAccessors[parameter](gen);
                         if (!unbox) {
-                            gen.Emit(OpCodes.Box, typeLookup[parameter.Returns]);
+                            gen.Emit(OpCodes.Box, typeLookup[parameter.RequiredArgumentType]);
                             gen.Emit(OpCodes.Castclass, typeof(object));
                         }
                     }
@@ -264,7 +264,7 @@ namespace Tangent.CilGeneration
 
                     // Now, bind them.
                     foreach (var partialSpecialization in specializationDetails.Where(s => s.SpecializationType == DispatchType.PartialSpecialization)) {
-                        inferenceTypeWalker(partialSpecialization.SpecificFunctionParameter.Returns, () =>
+                        inferenceTypeWalker(partialSpecialization.SpecificFunctionParameter.RequiredArgumentType, () =>
                         {
                             // We already stored param.GetType() to a local. Use that.
                             gen.Emit(OpCodes.Ldloc, parameterTypeLocals[partialSpecialization.GeneralFunctionParameter]);
@@ -418,7 +418,7 @@ namespace Tangent.CilGeneration
                     var ctorAccess = (CtorParameterAccessExpression)expr;
                     parameterCodes[ctorAccess.ThisParam](gen);
                     var thisType = typeLookup[ctorAccess.ThisParam.Returns];
-                    gen.Emit(OpCodes.Ldfld, thisType.GetField(string.Join(" ", string.Join(" ", ctorAccess.CtorParam.Takes.Select(id => id.Value)))));
+                    gen.Emit(OpCodes.Ldfld, thisType.GetField(CilScope.GetNameFor(ctorAccess.CtorParam, typeLookup)));
                     return;
 
                 default:

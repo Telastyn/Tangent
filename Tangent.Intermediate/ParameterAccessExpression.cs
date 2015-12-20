@@ -8,6 +8,7 @@ namespace Tangent.Intermediate
     public class ParameterAccessExpression : Expression
     {
         public readonly ParameterDeclaration Parameter;
+        public readonly IEnumerable<Expression> Arguments;
 
         public override ExpressionNodeType NodeType
         {
@@ -19,10 +20,11 @@ namespace Tangent.Intermediate
             get { return Parameter.Returns; }
         }
 
-        public ParameterAccessExpression(ParameterDeclaration decl, LineColumnRange sourceInfo)
+        public ParameterAccessExpression(ParameterDeclaration decl, IEnumerable<Expression> arguments, LineColumnRange sourceInfo)
             : base(sourceInfo)
         {
             Parameter = decl;
+            Arguments = arguments;
         }
 
         public override string ToString()

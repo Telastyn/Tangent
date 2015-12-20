@@ -51,17 +51,17 @@ namespace Tangent.Intermediate
 
         private static int? CompareEnum(ParameterDeclaration x, ParameterDeclaration y)
         {
-            if (x.Returns.ImplementationType == KindOfType.Enum && y.Returns.ImplementationType == KindOfType.SingleValue) {
-                var xenum = x.Returns as EnumType;
-                var ysvt = y.Returns as SingleValueType;
+            if (x.RequiredArgumentType.ImplementationType == KindOfType.Enum && y.RequiredArgumentType.ImplementationType == KindOfType.SingleValue) {
+                var xenum = x.RequiredArgumentType as EnumType;
+                var ysvt = y.RequiredArgumentType as SingleValueType;
                 if (xenum == ysvt.ValueType) {
                     return 1;
                 } else {
                     return 0;
                 }
-            } else if (x.Returns.ImplementationType == KindOfType.SingleValue && y.Returns.ImplementationType == KindOfType.Enum) {
-                var xsvt = x.Returns as SingleValueType;
-                var yenum = y.Returns as EnumType;
+            } else if (x.RequiredArgumentType.ImplementationType == KindOfType.SingleValue && y.RequiredArgumentType.ImplementationType == KindOfType.Enum) {
+                var xsvt = x.RequiredArgumentType as SingleValueType;
+                var yenum = y.RequiredArgumentType as EnumType;
                 if (yenum == xsvt.ValueType) {
                     return -1;
                 } else {
@@ -79,16 +79,16 @@ namespace Tangent.Intermediate
             // Non-generics preferred.
             // Generics that can infer the other are considered more general, and thus less preferred.
 
-            var isXGeneric = x.Returns.ContainedGenericReferences(GenericTie.Inference).Any();
-            var isYGeneric = y.Returns.ContainedGenericReferences(GenericTie.Inference).Any();
+            var isXGeneric = x.RequiredArgumentType.ContainedGenericReferences(GenericTie.Inference).Any();
+            var isYGeneric = y.RequiredArgumentType.ContainedGenericReferences(GenericTie.Inference).Any();
 
             if (isXGeneric) {
                 if (!isYGeneric) {
                     return 1;
                 }
 
-                var xCanInferY = x.Returns.CompatibilityMatches(y.Returns, new Dictionary<ParameterDeclaration, TangentType>());
-                var yCanInferX = y.Returns.CompatibilityMatches(x.Returns, new Dictionary<ParameterDeclaration, TangentType>());
+                var xCanInferY = x.RequiredArgumentType.CompatibilityMatches(y.Returns, new Dictionary<ParameterDeclaration, TangentType>());
+                var yCanInferX = y.RequiredArgumentType.CompatibilityMatches(x.Returns, new Dictionary<ParameterDeclaration, TangentType>());
                 if (xCanInferY) {
                     if (yCanInferX) {
                         return 0;

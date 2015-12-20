@@ -40,9 +40,9 @@ namespace Tangent.CilGeneration
                     dotnetFn.SetReturnType(typeLookup[fn.Returns.EffectiveType]);
                     dotnetFn.SetParameters(
                         fn.Takes.Where(t => !t.IsIdentifier).Select(t =>
-                            t.Parameter.Returns.ImplementationType == KindOfType.SingleValue ?
-                            typeLookup[((SingleValueType)t.Parameter.Returns).ValueType] :
-                            typeLookup[t.Parameter.Returns]).ToArray());
+                            t.Parameter.RequiredArgumentType.ImplementationType == KindOfType.SingleValue ?
+                            typeLookup[((SingleValueType)t.Parameter.RequiredArgumentType).ValueType] :
+                            typeLookup[t.Parameter.RequiredArgumentType]).ToArray());
 
                     return dotnetFn;
                 });
@@ -97,18 +97,18 @@ namespace Tangent.CilGeneration
         public static string GetNameFor(ParameterDeclaration rule, Func<TangentType, Type> typeLookup)
         {
             string paramTypeName;
-            if (rule.Returns.ImplementationType == KindOfType.SingleValue) {
-                var svt = ((SingleValueType)rule.Returns);
+            if (rule.RequiredArgumentType.ImplementationType == KindOfType.SingleValue) {
+                var svt = ((SingleValueType)rule.RequiredArgumentType);
                 paramTypeName = typeLookup(svt.ValueType).Name + "." + svt.Value.Value;
             } else {
-                if (!rule.Returns.ContainedGenericReferences(GenericTie.Inference).Any()) {
-                    paramTypeName = typeLookup(rule.Returns).Name;
+                if (!rule.RequiredArgumentType.ContainedGenericReferences(GenericTie.Inference).Any()) {
+                    paramTypeName = typeLookup(rule.RequiredArgumentType).Name;
                 } else {
                     paramTypeName = "<inference>";
                 }
             }
 
-            string result = string.Join(" ", rule.Takes.Select(id => id.Value)) + ": " + paramTypeName;
+            string result = string.Join(" ", rule.Takes.Select(pp => pp.IsIdentifier? pp.Identifier.Value : string.Format("({0})", typeLookup(pp.Parameter.Returns).Name))) + ": " + paramTypeName;
             return result;
         }
 

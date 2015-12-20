@@ -65,7 +65,7 @@ namespace Tangent.CilGeneration
             }
 
             var tangentCtorParams = productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).ToList();
-            var dotnetCtorParamTypes = tangentCtorParams.Select(pp => lookup(pp.Parameter.Returns, true)).ToList();
+            var dotnetCtorParamTypes = tangentCtorParams.Select(pp => lookup(pp.Parameter.RequiredArgumentType, true)).ToList();
             var ctor = classBuilder.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, dotnetCtorParamTypes.ToArray());
             var gen = ctor.GetILGenerator();
 
@@ -73,7 +73,7 @@ namespace Tangent.CilGeneration
             gen.Emit(OpCodes.Call, classBuilder.BaseType.GetConstructor(new Type[0]));
 
             for (int ix = 0; ix < dotnetCtorParamTypes.Count; ++ix) {
-                var field = classBuilder.DefineField(string.Join(" ", tangentCtorParams[ix].Parameter.Takes.Select(id => id.Value)), dotnetCtorParamTypes[ix], System.Reflection.FieldAttributes.Public | System.Reflection.FieldAttributes.InitOnly);
+                var field = classBuilder.DefineField(CilScope.GetNameFor(tangentCtorParams[ix].Parameter, t=>lookup(t, false)), dotnetCtorParamTypes[ix], System.Reflection.FieldAttributes.Public | System.Reflection.FieldAttributes.InitOnly);
                 gen.Emit(OpCodes.Ldarg_0);
                 gen.Emit(OpCodes.Ldarg, ix + 1);
                 gen.Emit(OpCodes.Stfld, field);

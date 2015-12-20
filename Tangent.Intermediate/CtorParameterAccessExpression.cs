@@ -10,12 +10,14 @@ namespace Tangent.Intermediate
     {
         public readonly ParameterDeclaration ThisParam;
         public readonly ParameterDeclaration CtorParam;
+        public readonly IEnumerable<Expression> Arguments;
 
-        public CtorParameterAccessExpression(ParameterDeclaration thisParam, ParameterDeclaration ctorParam, LineColumnRange sourceInfo)
+        public CtorParameterAccessExpression(ParameterDeclaration thisParam, ParameterDeclaration ctorParam, IEnumerable<Expression> arguments, LineColumnRange sourceInfo)
             : base(sourceInfo)
         {
             this.ThisParam = thisParam;
             this.CtorParam = ctorParam;
+            this.Arguments = arguments;
         }
 
         public override ExpressionNodeType NodeType

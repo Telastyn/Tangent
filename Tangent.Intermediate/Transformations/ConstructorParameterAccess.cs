@@ -12,7 +12,7 @@ namespace Tangent.Intermediate
         private readonly ParameterDeclaration ConstructorParameter;
 
         public ConstructorParameterAccess(ParameterDeclaration thisParam, ParameterDeclaration ctorParam)
-            : base(new Phrase(ctorParam.Takes.Select(id => new PhrasePart(id))))
+            : base(new Phrase(ctorParam.Takes))
         {
             ThisParameter = thisParam;
             ConstructorParameter = ctorParam;
@@ -24,7 +24,7 @@ namespace Tangent.Intermediate
                 throw new ApplicationException("Unexpected input to Constructor Parameter Access.");
             }
 
-            return new CtorParameterAccessExpression(ThisParameter, ConstructorParameter, input.MatchLocation);
+            return new CtorParameterAccessExpression(ThisParameter, ConstructorParameter, input.IncomingArguments, input.MatchLocation);
         }
 
         public override TransformationType Type

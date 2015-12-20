@@ -11,8 +11,12 @@ namespace Tangent.Intermediate
         private readonly ParameterDeclaration GenericDeclaration;
 
         public GenericParameterAccess(ParameterDeclaration generic)
-            : base(new Phrase(generic.Takes.Select(id=>new PhrasePart(id))))
+            : base(new Phrase(generic.Takes))
         {
+            if (generic.Takes.Any(t => !t.IsIdentifier)) {
+                throw new InvalidOperationException("Generics may not take parameters.");
+            }
+
             GenericDeclaration = generic;
         }
 

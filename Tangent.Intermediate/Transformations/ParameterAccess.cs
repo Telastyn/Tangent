@@ -10,7 +10,7 @@ namespace Tangent.Intermediate
     {
         private readonly ParameterDeclaration Parameter;
         public ParameterAccess(ParameterDeclaration parameter)
-            : base(new Phrase(parameter.Takes.Select(id => new PhrasePart(id))))
+            : base(new Phrase(parameter.Takes))
         {
             Parameter = parameter;
         }
@@ -21,7 +21,7 @@ namespace Tangent.Intermediate
                 throw new ApplicationException("Unexpected input to Parameter Access.");
             }
 
-            return new ParameterAccessExpression(Parameter, input.MatchLocation);
+            return new ParameterAccessExpression(Parameter, input.IncomingArguments, input.MatchLocation);
         }
 
         public override TransformationType Type
