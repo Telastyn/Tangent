@@ -106,6 +106,7 @@ namespace Tangent.CilGeneration
                 case KindOfType.Product:
                 case KindOfType.Sum:
                 case KindOfType.BoundGeneric:
+                case KindOfType.Delegate:
                     // This should already be declared in our types.
                     var result = declaredTypes.FirstOrDefault(td => td.Returns == t);
                     if (result == null) {

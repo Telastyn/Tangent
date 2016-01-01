@@ -29,6 +29,8 @@ namespace Tangent.CilGeneration
                     return BuildVariant(typeDecl, placeholder, lookup);
                 case KindOfType.BoundGeneric:
                     return InstantiateGeneric(typeDecl, placeholder, lookup);
+                case KindOfType.Delegate:
+                    return BuildDelegateType(typeDecl, placeholder, lookup);
                 default:
                     throw new NotImplementedException();
             }
@@ -137,6 +139,23 @@ namespace Tangent.CilGeneration
             Type genericType = lookup(boundGeneric.GenericTypeDeclatation.Returns, true);
             var arguments = boundGeneric.TypeArguments.Select(tt => lookup(tt, true)).ToArray();
             return genericType.MakeGenericType(arguments);
+        }
+
+        private Type BuildDelegateType(TypeDeclaration target, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup)
+        {
+            var tangentDelegateType = target.Returns as DelegateType;
+            Type delegateGenericType;
+            Type[] genericArgs;
+            if (tangentDelegateType.Returns == TangentType.Void) {
+                delegateGenericType = typeof(Action).Assembly.GetTypes().First(t => t.Name.StartsWith("Action") && t.IsGenericTypeDefinition && t.GetGenericArguments().Count() == tangentDelegateType.Takes.Count);
+                genericArgs = tangentDelegateType.Takes.Select(tt => lookup(tt, true)).ToArray();
+            } else {
+                delegateGenericType = typeof(Func<int>).Assembly.GetTypes().First(t => t.Name.StartsWith("Func") && t.IsGenericTypeDefinition && t.GetGenericArguments().Count() == tangentDelegateType.Takes.Count + 1);
+                genericArgs = tangentDelegateType.Takes.Concat(new[]{tangentDelegateType.Returns}).Select(tt => lookup(tt, true)).ToArray();
+            }
+
+            var concreteFuncType = delegateGenericType.MakeGenericType(genericArgs);
+            return concreteFuncType;
         }
 
         public static string GetNameFor(TypeDeclaration rule)

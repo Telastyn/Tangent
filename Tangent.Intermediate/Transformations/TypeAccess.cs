@@ -8,7 +8,7 @@ namespace Tangent.Intermediate
 {
     public class TypeAccess : ExpressionDeclaration
     {
-        private readonly TypeDeclaration Declaration;
+        public readonly TypeDeclaration Declaration;
         public TypeAccess(TypeDeclaration decl)
             : base(new Phrase(decl.Takes))
         {

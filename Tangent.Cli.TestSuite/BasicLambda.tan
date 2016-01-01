@@ -1,0 +1,7 @@
+﻿twofer (fn(int): void) => void {
+  fn 2;
+}
+
+entrypoint => void {
+  twofer (x)=>{print x;};
+}

@@ -142,7 +142,7 @@ namespace Tangent.Parsing
                     // Normalize generics
                     phrase = phrase.Select(pp => pp.IsIdentifier ? pp : (pp.Parameter.Returns != null ? pp : new PartialPhrasePart(new PartialParameterDeclaration(pp.Parameter.Takes, new List<Expression>() { new IdentifierExpression("any", null) })))).ToList();
                     if (phrase.All(pp => !pp.IsIdentifier)) { return new ExpectedTokenParseError(TokenIdentifier.Identifier, separator); }
-                    if (phrase.Any(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.Takes.First() == "this")) { return new ThisAsGeneric(); }
+                    if (phrase.Any(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.Takes.First().IsIdentifier && pp.Parameter.Takes.First().Identifier == "this")) { return new ThisAsGeneric(); }
 
                     var typeDecl = Type(tokens, phrase.Where(ppp => !ppp.IsIdentifier).Select(ppp => ppp.Parameter));
                     if (!typeDecl.Success) {
@@ -220,8 +220,42 @@ namespace Tangent.Parsing
                     return new ParenExpression(notLast, lastExpr, info);
                 case ElementType.Constant:
                     return ((ConstantElement)element).TypelessExpression;
+                case ElementType.Lambda:
+                    var concrete = (LambdaElement)element;
+                    return new PartialLambdaExpression(concrete.Takes.Select(vde => VarDeclToParameterDeclaration(scope, vde, bad, ambiguous)).ToList(), scope, (newScope, returnType) =>
+                    {
+                        var errors = new List<IncomprehensibleStatementError>();
+                        var ambiguities = new List<AmbiguousStatementError>();
+                        var implementation = BuildBlock(newScope, returnType, concrete.Body.Block, errors, ambiguities);
+                        if (errors.Any()) {
+                            return null;
+                        }
+
+                        if (ambiguities.Any()) {
+                            return new AmbiguousExpression(ambiguities.SelectMany(a => a.PossibleInterpretations));
+                        }
+
+                        // RMS: being lazy. Should probably have an Either or a BlockExpr.
+                        return new ParenExpression(implementation.Implementation, null, concrete.Body.SourceInfo);
+                    }, element.SourceInfo);
                 default:
                     throw new NotImplementedException();
+            }
+        }
+
+        private static ParameterDeclaration VarDeclToParameterDeclaration(TransformationScope scope, VarDeclElement vde, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
+        {
+            if (!vde.ParameterDeclaration.Takes.All(ppp => ppp.IsIdentifier)) {
+                throw new NotImplementedException("Parameterized variable declarations not currently supported.");
+            }
+
+            var result = vde.ParameterDeclaration.Returns == null ? new ParameterDeclaration(vde.ParameterDeclaration.Takes.Select(ppp => new PhrasePart(ppp.Identifier)), null) :
+                TypeResolve.Resolve(vde.ParameterDeclaration, scope.Rules.SelectMany(x => x).Where(r => r.Type == TransformationType.Type).Cast<TypeAccess>().Select(t => t.Declaration));
+            if (result.Success) {
+                return result.Result;
+            } else {
+                bad.Add(new IncomprehensibleStatementError(vde.ParameterDeclaration.Returns));
+                return null;
             }
         }
 
@@ -257,15 +291,30 @@ namespace Tangent.Parsing
             var first = tokens.FirstOrDefault();
             if (first != null && first.Identifier == TokenIdentifier.Symbol && first.Value == "(") {
                 tokens.RemoveAt(0);
-                var paramName = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => new IdentifierExpression(t.Value, t.SourceInfo)).ToList();
-                tokens.RemoveRange(0, paramName.Count);
+                var paramName = new List<PartialPhrasePart>();
+                var go = true;
+                while (go) {
+                    go = false;
+                    if (tokens.Any()) {
+                        var part = TryPartialPhrasePart(tokens, false);
+                        if (part != null) {
+                            if (part.Success) {
+                                paramName.Add(part.Result);
+                                go = true;
+                            } else {
+                                return new ResultOrParseError<PartialParameterDeclaration>(part.Error);
+                            }
+                        }
+                    }
+                }
+
                 if (paramName.Count == 0) {
                     return new ResultOrParseError<PartialParameterDeclaration>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
                 }
 
                 if (classDecl && paramName.Count == 1 && paramName.First().Identifier.Value == "this" && tokens.Any() && tokens.First().Value == ")") {
                     tokens.RemoveAt(0);
-                    return new PartialParameterDeclaration("this", paramName.Cast<Expression>().ToList());
+                    return new PartialParameterDeclaration("this", new List<Expression>() { new IdentifierExpression("this", null) });
                 } else {
 
                     var possibleColon = tokens.FirstOrDefault();
@@ -286,7 +335,7 @@ namespace Tangent.Parsing
                         return new ResultOrParseError<PartialParameterDeclaration>(typeName.Error);
                     }
 
-                    return new PartialParameterDeclaration(paramName.Select(p => p.Identifier), typeName.Result.Select<PartialElement, Expression>(pe =>
+                    return new PartialParameterDeclaration(paramName, typeName.Result.Select<PartialElement, Expression>(pe =>
                     {
                         if (pe.Type == ElementType.Identifier) {
                             return new IdentifierExpression(((IdentifierElement)pe).Identifier, pe.SourceInfo);
@@ -294,7 +343,11 @@ namespace Tangent.Parsing
 
                         if (pe.Type == ElementType.VarDecl) {
                             var varDecl = (VarDeclElement)pe;
-                            return new PartialTypeInferenceExpression(varDecl.ParameterDeclaration.Takes, varDecl.ParameterDeclaration.Returns ?? new List<Expression>() { new IdentifierExpression("any", null) }, varDecl.SourceInfo);
+                            if (!varDecl.ParameterDeclaration.Takes.All(pd => pd.IsIdentifier)) {
+                                throw new NotImplementedException("Higher ordered type generics are not currently supported.");
+                            }
+
+                            return new PartialTypeInferenceExpression(varDecl.ParameterDeclaration.Takes.Select(ppp => ppp.Identifier), varDecl.ParameterDeclaration.Returns ?? new List<Expression>() { new IdentifierExpression("any", null) }, varDecl.SourceInfo);
                         }
 
                         throw new NotImplementedException(string.Format("Unsupported expression {0} in Type Declaration.", pe.Type));
@@ -327,7 +380,7 @@ namespace Tangent.Parsing
             }
 
 
-            if (first.Identifier == TokenIdentifier.Symbol && first.Value != "{" && first.Value != "|") {
+            if (first.Identifier == TokenIdentifier.Symbol && first.Value != "{" && first.Value != "|" && first.Value != ")") {
                 if (first.Value == ";") {
                     tokens.RemoveAt(0);
                     return null;

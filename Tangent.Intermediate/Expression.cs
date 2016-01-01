@@ -22,7 +22,9 @@ namespace Tangent.Intermediate
         CtorParamAccess = 12,
         GenericParameterAccess = 13,
         TypeInference = 14,
-        Ambiguity = 15
+        Ambiguity = 15,
+        PartialLambda = 16,
+        Lambda = 17
     }
 
     public abstract class Expression

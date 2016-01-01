@@ -30,7 +30,8 @@ namespace Tangent.Parsing.UnitTests
             Assert.IsTrue(plus.IsIdentifier);
             Assert.IsFalse(y.IsIdentifier);
 
-            Assert.AreEqual("x", x.Parameter.Takes.First().Value);
+            Assert.IsTrue(x.Parameter.Takes.First().IsIdentifier);
+            Assert.AreEqual("x", x.Parameter.Takes.First().Identifier.Value);
             Assert.AreEqual(1, x.Parameter.Takes.Count);
             Assert.AreEqual(1, x.Parameter.Returns.Count);
             Assert.AreEqual("int", x.Parameter.Returns.Cast<IdentifierExpression>().First().Identifier.Value);
@@ -57,7 +58,8 @@ namespace Tangent.Parsing.UnitTests
             Assert.IsTrue(plus.IsIdentifier);
             Assert.IsFalse(y.IsIdentifier);
 
-            Assert.AreEqual("this", x.Parameter.Takes.First().Value);
+            Assert.IsTrue(x.Parameter.Takes.First().IsIdentifier);
+            Assert.AreEqual("this", x.Parameter.Takes.First().Identifier.Value);
             Assert.AreEqual(1, x.Parameter.Takes.Count);
             Assert.AreEqual(1, x.Parameter.Returns.Count);
             Assert.AreEqual("this", x.Parameter.Returns.Cast<IdentifierExpression>().First().Identifier.Value);
@@ -84,7 +86,8 @@ namespace Tangent.Parsing.UnitTests
             Assert.IsTrue(plus.IsIdentifier);
             Assert.IsFalse(y.IsIdentifier);
 
-            Assert.AreEqual("x", x.Parameter.Takes.First().Value);
+            Assert.IsTrue(x.Parameter.Takes.First().IsIdentifier);
+            Assert.AreEqual("x", x.Parameter.Takes.First().Identifier.Value);
             Assert.AreEqual(1, x.Parameter.Takes.Count);
             Assert.AreEqual(1, x.Parameter.Returns.Count);
             Assert.AreEqual("int", x.Parameter.Returns.Cast<IdentifierExpression>().First().Identifier.Value);
@@ -146,7 +149,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.IsFalse(y.IsIdentifier);
 
             Assert.AreEqual(3, x.Parameter.Takes.Count);
-            Assert.IsTrue(new[] { "x", "y", "z" }.SequenceEqual(x.Parameter.Takes.Select(id => id.Value)));
+            Assert.IsTrue(new[] { "x", "y", "z" }.SequenceEqual(x.Parameter.Takes.Select(id => id.Identifier.Value)));
 
             Assert.AreEqual(2, x.Parameter.Returns.Count);
             Assert.IsTrue(new[] { "unsigned", "int" }.SequenceEqual(x.Parameter.Returns.Cast<IdentifierExpression>().Select(id => id.Identifier.Value)));
@@ -171,14 +174,16 @@ namespace Tangent.Parsing.UnitTests
             Assert.IsTrue(plus.IsIdentifier);
             Assert.IsFalse(y.IsIdentifier);
 
-            Assert.AreEqual("x", x.Parameter.Takes.First().Value);
+            Assert.IsTrue(x.Parameter.Takes.First().IsIdentifier);
+            Assert.AreEqual("x", x.Parameter.Takes.First().Identifier.Value);
             Assert.AreEqual(1, x.Parameter.Takes.Count);
             Assert.AreEqual(1, x.Parameter.Returns.Count);
             Assert.AreEqual("int", x.Parameter.Returns.Cast<IdentifierExpression>().First().Identifier.Value);
 
             Assert.AreEqual("plus", plus.Identifier.Value);
 
-            Assert.AreEqual("y", y.Parameter.Takes.First().Value);
+            Assert.IsTrue(y.Parameter.Takes.First().IsIdentifier);
+            Assert.AreEqual("y", y.Parameter.Takes.First().Identifier.Value);
             var inference = y.Parameter.Returns.First();
             Assert.AreEqual(ExpressionNodeType.TypeInference, inference.NodeType);
             var castInference = (PartialTypeInferenceExpression)inference;
@@ -208,14 +213,16 @@ namespace Tangent.Parsing.UnitTests
             Assert.IsTrue(plus.IsIdentifier);
             Assert.IsFalse(y.IsIdentifier);
 
-            Assert.AreEqual("x", x.Parameter.Takes.First().Value);
+            Assert.IsTrue(x.Parameter.Takes.First().IsIdentifier);
+            Assert.AreEqual("x", x.Parameter.Takes.First().Identifier.Value);
             Assert.AreEqual(1, x.Parameter.Takes.Count);
             Assert.AreEqual(1, x.Parameter.Returns.Count);
             Assert.AreEqual("int", x.Parameter.Returns.Cast<IdentifierExpression>().First().Identifier.Value);
 
             Assert.AreEqual("plus", plus.Identifier.Value);
 
-            Assert.AreEqual("y", y.Parameter.Takes.First().Value);
+            Assert.IsTrue(y.Parameter.Takes.First().IsIdentifier);
+            Assert.AreEqual("y", y.Parameter.Takes.First().Identifier.Value);
             var typeExpr = y.Parameter.Returns;
             Assert.AreEqual(2, typeExpr.Count);
             Assert.AreEqual(ExpressionNodeType.Identifier, typeExpr[0].NodeType);
@@ -250,14 +257,16 @@ namespace Tangent.Parsing.UnitTests
             Assert.IsTrue(plus.IsIdentifier);
             Assert.IsFalse(y.IsIdentifier);
 
-            Assert.AreEqual("x", x.Parameter.Takes.First().Value);
+            Assert.IsTrue(x.Parameter.Takes.First().IsIdentifier);
+            Assert.AreEqual("x", x.Parameter.Takes.First().Identifier.Value);
             Assert.AreEqual(1, x.Parameter.Takes.Count);
             Assert.AreEqual(1, x.Parameter.Returns.Count);
             Assert.AreEqual("int", x.Parameter.Returns.Cast<IdentifierExpression>().First().Identifier.Value);
 
             Assert.AreEqual("plus", plus.Identifier.Value);
 
-            Assert.AreEqual("y", y.Parameter.Takes.First().Value);
+            Assert.IsTrue(y.Parameter.Takes.First().IsIdentifier);
+            Assert.AreEqual("y", y.Parameter.Takes.First().Identifier.Value);
             var typeExpr = y.Parameter.Returns;
             Assert.AreEqual(2, typeExpr.Count);
             Assert.AreEqual(ExpressionNodeType.Identifier, typeExpr[0].NodeType);

@@ -65,7 +65,11 @@ namespace Tangent.Parsing
                 } else {
                     var interpretResults = scope.InterpretTowards(TangentType.Any.Kind, t.Parameter.Returns);
                     if (interpretResults.Count == 1) {
-                        takes.Add(new PhrasePart(new ParameterDeclaration(t.Parameter.Takes, interpretResults.Cast<TypeAccessExpression>().First().TypeConstant.Value.Kind)));
+                        if (!t.Parameter.Takes.All(ppp => ppp.IsIdentifier)) {
+                            throw new NotImplementedException("Delegate parameter in type declaration not yet supported.");
+                        }
+
+                        takes.Add(new PhrasePart(new ParameterDeclaration(t.Parameter.Takes.Select(ppp => ppp.Identifier), interpretResults.Cast<TypeAccessExpression>().First().TypeConstant.Value.Kind)));
                     } else if (interpretResults.Count == 0) {
                         // No way to parse things. 
                         if (!hardError) {
@@ -264,7 +268,24 @@ namespace Tangent.Parsing
                 return new ResultOrParseError<ParameterDeclaration>(type.Error);
             }
 
-            return new ParameterDeclaration(partial.Takes, ctorGenericArguments == null ? type.Result : ConvertGenericReferencesToInferences(type.Result));
+            var takeResolutions = new List<PhrasePart>();
+            foreach (var ppp in partial.Takes) {
+                if (ppp.IsIdentifier) {
+                    takeResolutions.Add(new PhrasePart(ppp.Identifier));
+                } else {
+                    if(!ppp.Parameter.Takes.All(inner=>inner.IsIdentifier)){
+                        throw new NotImplementedException("Nested higher level function parameters not yet supported.");
+                    }
+
+                    var partialResult = ResolveType(ppp.Parameter.Takes.Select(inner=>new IdentifierExpression( inner.Identifier, null)), types, ctorGenericArguments ?? Enumerable.Empty<ParameterDeclaration>());
+                    if (partialResult.Success) {
+                        takeResolutions.Add(new PhrasePart(new ParameterDeclaration("_", partialResult.Result)));
+                    } else {
+                        return new ResultOrParseError<ParameterDeclaration>(partialResult.Error);
+                    }
+                }
+            }
+            return new ParameterDeclaration(takeResolutions, ctorGenericArguments == null ? type.Result : ConvertGenericReferencesToInferences(type.Result));
         }
 
 

@@ -116,5 +116,16 @@ namespace Tangent.Cli.TestSuite
             Assert.IsTrue(results.SequenceEqual(new[] { "in inference", "in int." }));
             Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
         }
+
+        [TestMethod]
+        public void BasicLambda()
+        {
+            TimeSpan compileDuration;
+            TimeSpan programDuration;
+            var result = Test.DebugProgramFile("BasicLambda.tan", out compileDuration, out programDuration);
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "2" }));
+            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
+        }
     }
 }

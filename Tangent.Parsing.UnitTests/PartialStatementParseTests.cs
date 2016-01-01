@@ -88,7 +88,7 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(ElementType.Lambda, result.Result.First().Type);
             var l = (LambdaElement)result.Result.First();
             Assert.AreEqual(1, l.Takes.Count);
-            Assert.AreEqual("x", l.Takes.First().ParameterDeclaration.Takes.First());
+            Assert.AreEqual("x", l.Takes.First().ParameterDeclaration.Takes.First().Identifier);
             Assert.AreEqual(null, l.Takes.First().ParameterDeclaration.Returns);
         }
 
@@ -104,14 +104,14 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(ElementType.Lambda, result.Result.First().Type);
             var l = (LambdaElement)result.Result.First();
             Assert.AreEqual(3, l.Takes.Count);
-            Assert.AreEqual("x", l.Takes.First().ParameterDeclaration.Takes.First());
+            Assert.AreEqual("x", l.Takes.First().ParameterDeclaration.Takes.First().Identifier);
             Assert.AreEqual(null, l.Takes.First().ParameterDeclaration.Returns);
-            Assert.AreEqual("x", l.Takes.First().ParameterDeclaration.Takes.First());
-            Assert.AreEqual("y", l.Takes.First().ParameterDeclaration.Takes.Skip(1).First());
+            Assert.AreEqual("x", l.Takes.First().ParameterDeclaration.Takes.First().Identifier);
+            Assert.AreEqual("y", l.Takes.First().ParameterDeclaration.Takes.Skip(1).First().Identifier);
             Assert.AreEqual(null, l.Takes.First().ParameterDeclaration.Returns);
-            Assert.AreEqual("x", l.Takes.First().ParameterDeclaration.Takes.First());
-            Assert.AreEqual("y", l.Takes.First().ParameterDeclaration.Takes.Skip(1).First());
-            Assert.AreEqual("z", l.Takes.First().ParameterDeclaration.Takes.Skip(2).First());
+            Assert.AreEqual("x", l.Takes.First().ParameterDeclaration.Takes.First().Identifier);
+            Assert.AreEqual("y", l.Takes.First().ParameterDeclaration.Takes.Skip(1).First().Identifier);
+            Assert.AreEqual("z", l.Takes.First().ParameterDeclaration.Takes.Skip(2).First().Identifier);
             Assert.AreEqual(null, l.Takes.First().ParameterDeclaration.Returns);
         }
     }
