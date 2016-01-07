@@ -1,0 +1,11 @@
+﻿foo(fn(int):void) => void {
+  fn 42;
+}
+
+foo(fn(string):void) => void {
+  fn "foo";
+}
+
+entrypoint => void {
+  foo (x) => { print x + 2; };
+}

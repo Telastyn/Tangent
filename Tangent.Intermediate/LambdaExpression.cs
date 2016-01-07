@@ -31,5 +31,10 @@ namespace Tangent.Intermediate
         {
             get { return resolvedType; }
         }
+
+        public override string ToString()
+        {
+            return string.Format("{0} {{...}}", resolvedType);
+        }
     }
 }

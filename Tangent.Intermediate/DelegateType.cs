@@ -47,7 +47,7 @@ namespace Tangent.Intermediate
 
         public override string ToString()
         {
-            return string.Format("{0} => {1}", Takes.Select(t => string.Format("({0})", Takes)), Returns);
+            return string.Format("{0} => {1}", string.Join("", Takes.Select(t => string.Format("({0})", t))), Returns);
         }
 
         public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)

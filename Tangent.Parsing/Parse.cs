@@ -39,6 +39,7 @@ namespace Tangent.Parsing
                 new TypeDeclaration("int", TangentType.Int),
                 new TypeDeclaration("double", TangentType.Double),
                 new TypeDeclaration("bool", TangentType.Bool),
+                new TypeDeclaration("string", TangentType.String),
                 new TypeDeclaration("any", TangentType.Any)
             };
 
