@@ -165,10 +165,10 @@ namespace Tangent.CilGeneration
             }
 
             string result = string.Join(" ", rule.Takes.Select(id => id.ToString()));
-            var t = rule.Returns;
-            while (t.ImplementationType == KindOfType.Lazy) {
+            var t = rule.Returns as DelegateType;
+            while (t != null && !t.Takes.Any()) {
                 result = "~> " + result;
-                t = (t as LazyType).Type;
+                t = t.Returns as DelegateType;
             }
 
             return result;

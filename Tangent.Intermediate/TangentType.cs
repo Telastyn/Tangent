@@ -10,7 +10,6 @@ namespace Tangent.Intermediate
         Builtin,
         Enum,
         SingleValue,
-        Lazy,
         Product,
         Sum,
         Kind,
@@ -38,14 +37,11 @@ namespace Tangent.Intermediate
             ImplementationType = impl;
         }
 
-        private LazyType lazy = null;
-
-        public LazyType Lazy
+        public DelegateType Lazy
         {
             get
             {
-                lazy = lazy ?? new LazyType(this);
-                return lazy;
+                return DelegateType.For(Enumerable.Empty<TangentType>(), this);
             }
         }
 

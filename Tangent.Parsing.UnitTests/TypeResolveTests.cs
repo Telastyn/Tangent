@@ -203,7 +203,7 @@ namespace Tangent.Parsing.UnitTests
 
             var result = TypeResolve.ResolveType(Fix(new Identifier[] { "~>", "foo", "bar" }), new[] { typeDecl }, Enumerable.Empty<ParameterDeclaration>());
             Assert.IsTrue(result.Success);
-            Assert.AreEqual(KindOfType.Lazy, result.Result.ImplementationType);
+            Assert.AreEqual(KindOfType.Delegate, result.Result.ImplementationType);
             Assert.AreEqual(foo.Lazy, result.Result);
         }
 
@@ -215,7 +215,7 @@ namespace Tangent.Parsing.UnitTests
 
             var result = TypeResolve.ResolveType(Fix(new Identifier[] { "~>", "~>", "foo", "bar" }), new[] { typeDecl }, Enumerable.Empty<ParameterDeclaration>());
             Assert.IsTrue(result.Success);
-            Assert.AreEqual(KindOfType.Lazy, result.Result.ImplementationType);
+            Assert.AreEqual(KindOfType.Delegate, result.Result.ImplementationType);
             Assert.AreEqual(foo.Lazy.Lazy, result.Result);
         }
 
@@ -227,7 +227,7 @@ namespace Tangent.Parsing.UnitTests
 
             var result = TypeResolve.ResolveType(Fix(new Identifier[] { "~>", "foo", "bar", ".", "moocow" }), new[] { typeDecl }, Enumerable.Empty<ParameterDeclaration>());
             Assert.IsTrue(result.Success);
-            Assert.AreEqual(KindOfType.Lazy, result.Result.ImplementationType);
+            Assert.AreEqual(KindOfType.Delegate, result.Result.ImplementationType);
             Assert.AreEqual(foo.SingleValueTypeFor("moocow").Lazy, result.Result);
         }
 

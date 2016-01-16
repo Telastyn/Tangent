@@ -22,10 +22,6 @@ namespace Tangent.Intermediate
 
         public static DelegateType For(IEnumerable<TangentType> takes, TangentType returns)
         {
-            if (!takes.Any()) {
-                throw new InvalidOperationException("Use lazy types for nullary delegates.");
-            }
-
             lock (cache) {
                 if (!cache.ContainsKey(returns)) {
                     var result = new DelegateType(takes, returns);
@@ -78,6 +74,10 @@ namespace Tangent.Intermediate
 
             if (delegateOther.Takes.Count != this.Takes.Count) {
                 return false;
+            }
+
+            if (!this.Takes.Any()) {
+                return this.Returns.CompatibilityMatches(delegateOther.Returns, necessaryTypeInferences);
             }
 
             return this.Takes.Zip(delegateOther.Takes, (a, b) => a.CompatibilityMatches(b, necessaryTypeInferences)).Aggregate((a, b) => a & b)

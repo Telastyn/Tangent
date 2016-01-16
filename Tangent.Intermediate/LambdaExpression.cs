@@ -16,7 +16,7 @@ namespace Tangent.Intermediate
         public LambdaExpression(IEnumerable<ParameterDeclaration> parameters, TangentType returnType, Block implementation, LineColumnRange sourceInfo)
             : base(sourceInfo)
         {
-            resolvedType = DelegateType.For(parameters.Select(pd=>pd.Returns), returnType);
+            resolvedType = DelegateType.For(parameters.Select(pd => pd.Returns), returnType);
             ResolvedParameters = parameters;
             ResolvedReturnType = returnType;
             Implementation = implementation;

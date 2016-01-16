@@ -41,47 +41,5 @@ namespace Tangent.CilGeneration.UnitTests
                 }
             }
         }
-
-        [TestMethod]
-        public void LazyVoidWorks()
-        {
-            lock (sync) {
-                var mockCompiler = new Mock<ITypeCompiler>();
-                using (var lookup = new DelegatingTypeLookup(mockCompiler.Object, Enumerable.Empty<TypeDeclaration>(), AppDomain.CurrentDomain)) {
-                    var result = lookup[TangentType.Void.Lazy];
-                    Assert.AreEqual(typeof(Action), result);
-                }
-            }
-        }
-
-        [TestMethod]
-        public void LazyFooWorks()
-        {
-            lock (sync) {
-                var typeDecl = new TypeDeclaration("foo", new EnumType(new Identifier[] { "bar" }));
-                var mockCompiler = new Mock<ITypeCompiler>();
-                mockCompiler.Setup(c => c.Compile(typeDecl, It.IsAny<Action<TangentType, Type>>(), It.IsAny<Func<TangentType, bool, Type>>())).Returns(typeof(DateTimeOffset));
-                using (var lookup = new DelegatingTypeLookup(mockCompiler.Object, new[] { typeDecl }, AppDomain.CurrentDomain)) {
-
-                    var result = lookup[typeDecl.Returns.Lazy];
-                    Assert.AreEqual(typeof(Func<DateTimeOffset>), result);
-                }
-            }
-        }
-
-        [TestMethod]
-        public void SuperLazyFooWorks()
-        {
-            lock (sync) {
-                var typeDecl = new TypeDeclaration("foo", new EnumType(new Identifier[] { "bar" }));
-                var mockCompiler = new Mock<ITypeCompiler>();
-                mockCompiler.Setup(c => c.Compile(typeDecl, It.IsAny<Action<TangentType, Type>>(), It.IsAny<Func<TangentType, bool, Type>>())).Returns(typeof(DateTimeOffset));
-                using (var lookup = new DelegatingTypeLookup(mockCompiler.Object, new[] { typeDecl }, AppDomain.CurrentDomain)) {
-
-                    var result = lookup[typeDecl.Returns.Lazy.Lazy];
-                    Assert.AreEqual(typeof(Func<Func<DateTimeOffset>>), result);
-                }
-            }
-        }
     }
 }

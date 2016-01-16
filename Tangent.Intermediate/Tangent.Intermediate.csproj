@@ -50,7 +50,6 @@
     <Compile Include="ConstantExpression.cs" />
     <Compile Include="CtorCall.cs" />
     <Compile Include="CtorParameterAccessExpression.cs" />
-    <Compile Include="DelegateInvocationExpression.cs" />
     <Compile Include="DelegateType.cs" />
     <Compile Include="DirectOpCode.cs" />
     <Compile Include="EnumType.cs" />
@@ -67,7 +66,6 @@
     <Compile Include="IdentifierExpression.cs" />
     <Compile Include="LambdaExpression.cs" />
     <Compile Include="PartialLambdaExpression.cs" />
-    <Compile Include="LazyType.cs" />
     <Compile Include="ParameterAccessExpression.cs" />
     <Compile Include="ParameterDeclaration.cs" />
     <Compile Include="ParenExpression.cs" />

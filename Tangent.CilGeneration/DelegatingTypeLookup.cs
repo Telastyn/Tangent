@@ -125,19 +125,6 @@ namespace Tangent.CilGeneration
                     lookup.Add(t, genericType.MakeGenericType(arguments.ToArray()));
                     return;
 
-                case KindOfType.Lazy:
-                    // The target of the type constructor needs to be already declared in our types.
-                    var lazyType = t as LazyType;
-                    var target = this[lazyType.Type];
-
-                    if (target == typeof(void)) {
-                        lookup.Add(t, typeof(Action));
-                    } else {
-                        lookup.Add(t, typeof(Func<>).MakeGenericType(target));
-                    }
-
-                    return;
-
                 case KindOfType.SingleValue:
                     throw new NotImplementedException("Something is asking for the type of a SingleValueType. We should never get here.");
 

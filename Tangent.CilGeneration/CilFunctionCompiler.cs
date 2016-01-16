@@ -337,14 +337,6 @@ namespace Tangent.CilGeneration
         private void AddExpression(Expression expr, ILGenerator gen, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, Action<ILGenerator>> parameterCodes, bool lastStatement)
         {
             switch (expr.NodeType) {
-                case ExpressionNodeType.DelegateInvocation:
-                    // Some parameter action needs invoked.
-                    var dinvoke = (LazyInvocationExpression)expr;
-                    AddExpression(dinvoke.Delegate, gen, fnLookup, typeLookup, closureScope, parameterCodes, false);
-                    if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
-                    gen.EmitCall(OpCodes.Call, typeLookup[((ParameterAccessExpression)dinvoke.Delegate).Parameter.Returns].GetMethod("Invoke", new Type[0]), null);
-                    return;
-
                 case ExpressionNodeType.FunctionInvocation:
                     var invoke = (FunctionInvocationExpression)expr;
                     AddDebuggingInfo(gen, expr);

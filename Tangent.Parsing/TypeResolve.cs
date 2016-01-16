@@ -391,9 +391,6 @@ namespace Tangent.Parsing
                 case KindOfType.Kind:
                     var kind = input as KindType;
                     return ConvertGenericReferencesToInferences(kind.KindOf).Kind;
-                case KindOfType.Lazy:
-                    var lazy = input as LazyType;
-                    return ConvertGenericReferencesToInferences(lazy.Type).Lazy;
                 default:
                     throw new NotImplementedException();
 

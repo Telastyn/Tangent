@@ -14,7 +14,7 @@ namespace Tangent.Intermediate
         FunctionInvocation = 4,
         TypeAccess = 5,
         //HalfBoundExpression = 6,
-        DelegateInvocation = 7,
+        //DelegateInvocation = 7,
         Constant = 8,
         EnumValueAccess = 9,
         EnumWidening = 10,
