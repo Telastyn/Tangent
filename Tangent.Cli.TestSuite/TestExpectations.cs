@@ -138,5 +138,27 @@ namespace Tangent.Cli.TestSuite
             Assert.IsTrue(results.SequenceEqual(new[] { "44" }));
             Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
         }
+
+        [TestMethod]
+        public void LambdaReturn()
+        {
+            TimeSpan compileDuration;
+            TimeSpan programDuration;
+            var result = Test.DebugProgramFile("LambdaReturn.tan", out compileDuration, out programDuration);
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "16" }));
+            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
+        }
+
+        [TestMethod]
+        public void LambdaResolutionByBodyReturn()
+        {
+            TimeSpan compileDuration;
+            TimeSpan programDuration;
+            var result = Test.DebugProgramFile("LambdaResolutionByBodyReturn.tan", out compileDuration, out programDuration);
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "with int", "42", "with void", "42" }));
+            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
+        }
     }
 }

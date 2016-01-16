@@ -1,0 +1,14 @@
+﻿foo(fn(int): int) => void {
+  print "with int";
+  print fn 42;
+}
+
+foo(fn(int): void) => void {
+  print "with void";
+  fn 42;
+}
+
+entrypoint => void {
+  foo (x) => {x;};
+  foo (x) => {print x;};
+}

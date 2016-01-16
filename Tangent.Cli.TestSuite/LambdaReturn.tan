@@ -1,0 +1,7 @@
+﻿apply (fn(int): int) twice to (x: int) => int {
+  fn fn x;
+}
+
+entrypoint => void {
+  print apply (x)=>{x*x} twice to 2;
+}
