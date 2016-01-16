@@ -1,20 +1,20 @@
-﻿bool :> enum {
+﻿boolean :> enum {
     true,
 	false
 }
 
-if (condition: bool) (positive: ~>void) => void {
+if (condition: boolean) (positive: ~>void) => void {
 }
 
-if (condition: bool) (positive: ~>void) else (negative: ~>void) => void {
+if (condition: boolean) (positive: ~>void) else (negative: ~>void) => void {
     negative;
 }
 
-if (condition: bool.true) (positive: ~>void) => void {
+if (condition: boolean.true) (positive: ~>void) => void {
     positive;
 }
 
-if (condition: bool.true) (positive: ~>void) else (negative: ~>void) => void {
+if (condition: boolean.true) (positive: ~>void) else (negative: ~>void) => void {
     positive;
 }
 

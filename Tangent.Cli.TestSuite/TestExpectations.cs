@@ -46,12 +46,12 @@ namespace Tangent.Cli.TestSuite
         //    Assert.AreEqual("w00t.", result.Trim());
         //}
 
-        //[TestMethod]
-        //public void IfTrueCase()
-        //{
-        //    var result = Test.ProgramFile("IfTrue.tan");
-        //    Assert.AreEqual("w00t.", result.Trim());
-        //}
+        [TestMethod]
+        public void IfTrueCase()
+        {
+            var result = Test.DebugProgramFile("IfTrue.tan");
+            Assert.AreEqual("w00t.", result.Trim());
+        }
 
         //[TestMethod]
         //public void IfFalseCase()

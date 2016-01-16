@@ -615,6 +615,9 @@ namespace Tangent.Parsing
                     } else {
                         return new ResultOrParseError<IEnumerable<PartialElement>>(body.Error);
                     }
+                }else if(first.Identifier == TokenIdentifier.LazyOperator){
+                    tokens.RemoveAt(0);
+                    result.Add(new IdentifierElement(first.Value, first.SourceInfo));
                 } else {
                     return new ResultOrParseError<IEnumerable<PartialElement>>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
                 }
