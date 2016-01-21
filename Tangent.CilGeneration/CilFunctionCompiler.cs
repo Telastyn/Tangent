@@ -374,18 +374,18 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.ParameterAccess:
                     var access = (ParameterAccessExpression)expr;
-                    if (access.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Delegate) {
-                        parameterCodes[access.Parameter](gen);
+                    parameterCodes[access.Parameter](gen);
 
-                        foreach (var arg in access.Arguments) {
-                            AddExpression(arg, gen, fnLookup, typeLookup, closureScope, parameterCodes, false);
-                        }
+                    return;
 
-                        gen.EmitCall(OpCodes.Call, typeLookup[access.Parameter.RequiredArgumentType].GetMethod("Invoke"), null);
-
-                    } else {
-                        parameterCodes[access.Parameter](gen);
+                case ExpressionNodeType.DelegateInvocation:
+                    var invocation = (DelegateInvocationExpression)expr;
+                    AddExpression(invocation.DelegateAccess, gen, fnLookup, typeLookup, closureScope, parameterCodes, false);
+                    foreach (var entry in invocation.Arguments) {
+                        AddExpression(entry, gen, fnLookup, typeLookup, closureScope, parameterCodes, false);
                     }
+
+                    gen.EmitCall(OpCodes.Call, typeLookup[invocation.DelegateType].GetMethod("Invoke"), null);
 
                     return;
 

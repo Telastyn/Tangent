@@ -24,7 +24,8 @@ namespace Tangent.Intermediate
         TypeInference = 14,
         Ambiguity = 15,
         PartialLambda = 16,
-        Lambda = 17
+        Lambda = 17,
+        DelegateInvocation = 18
     }
 
     public abstract class Expression

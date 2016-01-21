@@ -50,6 +50,7 @@
     <Compile Include="ConstantExpression.cs" />
     <Compile Include="CtorCall.cs" />
     <Compile Include="CtorParameterAccessExpression.cs" />
+    <Compile Include="DelegateInvocationExpression.cs" />
     <Compile Include="DelegateType.cs" />
     <Compile Include="DirectOpCode.cs" />
     <Compile Include="EnumType.cs" />
@@ -87,6 +88,7 @@
     <Compile Include="TransformationResult.cs" />
     <Compile Include="TransformationScope.cs" />
     <Compile Include="Transformations\ConstructorParameterAccess.cs" />
+    <Compile Include="Transformations\Delazy.cs" />
     <Compile Include="Transformations\FunctionInvocation.cs" />
     <Compile Include="Transformations\GenericParameterAccess.cs" />
     <Compile Include="Transformations\LazyOperator.cs" />

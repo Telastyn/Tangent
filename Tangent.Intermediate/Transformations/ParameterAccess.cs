@@ -21,7 +21,12 @@ namespace Tangent.Intermediate
                 throw new ApplicationException("Unexpected input to Parameter Access.");
             }
 
-            return new ParameterAccessExpression(Parameter, input.IncomingArguments, input.MatchLocation);
+            var paramAccess = new ParameterAccessExpression(Parameter, input.MatchLocation);
+            if (input.IncomingArguments.Any()) {
+                return new DelegateInvocationExpression(paramAccess, input.IncomingArguments, input.MatchLocation);
+            } else {
+                return paramAccess;
+            }
         }
 
         public override TransformationType Type
