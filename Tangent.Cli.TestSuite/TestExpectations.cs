@@ -31,20 +31,20 @@ namespace Tangent.Cli.TestSuite
             Assert.IsTrue(results.SequenceEqual(new[] { "3", "True", "False" }));
         }
 
-        //[TestMethod]
-        //public void IfEqualsFalseCase()
-        //{
-        //    var result = Test.ProgramFile("IfEqualsFalseCase.tan");
-        //    Assert.AreEqual("zzz.", result.Trim());
-        //}
+        [TestMethod]
+        public void IfEqualsFalseCase()
+        {
+            var result = Test.ProgramFile("IfEqualsFalseCase.tan");
+            Assert.AreEqual("zzz.", result.Trim());
+        }
 
 
-        //[TestMethod]
-        //public void IfEqualsTrueCase()
-        //{
-        //    var result = Test.ProgramFile("IfEqualsTrueCase.tan");
-        //    Assert.AreEqual("w00t.", result.Trim());
-        //}
+        [TestMethod]
+        public void IfEqualsTrueCase()
+        {
+            var result = Test.ProgramFile("IfEqualsTrueCase.tan");
+            Assert.AreEqual("w00t.", result.Trim());
+        }
 
         [TestMethod]
         public void IfTrueCase()
@@ -53,12 +53,12 @@ namespace Tangent.Cli.TestSuite
             Assert.AreEqual("w00t.", result.Trim());
         }
 
-        //[TestMethod]
-        //public void IfFalseCase()
-        //{
-        //    var result = Test.ProgramFile("IfFalse.tan");
-        //    Assert.AreEqual("zzz.", result.Trim());
-        //}
+        [TestMethod]
+        public void IfFalseCase()
+        {
+            var result = Test.ProgramFile("IfFalse.tan");
+            Assert.AreEqual("zzz.", result.Trim());
+        }
 
         [TestMethod]
         public void BasicCtorParams()

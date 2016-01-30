@@ -81,12 +81,14 @@ namespace Tangent.Parsing
                 }
             }
 
+            var enumAccesses = resolvedTypes.Result.Where(tt => tt.Returns.ImplementationType == KindOfType.Enum).Select(tt=>tt.Returns).Cast<EnumType>().SelectMany(tt => tt.Values.Select(v => new ReductionDeclaration(v, new Function(tt, new Block(new[] { new EnumValueAccessExpression(tt.SingleValueTypeFor(v), null) }))))).ToList();
+
 
             // And now Phase 3 - Statement parsing based on syntax.
             var lookup = new Dictionary<Function, Function>();
             var bad = new List<IncomprehensibleStatementError>();
             var ambiguous = new List<AmbiguousStatementError>();
-            resolvedFunctions = new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(BuiltinFunctions.All));
+            resolvedFunctions = new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(BuiltinFunctions.All).Concat(enumAccesses));
             resolvedFunctions = FanOutFunctionsWithSumTypes(resolvedFunctions.Result);
             if (!resolvedFunctions.Success) { return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error); }
 

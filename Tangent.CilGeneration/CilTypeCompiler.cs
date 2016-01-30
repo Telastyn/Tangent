@@ -147,8 +147,12 @@ namespace Tangent.CilGeneration
             Type delegateGenericType;
             Type[] genericArgs;
             if (tangentDelegateType.Returns == TangentType.Void) {
-                delegateGenericType = typeof(Action).Assembly.GetTypes().First(t => t.Name.StartsWith("Action") && t.IsGenericTypeDefinition && t.GetGenericArguments().Count() == tangentDelegateType.Takes.Count);
-                genericArgs = tangentDelegateType.Takes.Select(tt => lookup(tt, true)).ToArray();
+                if (tangentDelegateType.Takes.Count == 0) {
+                    return typeof(Action);
+                } else {
+                    delegateGenericType = typeof(Action).Assembly.GetTypes().First(t => t.Name.StartsWith("Action") && t.IsGenericTypeDefinition && t.GetGenericArguments().Count() == tangentDelegateType.Takes.Count);
+                    genericArgs = tangentDelegateType.Takes.Select(tt => lookup(tt, true)).ToArray();
+                }
             } else {
                 delegateGenericType = typeof(Func<int>).Assembly.GetTypes().First(t => t.Name.StartsWith("Func") && t.IsGenericTypeDefinition && t.GetGenericArguments().Count() == tangentDelegateType.Takes.Count + 1);
                 genericArgs = tangentDelegateType.Takes.Concat(new[]{tangentDelegateType.Returns}).Select(tt => lookup(tt, true)).ToArray();
