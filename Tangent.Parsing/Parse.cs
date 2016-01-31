@@ -81,7 +81,7 @@ namespace Tangent.Parsing
                 }
             }
 
-            var enumAccesses = resolvedTypes.Result.Where(tt => tt.Returns.ImplementationType == KindOfType.Enum).Select(tt=>tt.Returns).Cast<EnumType>().SelectMany(tt => tt.Values.Select(v => new ReductionDeclaration(v, new Function(tt, new Block(new[] { new EnumValueAccessExpression(tt.SingleValueTypeFor(v), null) }))))).ToList();
+            var enumAccesses = resolvedTypes.Result.Where(tt => tt.Returns.ImplementationType == KindOfType.Enum).Select(tt => tt.Returns).Cast<EnumType>().SelectMany(tt => tt.Values.Select(v => new ReductionDeclaration(v, new Function(tt, new Block(new[] { new EnumValueAccessExpression(tt.SingleValueTypeFor(v), null) }))))).ToList();
 
 
             // And now Phase 3 - Statement parsing based on syntax.
@@ -99,7 +99,7 @@ namespace Tangent.Parsing
                         .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
                         .Concat(partialFunction.Scope != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, partialFunction.Scope.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
                         .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f => new FunctionInvocation(f)))
-                        .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common}));
+                        .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }));
 
                     Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
 
@@ -398,17 +398,62 @@ namespace Tangent.Parsing
 
         public static ResultOrParseError<TangentType> Type(List<Token> tokens, IEnumerable<PartialParameterDeclaration> genericArgs)
         {
-            var enumResult = Enum(tokens);
-            if (enumResult.Success) {
-                return TryExtendSumType(tokens, genericArgs, enumResult.Result);
+            var interfaceResult = TryInterface(tokens, genericArgs);
+            if (interfaceResult == null) {
+                var enumResult = Enum(tokens);
+                if (enumResult.Success) {
+                    return TryExtendSumType(tokens, genericArgs, enumResult.Result);
+                } else {
+                    var classResult = Class(tokens, genericArgs);
+                    if (classResult.Success) {
+                        return TryExtendSumType(tokens, genericArgs, classResult.Result);
+                    }
+
+                    return new ResultOrParseError<TangentType>(classResult.Error);
+                }
             } else {
-                var classResult = Class(tokens, genericArgs);
-                if (classResult.Success) {
-                    return TryExtendSumType(tokens, genericArgs, classResult.Result);
+                return interfaceResult;
+            }
+        }
+
+        public static ResultOrParseError<TangentType> TryInterface(List<Token> tokens, IEnumerable<PartialParameterDeclaration> genericArgs)
+        {
+            if (!tokens.Any()) { return null; }
+            if (!MatchAndDiscard(TokenIdentifier.Identifier, "interface", tokens)) {
+                return null;
+            }
+
+            var partial = new PartialInterface(Enumerable.Empty<PartialReductionDeclaration>(), genericArgs);
+
+            if (!MatchAndDiscard(TokenIdentifier.Symbol, "{", tokens)) {
+                return new ResultOrParseError<TangentType>(new ExpectedLiteralParseError("{", tokens.Any() ? tokens[0] : null));
+            }
+
+            var fns = new List<PartialReductionDeclaration>();
+
+            while (tokens.Any() && tokens[0].Value != "}") {
+                var fnDecl = PartialPhrase(tokens, true);
+                if(!fnDecl.Success){
+                    return new ResultOrParseError<TangentType>(fnDecl.Error);
                 }
 
-                return new ResultOrParseError<TangentType>(classResult.Error);
+                // TODO: ensure 1 this param?
+
+                if (!MatchAndDiscard(TokenIdentifier.FunctionArrow, "=>", tokens)) {
+                    return new ResultOrParseError<TangentType>(new ExpectedLiteralParseError("=>", tokens.Any() ? tokens[0] : null));
+                }
+
+                var typeBits = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).ToList();
+                if (!typeBits.Any()) { return new ResultOrParseError<TangentType>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.Any() ? tokens[0] : null)); }
+                tokens.RemoveRange(0, typeBits.Count);
+                if (!MatchAndDiscard(TokenIdentifier.Symbol, ";", tokens)) {
+                    return new ResultOrParseError<TangentType>(new ExpectedLiteralParseError(";", tokens.Any() ? tokens[0] : null));
+                }
+
+                partial.Functions.Add(new PartialReductionDeclaration(fnDecl.Result, new PartialFunction(typeBits.Select(t => new IdentifierExpression(t.Value, t.SourceInfo)), null, partial)));
             }
+
+            return partial;
         }
 
         private static ResultOrParseError<TangentType> TryExtendSumType(List<Token> tokens, IEnumerable<PartialParameterDeclaration> genericArgs, TangentType firstPart)
@@ -498,6 +543,7 @@ namespace Tangent.Parsing
                 return new ResultOrParseError<PartialFunction>(new ExpectedTokenParseError(TokenIdentifier.Identifier, null));
             }
 
+            // TODO: symbols?
             var identifiers = tokens.TakeWhile(t => t.Identifier == TokenIdentifier.Identifier).Select(t => new IdentifierExpression(t.Value, t.SourceInfo)).ToList();
             if (!identifiers.Any()) {
                 return new ResultOrParseError<PartialFunction>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.First()));
@@ -617,7 +663,7 @@ namespace Tangent.Parsing
                     } else {
                         return new ResultOrParseError<IEnumerable<PartialElement>>(body.Error);
                     }
-                }else if(first.Identifier == TokenIdentifier.LazyOperator){
+                } else if (first.Identifier == TokenIdentifier.LazyOperator) {
                     tokens.RemoveAt(0);
                     result.Add(new IdentifierElement(first.Value, first.SourceInfo));
                 } else {

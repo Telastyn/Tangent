@@ -9,10 +9,10 @@ namespace Tangent.Parsing.Partial
     public class PartialFunction
     {
         public readonly IEnumerable<IdentifierExpression> EffectiveType;
-        public readonly PartialProductType Scope;
+        public readonly PartialClass Scope;
         public readonly PartialBlock Implementation;
 
-        public PartialFunction(IEnumerable<IdentifierExpression> type, PartialBlock implementation, PartialProductType scope)
+        public PartialFunction(IEnumerable<IdentifierExpression> type, PartialBlock implementation, PartialClass scope)
         {
             EffectiveType = type;
             Implementation = implementation;
