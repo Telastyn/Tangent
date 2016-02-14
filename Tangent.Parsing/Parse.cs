@@ -28,6 +28,7 @@ namespace Tangent.Parsing
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
 
             while (tokens.Any()) {
+                // LASTWORKED: parse interface binding.
                 var error = ParseDeclaration(tokens, partialTypes, partialFunctions, null);
                 if (error != null) {
                     return new ResultOrParseError<TangentProgram>(error);

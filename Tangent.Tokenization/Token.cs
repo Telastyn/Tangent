@@ -12,6 +12,7 @@ namespace Tangent.Tokenization
 
         TypeArrow,
         FunctionArrow,
+        InterfaceBindingOperator,
         Colon,
         
         LazyOperator,

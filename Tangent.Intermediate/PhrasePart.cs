@@ -36,5 +36,14 @@ namespace Tangent.Intermediate
             if (IsIdentifier) { return Identifier.Value; }
             return Parameter.ToString();
         }
+
+        public PhrasePart ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            if (IsIdentifier) {
+                return this;
+            }
+
+            return new PhrasePart(Parameter.ResolveGenericReferences(mapping));
+        }
     }
 }

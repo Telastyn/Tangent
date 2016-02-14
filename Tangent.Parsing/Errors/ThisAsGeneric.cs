@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Tangent.Parsing.Errors
 {
-    public class ThisAsGeneric:ParseError
+    public class ThisAsGeneric : ParseError
     {
         public ThisAsGeneric() : base() { }
         public override string ToString()

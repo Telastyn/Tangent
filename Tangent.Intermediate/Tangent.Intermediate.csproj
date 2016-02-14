@@ -98,6 +98,7 @@
     <Compile Include="TransformationType.cs" />
     <Compile Include="TransformationRule.cs" />
     <Compile Include="TypeAccessExpression.cs" />
+    <Compile Include="TypeClass.cs" />
     <Compile Include="TypeConstant.cs" />
     <Compile Include="TypeDeclaration.cs" />
     <Compile Include="EnumValueAccessExpression.cs" />

@@ -160,5 +160,14 @@ namespace Tangent.Cli.TestSuite
             Assert.IsTrue(results.SequenceEqual(new[] { "with int", "42", "with void", "42" }));
             Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
         }
+
+        [TestMethod]
+        public InterfaceNotEquals(){
+            TimeSpan compileDuration;
+            TimeSpan programDuration;
+            var result = Test.DebugProgramFile("interface-not-equals.tan", out compileDuration, out programDuration);
+            Assert.AreEqual("true", result.Trim());
+            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
+        }
     }
 }

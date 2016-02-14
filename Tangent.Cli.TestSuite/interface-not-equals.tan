@@ -1,0 +1,13 @@
+﻿equatable :> interface {
+  (this) = (this) => bool;
+}
+
+bool :< equatable;
+
+(left:T:equatable) != (right:T) => bool {
+  not left = right;
+}
+
+entrypoint => void {
+  print true != false;
+}

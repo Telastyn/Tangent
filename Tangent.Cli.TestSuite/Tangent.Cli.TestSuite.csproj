@@ -82,6 +82,7 @@
     <None Include="IfTrue.tan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="interface-not-equals.tan" />
     <None Include="intSandbox.tan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

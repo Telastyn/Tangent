@@ -19,7 +19,8 @@ namespace Tangent.Intermediate
         BoundGenericProduct,
         InferencePoint,
         Placeholder,
-        Delegate
+        Delegate,
+        TypeClass
     }
 
     public enum GenericTie{

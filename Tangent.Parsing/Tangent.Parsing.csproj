@@ -59,6 +59,7 @@
     <Compile Include="Partial\PartialClass.cs" />
     <Compile Include="Partial\PartialFunction.cs" />
     <Compile Include="Partial\PartialInterface.cs" />
+    <Compile Include="Partial\PartialInterfaceBinding.cs" />
     <Compile Include="Partial\PartialParameterDeclaration.cs" />
     <Compile Include="Partial\PartialPhrasePart.cs" />
     <Compile Include="Partial\PartialProductType.cs" />

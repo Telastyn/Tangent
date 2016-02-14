@@ -48,5 +48,10 @@ namespace Tangent.Intermediate
         {
             return string.Format("({0})", base.ToString());
         }
+
+        public ParameterDeclaration ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return new ParameterDeclaration(Takes.Select(pp => pp.ResolveGenericReferences(mapping)), Returns.ResolveGenericReferences(mapping));
+        }
     }
 }
