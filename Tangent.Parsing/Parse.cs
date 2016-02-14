@@ -396,9 +396,9 @@ namespace Tangent.Parsing
             return null;
         }
 
-        public static ResultOrParseError<TangentType> Type(List<Token> tokens, IEnumerable<PartialParameterDeclaration> genericArgs)
+        public static ResultOrParseError<TangentType> Type(List<Token> tokens, IEnumerable<PartialParameterDeclaration> genericArgs, bool first = true)
         {
-            var interfaceResult = TryInterface(tokens, genericArgs);
+            var interfaceResult = first ? TryInterface(tokens, genericArgs) : null;
             if (interfaceResult == null) {
                 var enumResult = Enum(tokens);
                 if (enumResult.Success) {
@@ -433,11 +433,9 @@ namespace Tangent.Parsing
 
             while (tokens.Any() && tokens[0].Value != "}") {
                 var fnDecl = PartialPhrase(tokens, true);
-                if(!fnDecl.Success){
+                if (!fnDecl.Success) {
                     return new ResultOrParseError<TangentType>(fnDecl.Error);
                 }
-
-                // TODO: ensure 1 this param?
 
                 if (!MatchAndDiscard(TokenIdentifier.FunctionArrow, "=>", tokens)) {
                     return new ResultOrParseError<TangentType>(new ExpectedLiteralParseError("=>", tokens.Any() ? tokens[0] : null));
@@ -461,7 +459,7 @@ namespace Tangent.Parsing
             if (!tokens.Any()) { return firstPart; }
             if (tokens[0].Identifier == TokenIdentifier.Symbol && tokens[0].Value == "|") {
                 tokens.RemoveAt(0);
-                ResultOrParseError<TangentType> result = Type(tokens, genericArgs);
+                ResultOrParseError<TangentType> result = Type(tokens, genericArgs, false);
                 if (result.Success) {
                     if (result.Result.ImplementationType == KindOfType.Sum) {
                         return SumType.For(((SumType)result.Result).Types.Concat(new List<TangentType>() { firstPart }));
