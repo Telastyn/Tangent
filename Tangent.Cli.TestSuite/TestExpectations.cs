@@ -162,7 +162,7 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
-        public InterfaceNotEquals(){
+        public void InterfaceNotEquals(){
             TimeSpan compileDuration;
             TimeSpan programDuration;
             var result = Test.DebugProgramFile("interface-not-equals.tan", out compileDuration, out programDuration);

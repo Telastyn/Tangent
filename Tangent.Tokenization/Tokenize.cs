@@ -22,6 +22,11 @@ namespace Tangent.Tokenization
                     Match("~>", TokenIdentifier.LazyOperator, input, ix, inputLabel) ??
                     Match(":<", TokenIdentifier.InterfaceBindingOperator, input, ix, inputLabel) ??
                     Match(":", TokenIdentifier.Colon, input, ix, inputLabel) ??
+                    Match("(", TokenIdentifier.OpenParen, input, ix, inputLabel) ??
+                    Match(")", TokenIdentifier.CloseParen, input, ix, inputLabel) ??
+                    Match("{", TokenIdentifier.OpenCurly, input, ix, inputLabel) ??
+                    Match("}", TokenIdentifier.CloseCurly, input, ix, inputLabel) ??
+                    Match(";", TokenIdentifier.SemiColon, input, ix, inputLabel) ??
                     Identifier(inputLabel, input, ix) ??
                     String(inputLabel, input, ix) ??
                     IntegerConstant(inputLabel, input, ix) ??

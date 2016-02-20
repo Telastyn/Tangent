@@ -14,10 +14,16 @@ namespace Tangent.Tokenization
         FunctionArrow,
         InterfaceBindingOperator,
         Colon,
+        SemiColon,
         
         LazyOperator,
         StringConstant,
         IntegerConstant,
+
+        OpenParen,
+        CloseParen,
+        OpenCurly,
+        CloseCurly
     }
 
     [Serializable]
