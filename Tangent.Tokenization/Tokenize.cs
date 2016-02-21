@@ -119,7 +119,7 @@ namespace Tangent.Tokenization
             if (index >= input.Length) { return null; }
 
             // For now, everything is cool.
-            return new Token(TokenIdentifier.Symbol, input, index, index + 1, inputLabel);
+            return new Token(TokenIdentifier.Identifier, input, index, index + 1, inputLabel);
         }
 
         private static Token Match(string target, TokenIdentifier id, string input, int index, string inputLabel)

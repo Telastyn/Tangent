@@ -369,7 +369,7 @@ namespace Tangent.Parsing
                 return null;
             }
 
-            if (first.Identifier == TokenIdentifier.Identifier) {
+            if (first.Identifier == TokenIdentifier.Identifier && first.Value != "|") {
                 tokens.RemoveAt(0);
                 return new PartialPhrasePart(first.Value);
             }
@@ -386,11 +386,6 @@ namespace Tangent.Parsing
             if (first.Identifier == TokenIdentifier.SemiColon) {
                 tokens.RemoveAt(0);
                 return null;
-            }
-
-            if (first.Identifier == TokenIdentifier.Symbol && first.Value != "|") {
-                tokens.RemoveAt(0);
-                return new PartialPhrasePart(first.Value);
             }
 
             return null;
@@ -457,7 +452,7 @@ namespace Tangent.Parsing
         private static ResultOrParseError<TangentType> TryExtendSumType(List<Token> tokens, IEnumerable<PartialParameterDeclaration> genericArgs, TangentType firstPart)
         {
             if (!tokens.Any()) { return firstPart; }
-            if (tokens[0].Identifier == TokenIdentifier.Symbol && tokens[0].Value == "|") {
+            if (tokens[0].Identifier == TokenIdentifier.Identifier && tokens[0].Value == "|") {
                 tokens.RemoveAt(0);
                 ResultOrParseError<TangentType> result = Type(tokens, genericArgs, false);
                 if (result.Success) {
@@ -489,7 +484,7 @@ namespace Tangent.Parsing
             if (tokens.First().Identifier == TokenIdentifier.Identifier) {
                 result.Add(tokens.First().Value);
                 tokens.RemoveAt(0);
-                while (MatchAndDiscard(TokenIdentifier.Symbol, ",", tokens)) {
+                while (MatchAndDiscard(TokenIdentifier.Identifier, ",", tokens)) {
                     var id = tokens.FirstOrDefault();
                     if (id == null || id.Identifier != TokenIdentifier.Identifier) {
                         return new ResultOrParseError<EnumType>(new ExpectedTokenParseError(TokenIdentifier.Identifier, id));
@@ -632,9 +627,6 @@ namespace Tangent.Parsing
                 } else if (first.Identifier == TokenIdentifier.CloseCurly) {
                     // we're at end of block. Return statement for optional semi-colon.
                     return result;
-                } else if (first.Identifier == TokenIdentifier.Symbol) {
-                    tokens.RemoveAt(0);
-                    result.Add(new IdentifierElement(first.Value, first.SourceInfo));
                 } else if (first.Identifier == TokenIdentifier.FunctionArrow) {
                     // lambda.
                     if (!result.Any()) {

@@ -8,7 +8,6 @@ namespace Tangent.Tokenization
     public enum TokenIdentifier
     {
         Identifier,
-        Symbol,
 
         TypeArrow,
         FunctionArrow,

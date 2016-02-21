@@ -146,7 +146,7 @@ bar";
             var result = Tokenize.Symbol("test.tan", test, 0);
 
             Assert.IsNotNull(result);
-            Assert.AreEqual(TokenIdentifier.Symbol, result.Identifier);
+            Assert.AreEqual(TokenIdentifier.Identifier, result.Identifier);
             Assert.AreEqual("あ", result.Value);
         }
 
@@ -157,7 +157,7 @@ bar";
             var result = Tokenize.Symbol("test.tan", test, 0);
 
             Assert.IsNotNull(result);
-            Assert.AreEqual(TokenIdentifier.Symbol, result.Identifier);
+            Assert.AreEqual(TokenIdentifier.Identifier, result.Identifier);
             Assert.AreEqual("+", result.Value);
         }
 
@@ -168,7 +168,7 @@ bar";
             var result = Tokenize.Symbol("test.tan", test, 0);
 
             Assert.IsNotNull(result);
-            Assert.AreEqual(TokenIdentifier.Symbol, result.Identifier);
+            Assert.AreEqual(TokenIdentifier.Identifier, result.Identifier);
             Assert.AreEqual("+", result.Value);
         }
 
@@ -179,7 +179,7 @@ bar";
             var result = Tokenize.Symbol("test.tan", test, 0);
 
             Assert.IsNotNull(result);
-            Assert.AreEqual(TokenIdentifier.Symbol, result.Identifier);
+            Assert.AreEqual(TokenIdentifier.Identifier, result.Identifier);
             Assert.AreEqual("+", result.Value);
         }
 
@@ -190,7 +190,7 @@ bar";
             var result = Tokenize.Symbol("test.tan", test, 0);
 
             Assert.IsNotNull(result);
-            Assert.AreEqual(TokenIdentifier.Symbol, result.Identifier);
+            Assert.AreEqual(TokenIdentifier.Identifier, result.Identifier);
             Assert.AreEqual("+", result.Value);
         }
 
