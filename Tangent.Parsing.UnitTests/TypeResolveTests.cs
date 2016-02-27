@@ -98,7 +98,7 @@ namespace Tangent.Parsing.UnitTests
             var foo = new EnumType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
-            var partial = new PartialParameterDeclaration("x", new List<Expression>() { new IdentifierExpression("foo", null), new IdentifierExpression("bar", null) });
+            var partial = new PartialParameterDeclaration(new IdentifierExpression("x", null), new List<Expression>() { new IdentifierExpression("foo", null), new IdentifierExpression("bar", null) });
             var result = TypeResolve.Resolve(partial, new[] { typeDecl });
 
             Assert.IsTrue(result.Success);
@@ -113,7 +113,7 @@ namespace Tangent.Parsing.UnitTests
             var foo = new EnumType(new Identifier[0]);
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
-            var partial = new PartialParameterDeclaration("x", new List<Expression>() { new IdentifierExpression("foo", null), new IdentifierExpression("baz", null) });
+            var partial = new PartialParameterDeclaration(new IdentifierExpression("x", null), new List<Expression>() { new IdentifierExpression("foo", null), new IdentifierExpression("baz", null) });
             var result = TypeResolve.Resolve(partial, new[] { typeDecl });
 
             Assert.IsFalse(result.Success);
@@ -126,7 +126,7 @@ namespace Tangent.Parsing.UnitTests
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, foo);
 
             var partial = new PartialReductionDeclaration(
-                new PartialPhrasePart(new PartialParameterDeclaration("x", new List<Expression>() { new IdentifierExpression("foo", null), new IdentifierExpression("bar", null) })),
+                new PartialPhrasePart(new PartialParameterDeclaration(new IdentifierExpression("x", null), new List<Expression>() { new IdentifierExpression("foo", null), new IdentifierExpression("bar", null) })),
                 new PartialFunction(Fix(new Identifier[] { "foo", "bar" }), new PartialBlock(Enumerable.Empty<PartialStatement>()), null));
 
             var result = TypeResolve.PartialFunctionDeclaration(partial, new[] { typeDecl }, new Dictionary<TangentType, TangentType>());

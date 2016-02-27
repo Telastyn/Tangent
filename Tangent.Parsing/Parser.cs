@@ -39,6 +39,16 @@ namespace Tangent.Parsing
         {
             return new DelimitedParser<T, D>(delimiting, meaningful);
         }
+
+        public static Parser<T> Difference<T, D>(Parser<T> production, Parser<D> difference)
+        {
+            return new DifferenceParser<T, D>(production, difference);
+        }
+
+        public static Parser<T> Delegate<T>(Func<Parser<T>> wrapped)
+        {
+            return new DelegatingParser<T>(wrapped);
+        }
     }
 
     public abstract class Parser<T>

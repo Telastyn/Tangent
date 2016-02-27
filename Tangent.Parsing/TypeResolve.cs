@@ -15,7 +15,7 @@ namespace Tangent.Parsing
         {
             List<TypeDeclaration> types = new List<TypeDeclaration>(builtInTypes);
             var simpleTypes = partialTypes.Where(ptd => ptd.Takes.All(pp => pp.IsIdentifier));
-            types.AddRange(simpleTypes.Select(ptd => new TypeDeclaration(ptd.Takes.Select(ppp => new PhrasePart(ppp.Identifier)), ptd.Returns)));
+            types.AddRange(simpleTypes.Select(ptd => new TypeDeclaration(ptd.Takes.Select(ppp => new PhrasePart(ppp.Identifier.Identifier)), ptd.Returns)));
             var leftToProcess = partialTypes.Except(simpleTypes).ToList();
             genericArgumentMapping = new Dictionary<PartialParameterDeclaration, ParameterDeclaration>();
 
@@ -61,7 +61,7 @@ namespace Tangent.Parsing
             List<PhrasePart> takes = new List<PhrasePart>();
             foreach (var t in partial.Takes) {
                 if (t.IsIdentifier) {
-                    takes.Add(new PhrasePart(t.Identifier));
+                    takes.Add(new PhrasePart(t.Identifier.Identifier));
                 } else {
                     var interpretResults = scope.InterpretTowards(TangentType.Any.Kind, t.Parameter.Returns);
                     if (interpretResults.Count == 1) {
@@ -69,7 +69,7 @@ namespace Tangent.Parsing
                             throw new NotImplementedException("Delegate parameter in type declaration not yet supported.");
                         }
 
-                        takes.Add(new PhrasePart(new ParameterDeclaration(t.Parameter.Takes.Select(ppp => ppp.Identifier), interpretResults.Cast<TypeAccessExpression>().First().TypeConstant.Value.Kind)));
+                        takes.Add(new PhrasePart(new ParameterDeclaration(t.Parameter.Takes.Select(ppp => ppp.Identifier.Identifier), interpretResults.Cast<TypeAccessExpression>().First().TypeConstant.Value.Kind)));
                     } else if (interpretResults.Count == 0) {
                         // No way to parse things. 
                         if (!hardError) {
@@ -250,7 +250,7 @@ namespace Tangent.Parsing
         internal static ResultOrParseError<PhrasePart> Resolve(PartialPhrasePart partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
         {
             if (partial.IsIdentifier) {
-                return new PhrasePart(partial.Identifier);
+                return new PhrasePart(partial.Identifier.Identifier);
             }
 
             var resolved = Resolve(partial.Parameter, types, ctorGenericArguments);
@@ -271,13 +271,13 @@ namespace Tangent.Parsing
             var takeResolutions = new List<PhrasePart>();
             foreach (var ppp in partial.Takes) {
                 if (ppp.IsIdentifier) {
-                    takeResolutions.Add(new PhrasePart(ppp.Identifier));
+                    takeResolutions.Add(new PhrasePart(ppp.Identifier.Identifier));
                 } else {
-                    if(!ppp.Parameter.Takes.All(inner=>inner.IsIdentifier)){
+                    if (!ppp.Parameter.Takes.All(inner => inner.IsIdentifier)) {
                         throw new NotImplementedException("Nested higher level function parameters not yet supported.");
                     }
 
-                    var partialResult = ResolveType(ppp.Parameter.Takes.Select(inner=>new IdentifierExpression( inner.Identifier, null)), types, ctorGenericArguments ?? Enumerable.Empty<ParameterDeclaration>());
+                    var partialResult = ResolveType(ppp.Parameter.Takes.Select(inner => inner.Identifier), types, ctorGenericArguments ?? Enumerable.Empty<ParameterDeclaration>());
                     if (partialResult.Success) {
                         takeResolutions.Add(new PhrasePart(new ParameterDeclaration("_", partialResult.Result)));
                     } else {

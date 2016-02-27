@@ -28,8 +28,6 @@ namespace Tangent.Parsing
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
 
             while (tokens.Any()) {
-                var typeDecl = TryParseTypeDeclaration(tokens);
-
                 // LASTWORKED: parse interface binding.
                 var error = ParseDeclaration(tokens, partialTypes, partialFunctions, null);
                 if (error != null) {
@@ -130,48 +128,6 @@ namespace Tangent.Parsing
             }).ToList(), inputSources);
         }
 
-        private static ResultOrParseError<PartialTypeDeclaration> TryParseTypeDeclaration(List<Token> tokens)
-        {
-            var takes = new List<PartialPhrasePart>();
-            var go = true;
-            var skip = 0;
-            do {
-                go = false;
-                var maybeId = TryMatchId(tokens.Skip(skip));
-                if (!maybeId.Success) {
-                    int consumed = 0;
-                    var maybeTypeDecl = TryMatchTypeDeclParam(tokens.Skip(skip), out consumed);
-                    if (maybeTypeDecl == null) {
-                        if (!takes.Any()) {
-                            return new ResultOrParseError<PartialTypeDeclaration>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens[0]));
-                        }
-                    } else {
-                        takes.Add(maybeTypeDecl.Result);
-                        skip += consumed;
-                        go = true;
-                    }
-                } else {
-                    takes.Add(maybeId.Result);
-                    skip++;
-                    go = true;
-                }
-            } while (go);
-
-            var shouldBeTypeArrow = tokens.Skip(skip).FirstOrDefault();
-            if (shouldBeTypeArrow == null || shouldBeTypeArrow.Identifier != TokenIdentifier.TypeArrow) {
-                return new ResultOrParseError<PartialTypeDeclaration>(new ExpectedTokenParseError(TokenIdentifier.TypeArrow, shouldBeTypeArrow));
-            }
-
-            int meatConsumption = 0;
-            ResultOrParseError<TangentType> implimentation = TryParseTypeMeat(tokens.Skip(skip), out meatConsumption);
-            if (implimentation.Success) {
-                skip += meatConsumption;
-                tokens.RemoveRange(0, skip);
-            }
-
-            return new PartialTypeDeclaration(takes, implimentation.Result);
-        }
-
         public static ResultOrParseError<IdentifierExpression> TryMatchId(IEnumerable<Token> tokens)
         {
             var first = tokens.FirstOrDefault();
@@ -260,7 +216,7 @@ namespace Tangent.Parsing
                     // Normalize generics
                     phrase = phrase.Select(pp => pp.IsIdentifier ? pp : (pp.Parameter.Returns != null ? pp : new PartialPhrasePart(new PartialParameterDeclaration(pp.Parameter.Takes, new List<Expression>() { new IdentifierExpression("any", null) })))).ToList();
                     if (phrase.All(pp => !pp.IsIdentifier)) { return new ExpectedTokenParseError(TokenIdentifier.Identifier, separator); }
-                    if (phrase.Any(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.Takes.First().IsIdentifier && pp.Parameter.Takes.First().Identifier == "this")) { return new ThisAsGeneric(); }
+                    if (phrase.Any(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.Takes.First().IsIdentifier && pp.Parameter.Takes.First().Identifier.Identifier == "this")) { return new ThisAsGeneric(); }
 
                     var typeDecl = Type(tokens, phrase.Where(ppp => !ppp.IsIdentifier).Select(ppp => ppp.Parameter));
                     if (!typeDecl.Success) {
@@ -367,7 +323,7 @@ namespace Tangent.Parsing
                 throw new NotImplementedException("Parameterized variable declarations not currently supported.");
             }
 
-            var result = vde.ParameterDeclaration.Returns == null ? new ParameterDeclaration(vde.ParameterDeclaration.Takes.Select(ppp => new PhrasePart(ppp.Identifier)), null) :
+            var result = vde.ParameterDeclaration.Returns == null ? new ParameterDeclaration(vde.ParameterDeclaration.Takes.Select(ppp => new PhrasePart(ppp.Identifier.Identifier)), null) :
                 TypeResolve.Resolve(vde.ParameterDeclaration, scope.Rules.SelectMany(x => x).Where(r => r.Type == TransformationType.Type).Cast<TypeAccess>().Select(t => t.Declaration));
             if (result.Success) {
                 return result.Result;
@@ -430,9 +386,9 @@ namespace Tangent.Parsing
                     return new ResultOrParseError<PartialParameterDeclaration>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
                 }
 
-                if (classDecl && paramName.Count == 1 && paramName.First().Identifier.Value == "this" && tokens.Any() && tokens.First().Identifier == TokenIdentifier.CloseParen) {
+                if (classDecl && paramName.Count == 1 && paramName.First().Identifier.Identifier.Value == "this" && tokens.Any() && tokens.First().Identifier == TokenIdentifier.CloseParen) {
                     tokens.RemoveAt(0);
-                    return new PartialParameterDeclaration("this", new List<Expression>() { new IdentifierExpression("this", null) });
+                    return new PartialParameterDeclaration(new IdentifierExpression("this", null), new List<Expression>() { new IdentifierExpression("this", null) });
                 } else {
 
                     var possibleColon = tokens.FirstOrDefault();
@@ -465,7 +421,7 @@ namespace Tangent.Parsing
                                 throw new NotImplementedException("Higher ordered type generics are not currently supported.");
                             }
 
-                            return new PartialTypeInferenceExpression(varDecl.ParameterDeclaration.Takes.Select(ppp => ppp.Identifier), varDecl.ParameterDeclaration.Returns ?? new List<Expression>() { new IdentifierExpression("any", null) }, varDecl.SourceInfo);
+                            return new PartialTypeInferenceExpression(varDecl.ParameterDeclaration.Takes.Select(ppp => ppp.Identifier.Identifier), varDecl.ParameterDeclaration.Returns ?? new List<Expression>() { new IdentifierExpression("any", null) }, varDecl.SourceInfo);
                         }
 
                         throw new NotImplementedException(string.Format("Unsupported expression {0} in Type Declaration.", pe.Type));
@@ -485,7 +441,7 @@ namespace Tangent.Parsing
 
             if (first.Identifier == TokenIdentifier.Identifier && first.Value != "|") {
                 tokens.RemoveAt(0);
-                return new PartialPhrasePart(first.Value);
+                return new PartialPhrasePart(new IdentifierExpression(first.Value, first.SourceInfo));
             }
 
             if (first.Identifier == TokenIdentifier.OpenParen) {
@@ -624,7 +580,7 @@ namespace Tangent.Parsing
             }
 
             if (phrasePart.Result.All(pp => pp.IsIdentifier) && (!tokens.Any() || tokens[0].Identifier != TokenIdentifier.OpenCurly)) {
-                return new PartialTypeReference(phrasePart.Result.Select(pp => new IdentifierExpression(pp.Identifier, null)), genericArgs);
+                return new PartialTypeReference(phrasePart.Result.Select(pp => pp.Identifier), genericArgs);
             }
 
             if (!MatchAndDiscard(TokenIdentifier.OpenCurly, tokens)) {
@@ -750,7 +706,7 @@ namespace Tangent.Parsing
                     var preceeding = new List<VarDeclElement>();
                     var last = result.Last();
                     if (last.Type == ElementType.Identifier) {
-                        preceeding.Add(new VarDeclElement(new PartialParameterDeclaration(((IdentifierElement)last).Identifier, null), last.SourceInfo));
+                        preceeding.Add(new VarDeclElement(new PartialParameterDeclaration(new IdentifierExpression(((IdentifierElement)last).Identifier, null), null), last.SourceInfo));
                         result.RemoveAt(result.Count - 1);
                     } else if (last.Type == ElementType.VarDecl) {
                         while (result.Any() && result.Last().Type == ElementType.VarDecl) {

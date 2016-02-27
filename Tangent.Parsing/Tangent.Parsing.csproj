@@ -43,7 +43,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CombinedParser.cs" />
+    <Compile Include="DelegatingParser.cs" />
     <Compile Include="DelimitedParser.cs" />
+    <Compile Include="DifferenceParser.cs" />
     <Compile Include="Errors\AggregateParseError.cs" />
     <Compile Include="Errors\AmbiguousStatementError.cs" />
     <Compile Include="Errors\ExpectedLiteralParseError.cs" />
@@ -53,6 +55,7 @@
     <Compile Include="Errors\ThisAsGeneric.cs" />
     <Compile Include="Grammar.cs" />
     <Compile Include="IdentifierParser.cs" />
+    <Compile Include="IntConstantParser.cs" />
     <Compile Include="OptionalParser.cs" />
     <Compile Include="Parse.cs" />
     <Compile Include="Errors\ParseError.cs" />
@@ -84,6 +87,7 @@
     <Compile Include="Errors\StatementGrokErrors.cs" />
     <Compile Include="RepeatingParser.cs" />
     <Compile Include="ShortcuttingOrParser.cs" />
+    <Compile Include="StringConstantParser.cs" />
     <Compile Include="StringLiteralParser.cs" />
     <Compile Include="TypeResolve.cs" />
     <Compile Include="TypeResolved\TypeResolvedFunction.cs" />
