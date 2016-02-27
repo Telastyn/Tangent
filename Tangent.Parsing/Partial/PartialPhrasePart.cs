@@ -8,11 +8,11 @@ namespace Tangent.Parsing.Partial
 {
     public class PartialPhrasePart
     {
-        public readonly Identifier Identifier;
+        public readonly IdentifierExpression Identifier;
         public readonly PartialParameterDeclaration Parameter;
         public bool IsIdentifier { get { return Identifier != null; } }
 
-        public PartialPhrasePart(Identifier id)
+        public PartialPhrasePart(IdentifierExpression id)
         {
             Identifier = id;
         }
@@ -22,7 +22,7 @@ namespace Tangent.Parsing.Partial
             Parameter = decl;
         }
 
-        public static implicit operator PartialPhrasePart(Identifier id)
+        public static implicit operator PartialPhrasePart(IdentifierExpression id)
         {
             return new PartialPhrasePart(id);
         }

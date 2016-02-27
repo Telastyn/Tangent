@@ -42,6 +42,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CombinedParser.cs" />
+    <Compile Include="DelimitedParser.cs" />
     <Compile Include="Errors\AggregateParseError.cs" />
     <Compile Include="Errors\AmbiguousStatementError.cs" />
     <Compile Include="Errors\ExpectedLiteralParseError.cs" />
@@ -49,8 +51,13 @@
     <Compile Include="Errors\GenericSumTypeFunctionWithReturnTypeRelyingOnInference.cs" />
     <Compile Include="Errors\IncomprehensibleStatementError.cs" />
     <Compile Include="Errors\ThisAsGeneric.cs" />
+    <Compile Include="Grammar.cs" />
+    <Compile Include="IdentifierParser.cs" />
+    <Compile Include="OptionalParser.cs" />
     <Compile Include="Parse.cs" />
     <Compile Include="Errors\ParseError.cs" />
+    <Compile Include="Parser.cs" />
+    <Compile Include="LiteralParser.cs" />
     <Compile Include="Partial\BlockElement.cs" />
     <Compile Include="Partial\ConstantElement.cs" />
     <Compile Include="Partial\LambdaElement.cs" />
@@ -75,6 +82,9 @@
     <Compile Include="Errors\ResultOrError.cs" />
     <Compile Include="Errors\ResultOrParseError.cs" />
     <Compile Include="Errors\StatementGrokErrors.cs" />
+    <Compile Include="RepeatingParser.cs" />
+    <Compile Include="ShortcuttingOrParser.cs" />
+    <Compile Include="StringLiteralParser.cs" />
     <Compile Include="TypeResolve.cs" />
     <Compile Include="TypeResolved\TypeResolvedFunction.cs" />
   </ItemGroup>

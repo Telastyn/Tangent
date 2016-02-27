@@ -28,6 +28,8 @@ namespace Tangent.Parsing
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
 
             while (tokens.Any()) {
+                var typeDecl = TryParseTypeDeclaration(tokens);
+
                 // LASTWORKED: parse interface binding.
                 var error = ParseDeclaration(tokens, partialTypes, partialFunctions, null);
                 if (error != null) {
@@ -126,6 +128,118 @@ namespace Tangent.Parsing
                     return fn;
                 }
             }).ToList(), inputSources);
+        }
+
+        private static ResultOrParseError<PartialTypeDeclaration> TryParseTypeDeclaration(List<Token> tokens)
+        {
+            var takes = new List<PartialPhrasePart>();
+            var go = true;
+            var skip = 0;
+            do {
+                go = false;
+                var maybeId = TryMatchId(tokens.Skip(skip));
+                if (!maybeId.Success) {
+                    int consumed = 0;
+                    var maybeTypeDecl = TryMatchTypeDeclParam(tokens.Skip(skip), out consumed);
+                    if (maybeTypeDecl == null) {
+                        if (!takes.Any()) {
+                            return new ResultOrParseError<PartialTypeDeclaration>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens[0]));
+                        }
+                    } else {
+                        takes.Add(maybeTypeDecl.Result);
+                        skip += consumed;
+                        go = true;
+                    }
+                } else {
+                    takes.Add(maybeId.Result);
+                    skip++;
+                    go = true;
+                }
+            } while (go);
+
+            var shouldBeTypeArrow = tokens.Skip(skip).FirstOrDefault();
+            if (shouldBeTypeArrow == null || shouldBeTypeArrow.Identifier != TokenIdentifier.TypeArrow) {
+                return new ResultOrParseError<PartialTypeDeclaration>(new ExpectedTokenParseError(TokenIdentifier.TypeArrow, shouldBeTypeArrow));
+            }
+
+            int meatConsumption = 0;
+            ResultOrParseError<TangentType> implimentation = TryParseTypeMeat(tokens.Skip(skip), out meatConsumption);
+            if (implimentation.Success) {
+                skip += meatConsumption;
+                tokens.RemoveRange(0, skip);
+            }
+
+            return new PartialTypeDeclaration(takes, implimentation.Result);
+        }
+
+        public static ResultOrParseError<IdentifierExpression> TryMatchId(IEnumerable<Token> tokens)
+        {
+            var first = tokens.FirstOrDefault();
+            if (first == null || first.Identifier != TokenIdentifier.Identifier) {
+                return new ResultOrParseError<IdentifierExpression>(new ExpectedTokenParseError(TokenIdentifier.Identifier, first));
+            }
+
+            return new IdentifierExpression(new Identifier(first.Value), first.SourceInfo);
+        }
+
+        public static ResultOrParseError<PartialPhrasePart> TryMatchTypeDeclParam(IEnumerable<Token> tokens, out int consumed)
+        {
+            consumed = 0;
+            var first = tokens.FirstOrDefault();
+            if (first == null || first.Identifier != TokenIdentifier.OpenParen) {
+                return new ResultOrParseError<PartialPhrasePart>(new ExpectedTokenParseError(TokenIdentifier.OpenParen, first));
+            }
+
+            tokens = tokens.Skip(1);
+            consumed = 1;
+
+            var takes = new List<IdentifierExpression>();
+            ResultOrParseError<IdentifierExpression> nom = null;
+            do {
+                nom = TryMatchId(tokens);
+                if (nom.Success) { 
+                    tokens = tokens.Skip(1);
+                    consumed ++;
+                    takes.Add(nom.Result);
+                }
+            } while (nom.Success);
+
+            if (!takes.Any()) {
+                return new ResultOrParseError<PartialPhrasePart>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault()));
+            }
+
+            var mightBeColon = tokens.FirstOrDefault();
+            if (mightBeColon == null) {
+                return new ResultOrParseError<PartialPhrasePart>(new ExpectedTokenParseError(TokenIdentifier.Colon, null));
+            }
+
+            List<Expression> paramType = new List<Expression>() { new IdentifierExpression("any", null) };
+
+            if (mightBeColon.Identifier == TokenIdentifier.Colon) {
+                tokens = tokens.Skip(1);
+                consumed++;
+                var typeref = new List<Expression>();
+                do {
+                    nom = TryMatchId(tokens);
+                    if (nom.Success) {
+                        tokens = tokens.Skip(1);
+                        consumed++;
+                        typeref.Add(nom.Result);
+                    }
+                } while (nom.Success);
+
+                if (!typeref.Any()) { return new ResultOrParseError<PartialPhrasePart>(new ExpectedTokenParseError(TokenIdentifier.Identifier, tokens.FirstOrDefault())); }
+                paramType = typeref;
+            }
+
+            var shouldBeCloseParen = tokens.FirstOrDefault();
+            if (shouldBeCloseParen == null || shouldBeCloseParen.Identifier != TokenIdentifier.CloseParen) {
+                return new ResultOrParseError<PartialPhrasePart>(new ExpectedTokenParseError(TokenIdentifier.CloseParen, shouldBeCloseParen));
+            }
+
+            consumed++;
+
+            return new PartialPhrasePart(new PartialParameterDeclaration(takes, paramType));
         }
 
         private static ParseError ParseDeclaration(List<Token> tokens, List<PartialTypeDeclaration> partialTypes, List<PartialReductionDeclaration> partialFunctions, PartialProductType scope)
