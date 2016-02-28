@@ -61,10 +61,13 @@
     <Compile Include="PartialStatementParseTests.cs" />
     <Compile Include="PartialBlockParseTests.cs" />
     <Compile Include="PartialPhraseTests.cs" />
+    <Compile Include="TestIntParser.cs" />
     <Compile Include="TypeResolveTests.cs" />
     <Compile Include="EnumTests.cs" />
     <Compile Include="InterfaceTests.cs" />
     <Compile Include="InterfaceBindingTests.cs" />
+    <Compile Include="CombinedParserTests.cs" />
+    <Compile Include="DelimitedParserTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.Common\Tangent.Common.csproj">

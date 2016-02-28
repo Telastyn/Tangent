@@ -43,11 +43,16 @@ namespace Tangent.Parsing
 
         public override ResultOrParseError<T> Parse(IEnumerable<Token> tokens, out int consumed)
         {
-            var first = a.Parse(tokens, out consumed);
+            int taken = 0;
+            int last = 0;
+            consumed = 0;
+            var first = a.Parse(tokens, out taken);
             if (!first.Success) { return new ResultOrParseError<T>(first.Error); }
-            var second = b.Parse(tokens.Skip(consumed), out consumed);
+            var second = b.Parse(tokens.Skip(taken), out last);
             if (!second.Success) { return new ResultOrParseError<T>(second.Error); }
+            taken += last;
 
+            consumed = taken;
             return selector(first.Result, second.Result);
         }
     }
@@ -69,13 +74,19 @@ namespace Tangent.Parsing
 
         public override ResultOrParseError<T> Parse(IEnumerable<Token> tokens, out int consumed)
         {
-            var first = a.Parse(tokens, out consumed);
+            int taken = 0;
+            int last = 0;
+            consumed = 0;
+            var first = a.Parse(tokens, out taken);
             if (!first.Success) { return new ResultOrParseError<T>(first.Error); }
-            var second = b.Parse(tokens.Skip(consumed), out consumed);
+            var second = b.Parse(tokens.Skip(taken), out last);
             if (!second.Success) { return new ResultOrParseError<T>(second.Error); }
-            var third = c.Parse(tokens.Skip(consumed), out consumed);
+            taken += last;
+            var third = c.Parse(tokens.Skip(taken), out last);
             if (!third.Success) { return new ResultOrParseError<T>(third.Error); }
+            taken += last;
 
+            consumed = taken;
             return selector(first.Result, second.Result, third.Result);
         }
     }
@@ -99,15 +110,22 @@ namespace Tangent.Parsing
 
         public override ResultOrParseError<T> Parse(IEnumerable<Token> tokens, out int consumed)
         {
-            var first = a.Parse(tokens, out consumed);
+            int taken = 0;
+            int last = 0;
+            consumed = 0;
+            var first = a.Parse(tokens, out taken);
             if (!first.Success) { return new ResultOrParseError<T>(first.Error); }
-            var second = b.Parse(tokens.Skip(consumed), out consumed);
+            var second = b.Parse(tokens.Skip(taken), out last);
             if (!second.Success) { return new ResultOrParseError<T>(second.Error); }
-            var third = c.Parse(tokens.Skip(consumed), out consumed);
+            taken += last;
+            var third = c.Parse(tokens.Skip(taken), out last);
             if (!third.Success) { return new ResultOrParseError<T>(third.Error); }
-            var fourth = d.Parse(tokens.Skip(consumed), out consumed);
+            taken += last;
+            var fourth = d.Parse(tokens.Skip(taken), out last);
             if (!fourth.Success) { return new ResultOrParseError<T>(fourth.Error); }
+            taken += last;
 
+            consumed = taken;
             return selector(first.Result, second.Result, third.Result, fourth.Result);
         }
     }
@@ -133,17 +151,25 @@ namespace Tangent.Parsing
 
         public override ResultOrParseError<T> Parse(IEnumerable<Token> tokens, out int consumed)
         {
-            var first = a.Parse(tokens, out consumed);
+            int taken = 0;
+            int last = 0;
+            consumed = 0;
+            var first = a.Parse(tokens, out taken);
             if (!first.Success) { return new ResultOrParseError<T>(first.Error); }
-            var second = b.Parse(tokens.Skip(consumed), out consumed);
+            var second = b.Parse(tokens.Skip(taken), out last);
             if (!second.Success) { return new ResultOrParseError<T>(second.Error); }
-            var third = c.Parse(tokens.Skip(consumed), out consumed);
+            taken += last;
+            var third = c.Parse(tokens.Skip(taken), out last);
             if (!third.Success) { return new ResultOrParseError<T>(third.Error); }
-            var fourth = d.Parse(tokens.Skip(consumed), out consumed);
+            taken += last;
+            var fourth = d.Parse(tokens.Skip(taken), out last);
             if (!fourth.Success) { return new ResultOrParseError<T>(fourth.Error); }
-            var fifth = e.Parse(tokens.Skip(consumed), out consumed);
+            taken += last;
+            var fifth = e.Parse(tokens.Skip(taken), out last);
             if (!fifth.Success) { return new ResultOrParseError<T>(fifth.Error); }
+            taken += last;
 
+            consumed = taken;
             return selector(first.Result, second.Result, third.Result, fourth.Result, fifth.Result);
         }
     }
