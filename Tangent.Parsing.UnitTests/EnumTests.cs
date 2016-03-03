@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Tangent.Intermediate;
 using Tangent.Tokenization;
 
 namespace Tangent.Parsing.UnitTests
@@ -14,12 +15,14 @@ namespace Tangent.Parsing.UnitTests
             var test = "enum { a, b }";
             var tokens = Tokenize.ProgramFile(test, "test.tan");
 
-            var result = Parse.Enum(tokens.ToList());
+            int takes;
+            var result = Grammar.EnumImpl.Parse(tokens, out takes);
 
             Assert.IsTrue(result.Success);
-            Assert.AreEqual(2, result.Result.Values.Count());
-            Assert.AreEqual("a", result.Result.Values.First().Value);
-            Assert.AreEqual("b", result.Result.Values.Skip(1).First().Value);
+            var theEnum = result.Result as EnumType;
+            Assert.AreEqual(2, theEnum.Values.Count());
+            Assert.AreEqual("a", theEnum.Values.First().Value);
+            Assert.AreEqual("b", theEnum.Values.Skip(1).First().Value);
         }
 
         [TestMethod]
@@ -28,7 +31,8 @@ namespace Tangent.Parsing.UnitTests
             var test = "num { a, b }";
             var tokens = Tokenize.ProgramFile(test, "test.tan");
 
-            var result = Parse.Enum(tokens.ToList());
+            int takes;
+            var result = Grammar.EnumImpl.Parse(tokens, out takes);
 
             Assert.IsFalse(result.Success);
         }
@@ -39,7 +43,8 @@ namespace Tangent.Parsing.UnitTests
             var test = "enum a, b";
             var tokens = Tokenize.ProgramFile(test, "test.tan");
 
-            var result = Parse.Enum(tokens.ToList());
+            int takes;
+            var result = Grammar.EnumImpl.Parse(tokens, out takes);
 
             Assert.IsFalse(result.Success);
         }
@@ -50,7 +55,8 @@ namespace Tangent.Parsing.UnitTests
             var test = "enum { a, b ";
             var tokens = Tokenize.ProgramFile(test, "test.tan");
 
-            var result = Parse.Enum(tokens.ToList());
+            int takes;
+            var result = Grammar.EnumImpl.Parse(tokens, out takes);
 
             Assert.IsFalse(result.Success);
         }
@@ -61,7 +67,8 @@ namespace Tangent.Parsing.UnitTests
             var test = "ENUM { a, b }";
             var tokens = Tokenize.ProgramFile(test, "test.tan");
 
-            var result = Parse.Enum(tokens.ToList());
+            int takes;
+            var result = Grammar.EnumImpl.Parse(tokens, out takes);
 
             Assert.IsFalse(result.Success);
         }

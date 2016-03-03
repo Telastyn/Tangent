@@ -12,6 +12,7 @@ namespace Tangent.Parsing
     {
         public static readonly Parser<IdentifierExpression> ID = IdentifierParser.Common;
         private static readonly Parser<string> Pipe = new StringLiteralParser("|");
+        private static readonly Parser<string> Comma = new StringLiteralParser(",");
         private static readonly Parser<IdentifierExpression> LazyOperator = LiteralParser.LazyOperator.Select(x => new IdentifierExpression("~>", null));
         public static readonly Parser<ConstantElement<string>> StringConstant = new StringConstantParser();
         public static readonly Parser<ConstantElement<int>> IntConstant = new IntConstantParser();
@@ -23,14 +24,14 @@ namespace Tangent.Parsing
                 ID.OneOrMore,
                 Parser.Combine(LiteralParser.Colon, ID.OneOrMore, (c, typeref) => typeref).Maybe,
                 LiteralParser.CloseParen,
-                (o, phrase, typeref, c) => new PartialParameterDeclaration(phrase, typeref.Select(idexpr => (Expression)idexpr).ToList() ?? new List<Expression>() { new IdentifierExpression("any", null) }));
+                (o, phrase, typeref, c) => new PartialParameterDeclaration(phrase, (typeref ?? new List<IdentifierExpression>() { new IdentifierExpression("any", null) }).Select(idExpr => (Expression)idExpr).ToList()));
 
         // enum { id+, id+, ... }
         public static readonly Parser<TangentType> EnumImpl =
             Parser.Combine(
                 new StringLiteralParser("enum"),
                 LiteralParser.OpenCurly,
-                Parser.Delimited(new StringLiteralParser(","), ID.OneOrMore),
+                Parser.Delimited(Comma, Parser.Difference(ID, Comma).OneOrMore),
                 LiteralParser.CloseCurly,
                 (e, o, enums, c) => (TangentType)new EnumType(enums.Select(entry => entry.First().Identifier)));
 
@@ -74,11 +75,11 @@ namespace Tangent.Parsing
                 (o, name, c, type, e) => new PartialPhrasePart(new PartialParameterDeclaration(name, type.ToList())));
 
         // (this)
-        public static readonly Parser<PartialPhrasePart> thisParam = 
+        public static readonly Parser<PartialPhrasePart> thisParam =
             Parser.Combine(
-                LiteralParser.OpenParen, 
-                new StringLiteralParser("this"), 
-                LiteralParser.CloseParen, 
+                LiteralParser.OpenParen,
+                new StringLiteralParser("this"),
+                LiteralParser.CloseParen,
                 (o, t, c) => new PartialPhrasePart(new PartialParameterDeclaration(new IdentifierExpression("this", null), new List<Expression>() { new IdentifierExpression("this", null) })));
 
         // (id|param-decl)+
@@ -163,7 +164,7 @@ namespace Tangent.Parsing
             Parser.Combine(
                 Parser.Delimited(Pipe, ID.OneOrMore),
                 LiteralParser.SemiColon.Select(sc => (TangentType)null).Or(Parser.Combine(Pipe, ClassDecl, (p, cd) => cd), "Semicolon or Class Declaration"),
-                (aliases, optionalClass) => ConstructTypeAliasChain(aliases.Select(alias => new PartialTypeReference(alias, null)), optionalClass));
+                (aliases, optionalClass) => ConstructSumTypeFromAliasChain(aliases.Select(alias => new PartialTypeReference(alias, new List<PartialParameterDeclaration>())), optionalClass));
 
 
         public static readonly Parser<TangentType> TypeImpl =
@@ -180,21 +181,52 @@ namespace Tangent.Parsing
             TypeImpl,
             (phrase, arrow, impl) => ConstructTypeDeclaration(phrase, impl));
 
-        private static TangentType ConstructTypeAliasChain(IEnumerable<TangentType> aliases, TangentType optionalClass)
+        private static TangentType ConstructSumTypeFromAliasChain(IEnumerable<TangentType> aliases, TangentType optionalClass)
         {
-            throw new NotImplementedException();
+            return SumType.For(aliases.Concat(new[] { optionalClass }));
         }
 
         private static TangentType ConstructProductType(IEnumerable<PartialPhrasePart> constructorBits, IEnumerable<TangentType> interfaceReferences, IEnumerable<PartialReductionDeclaration> body)
         {
             interfaceReferences = interfaceReferences ?? Enumerable.Empty<TangentType>();
-            throw new NotImplementedException();
+            return new PartialProductType(constructorBits, body, new List<PartialParameterDeclaration>());
         }
 
         private static PartialTypeDeclaration ConstructTypeDeclaration(IEnumerable<PartialPhrasePart> typePhrase, TangentType implementation)
         {
             // Take any generics and propogate to implementation bits.
-            throw new NotImplementedException();
+            var generics = typePhrase.Where(ppp => !ppp.IsIdentifier).Select(ppp => ppp.Parameter).ToList();
+            if (generics.Any()) {
+                SetGenericParams(implementation, generics);
+            }
+
+            return new PartialTypeDeclaration(typePhrase, implementation);
+        }
+
+        private static void SetGenericParams(TangentType implementation, IEnumerable<PartialParameterDeclaration> generics)
+        {
+            var product = implementation as PartialProductType;
+            if (product != null) {
+                (product.GenericArguments as List<PartialParameterDeclaration>).AddRange(generics);
+                return;
+            }
+
+            var reference = implementation as PartialTypeReference;
+            if (reference != null) {
+                (reference.GenericArgumentPlaceholders as List<PartialParameterDeclaration>).AddRange(generics);
+                return;
+            }
+
+            var sum = implementation as SumType;
+            if (sum != null) {
+                foreach (var t in sum.Types) {
+                    SetGenericParams(t, generics);
+                }
+
+                return;
+            }
+
+            return;
         }
     }
 }
