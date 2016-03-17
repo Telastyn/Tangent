@@ -9,6 +9,7 @@ namespace Tangent.Parsing.UnitTests
     [TestClass]
     public class EnumTests
     {
+        // enum { id+, id+, ... }
         [TestMethod]
         public void HappyPath()
         {

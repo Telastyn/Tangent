@@ -38,7 +38,7 @@ namespace Tangent.Parsing
         // (id|lazy)+
         public static readonly Parser<IEnumerable<Expression>> TypeExpr = ID.Or(LazyOperator, "Identifier").OneOrMore.Select(expr => expr.Select(id => (Expression)id));
 
-        // (type-expr);
+        // (type-expr)
         public static readonly Parser<PartialPhrasePart> ParamParam =
             Parser.Combine(
                 LiteralParser.OpenParen,

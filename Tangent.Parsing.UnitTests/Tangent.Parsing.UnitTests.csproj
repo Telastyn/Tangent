@@ -69,6 +69,8 @@
     <Compile Include="CombinedParserTests.cs" />
     <Compile Include="DelimitedParserTests.cs" />
     <Compile Include="TypeDeclParamTests.cs" />
+    <Compile Include="ParamParamTests.cs" />
+    <Compile Include="ParamDeclTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.Common\Tangent.Common.csproj">
