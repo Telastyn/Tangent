@@ -12,11 +12,15 @@ namespace Tangent.Parsing
     {
         private readonly Parser<T> meaningfulParser;
         private readonly Parser<U> delimitingParser;
+        private readonly bool requiresOne;
+        private readonly bool optionalTrailingDelimiter;
 
-        public DelimitedParser(Parser<U> delimiting, Parser<T> meaningful)
+        public DelimitedParser(Parser<U> delimiting, Parser<T> meaningful, bool requiresOne, bool optionalTrailingDelimiter)
         {
-            meaningfulParser = meaningful;
-            delimitingParser = delimiting;
+            this.meaningfulParser = meaningful;
+            this.delimitingParser = delimiting;
+            this.requiresOne = requiresOne;
+            this.optionalTrailingDelimiter = optionalTrailingDelimiter;
         }
 
         public override ResultOrParseError<IEnumerable<T>> Parse(IEnumerable<Token> tokens, out int consumed)
@@ -27,6 +31,14 @@ namespace Tangent.Parsing
             while (true) {
                 var result = meaningfulParser.Parse(tokens, out skip);
                 if (!result.Success) {
+                    if (!output.Any() && !requiresOne) {
+                        return output;
+                    }
+
+                    if (optionalTrailingDelimiter) {
+                        return output;
+                    }
+
                     return new ResultOrParseError<IEnumerable<T>>(result.Error);
                 }
 

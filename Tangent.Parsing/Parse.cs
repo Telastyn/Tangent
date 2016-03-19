@@ -17,6 +17,133 @@ namespace Tangent.Parsing
             return TangentProgram(new List<Token>(tokens));
         }
 
+        public static ResultOrParseError<TangentProgram> TangentProgramViaGrammar(IEnumerable<Token> tokens)
+        {
+            return TangentProgramViaGrammar(new List<Token>(tokens));
+        }
+
+        private static ResultOrParseError<TangentProgram> TangentProgramViaGrammar(List<Token> tokens)
+        {
+            if (!tokens.Any()) {
+                return new TangentProgram(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>(), Enumerable.Empty<string>());
+            }
+
+            List<string> inputSources = tokens.Select(t => t.SourceInfo.Label).Distinct().ToList();
+            List<PartialTypeDeclaration> partialTypes = new List<PartialTypeDeclaration>();
+            List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
+
+            while (tokens.Any()) {
+                int typeTake;
+                var type = Grammar.TypeDecl.Parse(tokens, out typeTake);
+                int fnTake;
+                if (type.Success) {
+                    partialTypes.Add(type.Result);
+                    partialFunctions.AddRange(ExtractPartialFunctions(type.Result.Returns));
+                    tokens.RemoveRange(0, typeTake);
+                } else {
+                    var fn = Grammar.FunctionDeclaration.Parse(tokens, out fnTake);
+                    if (fn.Success) {
+                        partialFunctions.Add(fn.Result);
+                        tokens.RemoveRange(0, fnTake);
+                    } else {
+                        return new ResultOrParseError<TangentProgram>(typeTake >= fnTake ? type.Error : fn.Error);
+                    }
+                }
+            }
+
+            List<TypeDeclaration> builtInTypes = new List<TypeDeclaration>(){
+                new TypeDeclaration("void", TangentType.Void),
+                new TypeDeclaration("int", TangentType.Int),
+                new TypeDeclaration("double", TangentType.Double),
+                new TypeDeclaration("bool", TangentType.Bool),
+                new TypeDeclaration("string", TangentType.String),
+                new TypeDeclaration("any", TangentType.Any)
+            };
+
+            Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping;
+            var typeResult = TypeResolve.AllPartialTypeDeclarations(partialTypes, builtInTypes, out genericArgumentMapping);
+            if (!typeResult.Success) {
+                return new ResultOrParseError<Intermediate.TangentProgram>(typeResult.Error);
+            }
+
+            var types = typeResult.Result;
+
+            // Move to Phase 2 - Resolve types in parameters and function return types.
+            Dictionary<TangentType, TangentType> conversions;
+            var resolvedTypes = TypeResolve.AllTypePlaceholders(types, genericArgumentMapping, out conversions);
+            if (!resolvedTypes.Success) {
+                return new ResultOrParseError<Intermediate.TangentProgram>(resolvedTypes.Error);
+            }
+
+            var resolvedFunctions = TypeResolve.AllPartialFunctionDeclarations(partialFunctions, resolvedTypes.Result, conversions);
+            if (!resolvedFunctions.Success) {
+                return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error);
+            }
+
+            HashSet<ProductType> allProductTypes = new HashSet<ProductType>();
+            foreach (var t in resolvedTypes.Result) {
+                if (t.Returns.ImplementationType == KindOfType.Product) {
+                    allProductTypes.Add((ProductType)t.Returns);
+                } else if (t.Returns.ImplementationType == KindOfType.Sum) {
+                    allProductTypes.UnionWith(((SumType)t.Returns).Types.Where(tt => tt.ImplementationType == KindOfType.Product).Cast<ProductType>());
+                }
+            }
+
+            HashSet<SumType> allSumTypes = new HashSet<SumType>(resolvedTypes.Result.Where(t => t.Returns.ImplementationType == KindOfType.Sum).Select(t => t.Returns).Cast<SumType>());
+
+            var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt), pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)))).ToList();
+            foreach (var sum in allSumTypes) {
+                foreach (var entry in sum.Types) {
+                    ctorCalls.Add(new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", entry)), new CtorCall(sum)));
+                }
+            }
+
+            var enumAccesses = resolvedTypes.Result.Where(tt => tt.Returns.ImplementationType == KindOfType.Enum).Select(tt => tt.Returns).Cast<EnumType>().SelectMany(tt => tt.Values.Select(v => new ReductionDeclaration(v, new Function(tt, new Block(new[] { new EnumValueAccessExpression(tt.SingleValueTypeFor(v), null) }))))).ToList();
+
+
+            // And now Phase 3 - Statement parsing based on syntax.
+            var lookup = new Dictionary<Function, Function>();
+            var bad = new List<IncomprehensibleStatementError>();
+            var ambiguous = new List<AmbiguousStatementError>();
+            resolvedFunctions = new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(BuiltinFunctions.All).Concat(enumAccesses));
+            resolvedFunctions = FanOutFunctionsWithSumTypes(resolvedFunctions.Result);
+            if (!resolvedFunctions.Success) { return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error); }
+
+            foreach (var fn in resolvedFunctions.Result) {
+                TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
+                if (partialFunction != null) {
+                    var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
+                        .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
+                        .Concat(partialFunction.Scope != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, partialFunction.Scope.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
+                        .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f => new FunctionInvocation(f)))
+                        .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }));
+
+                    Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
+
+                    lookup.Add(partialFunction, newb);
+                }
+            }
+
+            if (bad.Any() || ambiguous.Any()) {
+                return new ResultOrParseError<TangentProgram>(new StatementGrokErrors(bad, ambiguous));
+            }
+
+            // 3a - Replace TypeResolvedFunctions with fully resolved ones.
+            var workset = new HashSet<Expression>();
+            foreach (var fn in lookup.Values) {
+                fn.ReplaceTypeResolvedFunctions(lookup, workset);
+            }
+
+            return new TangentProgram(resolvedTypes.Result, resolvedFunctions.Result.Select(fn =>
+            {
+                if (fn.Returns is TypeResolvedFunction) {
+                    return new ReductionDeclaration(fn.Takes, lookup[fn.Returns], fn.GenericParameters);
+                } else {
+                    return fn;
+                }
+            }).ToList(), inputSources);
+        }
+
         private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens)
         {
             if (!tokens.Any()) {

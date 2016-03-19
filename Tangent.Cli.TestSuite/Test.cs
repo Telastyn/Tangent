@@ -35,6 +35,29 @@ namespace Tangent.Cli.TestSuite
             return DebugProgramFile(path);
         }
 
+        public static string DebugProgramFileViaGrammar(string path)
+        {
+            // Copy Pastey from Cli.Program
+            var tokenization = Tokenize.ProgramFile(File.ReadAllText(path), path);
+            var intermediateProgram = Parse.TangentProgramViaGrammar(tokenization);
+            if (!intermediateProgram.Success) {
+                Assert.Fail(string.Format("Errors during compilation: {0}", intermediateProgram.Error));
+            }
+
+            var compiler = new CilCompiler();
+            compiler.Compile(intermediateProgram.Result, Path.GetFileNameWithoutExtension(path));
+
+            var discard = TimeSpan.Zero;
+            return RunCompiledProgram(Path.GetFileNameWithoutExtension(path) + ".exe", out discard);
+        }
+
+        public static string DebugProgramFileViaGrammar(string path, out TimeSpan compileDuration, out TimeSpan programDuration)
+        {
+            compileDuration = TimeSpan.Zero;
+            programDuration = TimeSpan.Zero;
+            return DebugProgramFileViaGrammar(path);
+        }
+
         public static string ProgramFile(string path)
         {
             var discard = TimeSpan.Zero;

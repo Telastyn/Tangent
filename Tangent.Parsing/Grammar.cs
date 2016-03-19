@@ -31,7 +31,7 @@ namespace Tangent.Parsing
             Parser.Combine(
                 new StringLiteralParser("enum"),
                 LiteralParser.OpenCurly,
-                Parser.Delimited(Comma, Parser.Difference(ID, Comma).OneOrMore),
+                Parser.Delimited(Comma, Parser.Difference(ID, Comma).OneOrMore, requiresOne: false, optionalTrailingDelimiter: false),
                 LiteralParser.CloseCurly,
                 (e, o, enums, c) => (TangentType)new EnumType(enums.Select(entry => entry.First().Identifier)));
 
@@ -125,16 +125,14 @@ namespace Tangent.Parsing
                 (o, exprs, c) => (PartialElement)new BlockElement(new PartialBlock(new[] { new PartialStatement(exprs) })));
 
         public static readonly Parser<PartialStatement> Statement =
-            Parser.Combine(
-                Expr.OneOrMore,
-                LiteralParser.SemiColon,
-                (exprs, sc) => new PartialStatement(exprs));
+                Expr.OneOrMore.Select(
+                    (exprs) => new PartialStatement(exprs));
 
         // { statement* }
         public static readonly Parser<PartialBlock> BlockDecl =
             Parser.Combine(
                 LiteralParser.OpenCurly,
-                Statement.ZeroOrMore,
+                Parser.Delimited(LiteralParser.SemiColon, Statement, false, true),
                 LiteralParser.CloseCurly,
                 (o, stmts, c) => new PartialBlock(stmts));
 
@@ -162,7 +160,7 @@ namespace Tangent.Parsing
         // type-alias (| type-alias)* (;|class-decl)
         public static readonly Parser<TangentType> TypeAliasChain =
             Parser.Combine(
-                Parser.Delimited(Pipe, ID.OneOrMore),
+                Parser.Delimited(Pipe, Parser.Difference(ID, Pipe).OneOrMore, requiresOne: true, optionalTrailingDelimiter: false),
                 LiteralParser.SemiColon.Select(sc => (TangentType)null).Or(Parser.Combine(Pipe, ClassDecl, (p, cd) => cd), "Semicolon or Class Declaration"),
                 (aliases, optionalClass) => ConstructSumTypeFromAliasChain(aliases.Select(alias => new PartialTypeReference(alias, new List<PartialParameterDeclaration>())), optionalClass));
 
@@ -183,13 +181,21 @@ namespace Tangent.Parsing
 
         private static TangentType ConstructSumTypeFromAliasChain(IEnumerable<TangentType> aliases, TangentType optionalClass)
         {
-            return SumType.For(aliases.Concat(new[] { optionalClass }));
+            if (optionalClass != null) {
+                return SumType.For(aliases.Concat(new[] { optionalClass }));
+            } else {
+                return SumType.For(aliases);
+            }
         }
 
         private static TangentType ConstructProductType(IEnumerable<PartialPhrasePart> constructorBits, IEnumerable<TangentType> interfaceReferences, IEnumerable<PartialReductionDeclaration> body)
         {
             interfaceReferences = interfaceReferences ?? Enumerable.Empty<TangentType>();
-            return new PartialProductType(constructorBits, body, new List<PartialParameterDeclaration>());
+            var result =  new PartialProductType(constructorBits, body, new List<PartialParameterDeclaration>());
+            var boundFunctions = result.Functions.Select(fn => new PartialReductionDeclaration(fn.Takes, new PartialFunction(fn.Returns.EffectiveType, fn.Returns.Implementation, result))).ToList();
+            result.Functions.Clear();
+            result.Functions.AddRange(boundFunctions);
+            return result;
         }
 
         private static PartialTypeDeclaration ConstructTypeDeclaration(IEnumerable<PartialPhrasePart> typePhrase, TangentType implementation)

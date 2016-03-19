@@ -21,7 +21,7 @@ namespace Tangent.Parsing
             }
 
             consumed = 1;
-            return new ConstantElement<string>(new ConstantExpression<string>(TangentType.String, first.Value, first.SourceInfo));
+            return new ConstantElement<string>(new ConstantExpression<string>(TangentType.String, first.Value.Substring(1, first.Value.Length - 2), first.SourceInfo));
         }
     }
 }

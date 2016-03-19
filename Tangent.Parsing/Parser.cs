@@ -35,9 +35,9 @@ namespace Tangent.Parsing
             return new CombinedParser<A, B, C, D, E, T>(a, b, c, d, e, selector);
         }
 
-        public static Parser<IEnumerable<T>> Delimited<D, T>(Parser<D> delimiting, Parser<T> meaningful)
+        public static Parser<IEnumerable<T>> Delimited<D, T>(Parser<D> delimiting, Parser<T> meaningful, bool requiresOne = true, bool optionalTrailingDelimiter = false)
         {
-            return new DelimitedParser<T, D>(delimiting, meaningful);
+            return new DelimitedParser<T, D>(delimiting, meaningful, requiresOne, optionalTrailingDelimiter);
         }
 
         public static Parser<T> Difference<T, D>(Parser<T> production, Parser<D> difference)
