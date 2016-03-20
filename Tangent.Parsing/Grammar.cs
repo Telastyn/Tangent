@@ -36,7 +36,7 @@ namespace Tangent.Parsing
                 (e, o, enums, c) => (TangentType)new EnumType(enums.Select(entry => entry.First().Identifier)));
 
         // (id|lazy)+
-        public static readonly Parser<IEnumerable<Expression>> TypeExpr = ID.Or(LazyOperator, "Identifier").OneOrMore.Select(expr => expr.Select(id => (Expression)id));
+        public static readonly Parser<IEnumerable<IdentifierExpression>> TypeExpr = ID.Or(LazyOperator, "Identifier").OneOrMore;
 
         // (type-expr)
         public static readonly Parser<PartialPhrasePart> ParamParam =
@@ -44,7 +44,7 @@ namespace Tangent.Parsing
                 LiteralParser.OpenParen,
                 TypeExpr,
                 LiteralParser.CloseParen,
-                (o, expr, c) => new PartialPhrasePart(new PartialParameterDeclaration(new IdentifierExpression("", null), expr.ToList())));
+                (o, expr, c) => new PartialPhrasePart(new PartialParameterDeclaration(expr.ToList(), new List<Expression>() { new IdentifierExpression("any", null) })));
 
         // (id|param-param)+
         public static readonly Parser<IEnumerable<PartialPhrasePart>> ParamNamePart = ID.Select(id => new PartialPhrasePart(id)).Or(ParamParam, "Parameter name part").OneOrMore;
@@ -167,7 +167,7 @@ namespace Tangent.Parsing
         // type-alias (| type-alias)* (;|class-decl)
         public static readonly Parser<TangentType> TypeAliasChain =
             Parser.Combine(
-                Parser.Delimited(Pipe, Parser.Difference(ID, Pipe).OneOrMore, requiresOne: true, optionalTrailingDelimiter: false),
+                Parser.Delimited(Pipe, Parser.NotFollowedBy(Parser.Difference(ID, Pipe).OneOrMore, LiteralParser.OpenCurly, "Type Alias"), requiresOne: true, optionalTrailingDelimiter: false),
                 LiteralParser.SemiColon.Select(sc => (TangentType)null).Or(Parser.Combine(Pipe, ClassDecl, (p, cd) => cd), "Semicolon or Class Declaration"),
                 (aliases, optionalClass) => ConstructSumTypeFromAliasChain(aliases.Select(alias => new PartialTypeReference(alias, new List<PartialParameterDeclaration>())), optionalClass));
 

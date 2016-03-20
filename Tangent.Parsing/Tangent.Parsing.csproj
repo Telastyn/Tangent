@@ -56,6 +56,7 @@
     <Compile Include="Grammar.cs" />
     <Compile Include="IdentifierParser.cs" />
     <Compile Include="IntConstantParser.cs" />
+    <Compile Include="NotFollowedByParser.cs" />
     <Compile Include="OptionalParser.cs" />
     <Compile Include="Parse.cs" />
     <Compile Include="Errors\ParseError.cs" />

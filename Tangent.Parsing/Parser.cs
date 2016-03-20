@@ -49,6 +49,11 @@ namespace Tangent.Parsing
         {
             return new DelegatingParser<T>(wrapped);
         }
+
+        public static Parser<T> NotFollowedBy<T, U>(Parser<T> meaningful, Parser<U> peekToAvoid, string whenAvoidingMessage)
+        {
+            return new NotFollowedByParser<T, U>(meaningful, peekToAvoid, whenAvoidingMessage);
+        }
     }
 
     public abstract class Parser<T>
