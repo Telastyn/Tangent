@@ -53,7 +53,6 @@
     <Compile Include="Test.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestExpectations.cs" />
-    <Compile Include="TestExpectationsViaGrammar.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="adt.tan">

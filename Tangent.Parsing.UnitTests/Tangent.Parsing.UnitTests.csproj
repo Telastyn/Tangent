@@ -58,9 +58,6 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PartialStatementParseTests.cs" />
-    <Compile Include="PartialBlockParseTests.cs" />
-    <Compile Include="PartialPhraseTests.cs" />
     <Compile Include="TestIntParser.cs" />
     <Compile Include="TypeResolveTests.cs" />
     <Compile Include="EnumTests.cs" />
