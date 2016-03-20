@@ -68,5 +68,17 @@ namespace Tangent.Parsing.UnitTests
             Assert.AreEqual(0, taken);
             Assert.IsTrue(new int[] {  }.SequenceEqual(result.Result));
         }
+
+        [TestMethod]
+        public void PartialCaptureWorks()
+        {
+            var tokens = Tokenize.ProgramFile("42:2:6:", "test");
+            var parser = Parser.Delimited(LiteralParser.Colon, TestIntParser.Common);
+            int taken;
+            var result = parser.Parse(tokens, out taken);
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(5, taken);
+            Assert.IsTrue(new[] { 42, 2, 6 }.SequenceEqual(result.Result));
+        }
     }
 }

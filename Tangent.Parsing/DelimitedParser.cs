@@ -27,6 +27,7 @@ namespace Tangent.Parsing
         {
             List<T> output = new List<T>();
             consumed = 0;
+            int lastGood = 0;
             int skip = 0;
             while (true) {
                 var result = meaningfulParser.Parse(tokens, out skip);
@@ -39,10 +40,16 @@ namespace Tangent.Parsing
                         return output;
                     }
 
+                    if (output.Any()) {
+                        consumed = lastGood;
+                        return output;
+                    }
+
                     return new ResultOrParseError<IEnumerable<T>>(result.Error);
                 }
 
                 consumed += skip;
+                lastGood = consumed;
                 tokens = tokens.Skip(skip);
                 output.Add(result.Result);
 

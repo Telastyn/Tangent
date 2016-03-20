@@ -90,6 +90,13 @@ namespace Tangent.Parsing
                 ParamDecl
             ).OneOrMore;
 
+        public static readonly Parser<IEnumerable<PartialPhrasePart>> FunctionPhraseSansPipe =
+            Parser.Options("Phrase part",
+                Parser.Difference(ID.Select(id => new PartialPhrasePart(id)), Pipe),
+                thisParam,
+                ParamDecl
+            ).OneOrMore;
+
         // :< id+
         public static readonly Parser<TangentType> InlineInterfaceBinding =
             Parser.Combine(
@@ -150,7 +157,7 @@ namespace Tangent.Parsing
         // (function-phrase - |) inline-interface-bindings? { class-body }
         public static readonly Parser<TangentType> ClassDecl =
             Parser.Combine(
-                Parser.Difference(FunctionPhrase, Pipe),
+                FunctionPhraseSansPipe,
                 InlineInterfaceBinding.ZeroOrMore,
                 LiteralParser.OpenCurly,
                 ClassBody,
