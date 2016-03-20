@@ -184,6 +184,10 @@ namespace Tangent.Parsing
             if (optionalClass != null) {
                 return SumType.For(aliases.Concat(new[] { optionalClass }));
             } else {
+                if (aliases.Count() == 1) {
+                    return aliases.First();
+                }
+
                 return SumType.For(aliases);
             }
         }
@@ -191,7 +195,7 @@ namespace Tangent.Parsing
         private static TangentType ConstructProductType(IEnumerable<PartialPhrasePart> constructorBits, IEnumerable<TangentType> interfaceReferences, IEnumerable<PartialReductionDeclaration> body)
         {
             interfaceReferences = interfaceReferences ?? Enumerable.Empty<TangentType>();
-            var result =  new PartialProductType(constructorBits, body, new List<PartialParameterDeclaration>());
+            var result = new PartialProductType(constructorBits, body, new List<PartialParameterDeclaration>());
             var boundFunctions = result.Functions.Select(fn => new PartialReductionDeclaration(fn.Takes, new PartialFunction(fn.Returns.EffectiveType, fn.Returns.Implementation, result))).ToList();
             result.Functions.Clear();
             result.Functions.AddRange(boundFunctions);
