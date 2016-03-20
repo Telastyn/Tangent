@@ -162,6 +162,7 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        [Ignore]
         public void InterfaceNotEquals(){
             TimeSpan compileDuration;
             TimeSpan programDuration;
