@@ -54,15 +54,29 @@ namespace Tangent.Parsing
             Parser.Combine(
                 LiteralParser.OpenParen,
                 ID.OneOrMore,
+                Parser.Combine(LiteralParser.Colon, TypeExpr, (c, constraint) => constraint).Maybe,
                 LiteralParser.CloseParen,
-                (o, ids, c) => (Expression)new PartialTypeInferenceExpression(ids.Select(id => id.Identifier), new Expression[] { new IdentifierExpression("any", null) }, null));
+                (o, ids, constraint, c) => (Expression)new PartialTypeInferenceExpression(ids.Select(id => id.Identifier), constraint ?? (IEnumerable<Expression>)new Expression[] { new IdentifierExpression("any", null) }, LineColumnRange.CombineAll(ids.Select(id => id.SourceInfo))));
 
         // (id|lazy|param-inference-placeholder)+
-        public static readonly Parser<IEnumerable<Expression>> ParamTypePart =
+        public static readonly Parser<IEnumerable<Expression>> SimpleParamType =
             Parser.Options("Parameter type part",
                 ID.Select(id => (Expression)id),
                 LazyOperator.Select(id => (Expression)id),
                 ParamInferencePlaceholder).OneOrMore;
+
+        // id+:type-expr
+        public static readonly Parser<IEnumerable<Expression>> ConstrainedGenericParamType =
+            Parser.Combine(
+                ID.OneOrMore,
+                LiteralParser.Colon,
+                TypeExpr,
+                (generic, c, constraint) => (IEnumerable<Expression>)new Expression[] { new PartialTypeInferenceExpression(generic.Select(g => g.Identifier), constraint, LineColumnRange.CombineAll(generic.Select(g => g.SourceInfo))) });
+
+        public static readonly Parser<IEnumerable<Expression>> ParamType =
+            Parser.Options("Parameter type",
+                ConstrainedGenericParamType,
+                SimpleParamType);
 
         // ( name : type )
         public static readonly Parser<PartialPhrasePart> ParamDecl =
@@ -70,7 +84,7 @@ namespace Tangent.Parsing
                 LiteralParser.OpenParen,
                 ParamNamePart,
                 LiteralParser.Colon,
-                ParamTypePart,
+                ParamType,
                 LiteralParser.CloseParen,
                 (o, name, c, type, e) => new PartialPhrasePart(new PartialParameterDeclaration(name, type.ToList())));
 
