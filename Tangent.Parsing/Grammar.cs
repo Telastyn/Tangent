@@ -14,6 +14,7 @@ namespace Tangent.Parsing
         private static readonly Parser<string> Pipe = new StringLiteralParser("|");
         private static readonly Parser<string> Comma = new StringLiteralParser(",");
         private static readonly Parser<IdentifierExpression> LazyOperator = LiteralParser.LazyOperator.Select(x => new IdentifierExpression("~>", null));
+        private static readonly Parser<string> Interface = new StringLiteralParser("interface");
         public static readonly Parser<ConstantElement<string>> StringConstant = new StringConstantParser();
         public static readonly Parser<ConstantElement<int>> IntConstant = new IntConstantParser();
 
@@ -185,11 +186,28 @@ namespace Tangent.Parsing
                 LiteralParser.SemiColon.Select(sc => (TangentType)null).Or(Parser.Combine(Pipe, ClassDecl, (p, cd) => cd), "Semicolon or Class Declaration"),
                 (aliases, optionalClass) => ConstructSumTypeFromAliasChain(aliases.Select(alias => new PartialTypeReference(alias, new List<PartialParameterDeclaration>())), optionalClass));
 
+        // function-phrase => type-expr ;
+        public static readonly Parser<PartialReductionDeclaration> InterfaceFunctionSignature =
+            Parser.Combine(
+                FunctionPhrase,
+                LiteralParser.FunctionArrow,
+                TypeExpr,
+                LiteralParser.SemiColon,
+                (phrase, op, type, sc) => new PartialReductionDeclaration(phrase, new PartialFunction(type, null, null)));
+
+        // interface { interface-function-signature* }
+        public static readonly Parser<TangentType> InterfaceDecl =
+            Parser.Combine(
+                Interface,
+                LiteralParser.OpenCurly,
+                InterfaceFunctionSignature.ZeroOrMore,
+                LiteralParser.CloseCurly,
+                (i, o, sigs, c) => (TangentType)new PartialInterface(sigs, new List<PartialParameterDeclaration>()));
 
         public static readonly Parser<TangentType> TypeImpl =
             Parser.Options("Type Implementation",
                 EnumImpl,
-            //  InterfaceDecl,
+                InterfaceDecl,
                 TypeAliasChain,
                 ClassDecl);
 
