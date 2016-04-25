@@ -14,7 +14,6 @@ namespace Tangent.Cli.TestSuite
     {
         public static string DebugProgramFile(string path)
         {
-            //
             // Copy Pastey from Cli.Program
             var tokenization = Tokenize.ProgramFile(File.ReadAllText(path), path);
             var intermediateProgram = Parse.TangentProgram(tokenization);

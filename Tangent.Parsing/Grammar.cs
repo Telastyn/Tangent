@@ -182,7 +182,7 @@ namespace Tangent.Parsing
         // type-alias (| type-alias)* (;|class-decl)
         public static readonly Parser<TangentType> TypeAliasChain =
             Parser.Combine(
-                Parser.Delimited(Pipe, Parser.NotFollowedBy(Parser.Difference(ID, Pipe).OneOrMore, LiteralParser.OpenCurly, "Type Alias"), requiresOne: true, optionalTrailingDelimiter: false),
+                Parser.Delimited(Pipe, Parser.NotFollowedBy(Parser.Difference(ID, Pipe).OneOrMore, LiteralParser.OpenCurly.Or(LiteralParser.InterfaceBindingOperator, "class start"), "Type Alias"), requiresOne: true, optionalTrailingDelimiter: false),
                 LiteralParser.SemiColon.Select(sc => (TangentType)null).Or(Parser.Combine(Pipe, ClassDecl, (p, cd) => cd), "Semicolon or Class Declaration"),
                 (aliases, optionalClass) => ConstructSumTypeFromAliasChain(aliases.Select(alias => new PartialTypeReference(alias, new List<PartialParameterDeclaration>())), optionalClass));
 
