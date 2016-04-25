@@ -195,12 +195,12 @@ namespace Tangent.Parsing
                 LiteralParser.SemiColon,
                 (phrase, op, type, sc) => new PartialReductionDeclaration(phrase, new PartialFunction(type, null, null)));
 
-        // interface { interface-function-signature* }
+        // interface { interface-function-signature+ }
         public static readonly Parser<TangentType> InterfaceDecl =
             Parser.Combine(
                 Interface,
                 LiteralParser.OpenCurly,
-                InterfaceFunctionSignature.ZeroOrMore,
+                InterfaceFunctionSignature.OneOrMore,
                 LiteralParser.CloseCurly,
                 (i, o, sigs, c) => (TangentType)new PartialInterface(sigs, new List<PartialParameterDeclaration>()));
 

@@ -19,8 +19,7 @@ namespace Tangent.Parsing.UnitTests
             int takes;
             var result = Grammar.InterfaceDecl.Parse(test, out takes);
 
-            Assert.IsTrue(result.Success);
-            Assert.AreEqual(3, takes);
+            Assert.IsFalse(result.Success);
         }
 
         [TestMethod]
