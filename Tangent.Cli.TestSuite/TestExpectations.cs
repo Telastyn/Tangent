@@ -162,6 +162,24 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void ToStringFunctionInterface() {
+            TimeSpan compileDuration;
+            TimeSpan programDuration;
+            var result = Test.DebugProgramFile("ToStringFunctionInterface.tan", out compileDuration, out programDuration);
+            Assert.AreEqual("moo...", result.Trim());
+            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
+        }
+
+        [TestMethod]
+        public void ToStringFunctionInterfacePassing() {
+            TimeSpan compileDuration;
+            TimeSpan programDuration;
+            var result = Test.DebugProgramFile("ToStringFunctionInterfacePassing.tan", out compileDuration, out programDuration);
+            Assert.AreEqual("moo...", result.Trim());
+            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
+        }
+
+        [TestMethod]
         [Ignore]
         public void InterfaceNotEquals(){
             TimeSpan compileDuration;

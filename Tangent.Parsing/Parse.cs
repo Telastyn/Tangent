@@ -108,7 +108,7 @@ namespace Tangent.Parsing
                 if (partialFunction != null) {
                     var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
                         .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
-                        .Concat(partialFunction.Scope != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, partialFunction.Scope.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
+                        .Concat((partialFunction.Scope as ProductType) != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, (partialFunction.Scope as ProductType).DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
                         .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f => new FunctionInvocation(f)))
                         .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }));
 
@@ -245,6 +245,10 @@ namespace Tangent.Parsing
                 case KindOfType.Placeholder:
                     if (tt is PartialProductType) {
                         return ((PartialProductType)tt).Functions;
+                    }
+
+                    if(tt is PartialInterface) {
+                        return ((PartialInterface)tt).Functions;
                     }
 
                     return Enumerable.Empty<PartialReductionDeclaration>();

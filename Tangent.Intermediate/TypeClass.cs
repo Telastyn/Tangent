@@ -11,11 +11,11 @@ namespace Tangent.Intermediate
         public readonly IEnumerable<ReductionDeclaration> RequiredFunctions;
         public readonly ParameterDeclaration ThisBindingInRequiredFunctions;
 
-        public TypeClass(ParameterDeclaration thisBinding, IEnumerable<ReductionDeclaration> components)
+        public TypeClass(IEnumerable<ReductionDeclaration> components)
             : base(KindOfType.TypeClass)
         {
             RequiredFunctions = new List<ReductionDeclaration>(components);
-            ThisBindingInRequiredFunctions = thisBinding;
+            ThisBindingInRequiredFunctions = new ParameterDeclaration("this", this);
         }
 
         public bool IsSatisfiedBy(TangentType target, Func<ParameterDeclaration, TangentType> genericBindings, IEnumerable<ReductionDeclaration> functionPool)
