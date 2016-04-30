@@ -197,16 +197,26 @@ namespace Tangent.Parsing {
 
             foreach (var part in partialFunction.Takes) {
                 if (!part.IsIdentifier && part.Parameter.IsThisParam) {
-                    if (thisFound) { // TODO: nicer error.
-                        throw new ApplicationException("Multiple this parameters declared in function.");
-                    }
 
                     if (scope is TypeClass) {
-                        throw new NotImplementedException();
+                        var thisGeneric = (scope as TypeClass).ThisBindingInRequiredFunctions;
+                        // first this, generic inference.
+                        // Other thises, generic reference.
+                        if (!thisFound) {
+                            genericFnParams = genericFnParams.Concat(new[] { thisGeneric });
+                            phrase.Add(new PhrasePart(new ParameterDeclaration("this", GenericInferencePlaceholder.For(thisGeneric))));
+                        }else {
+                            phrase.Add(new PhrasePart(new ParameterDeclaration("this", GenericArgumentReferenceType.For(thisGeneric))));
+                        }
                     } else {
+                        if (thisFound) { // TODO: nicer error.
+                            throw new ApplicationException("Multiple this parameters declared in function.");
+                        }
+
                         phrase.Add(new PhrasePart(new ParameterDeclaration("this", scope)));
-                        thisFound = true;
                     }
+
+                    thisFound = true;
                 } else {
                     var resolved = Resolve(FixInferences(part, inferredTypes.Result), types);
                     if (resolved.Success) {

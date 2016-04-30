@@ -140,9 +140,14 @@ namespace Tangent.Parsing
 
         private static Function BuildBlock(TransformationScope scope, TangentType effectiveType, PartialBlock partialBlock, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
         {
-            var block = BuildBlock(scope, effectiveType, partialBlock.Statements, bad, ambiguous);
+            if (partialBlock != null) {
+                var block = BuildBlock(scope, effectiveType, partialBlock.Statements, bad, ambiguous);
 
-            return new Function(effectiveType, block);
+                return new Function(effectiveType, block);
+            }
+
+            // else, assume interface function.
+            return new Function(effectiveType, null);
         }
 
         private static Block BuildBlock(TransformationScope scope, TangentType effectiveType, IEnumerable<PartialStatement> elements, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)

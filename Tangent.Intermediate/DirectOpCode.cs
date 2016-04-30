@@ -5,14 +5,11 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Tangent.Intermediate
-{
-    public class DirectOpCode:Function
-    {
+namespace Tangent.Intermediate {
+    public class DirectOpCode : Function {
         public readonly OpCode OpCode;
         internal DirectOpCode(OpCode code, TangentType type)
-            : base(type, null)
-        {
+            : base(type, null) {
             this.OpCode = code;
         }
     }
