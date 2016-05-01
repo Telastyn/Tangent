@@ -8,16 +8,13 @@ using Tangent.Parsing.Partial;
 using Tangent.Parsing.TypeResolved;
 using Tangent.Tokenization;
 
-namespace Tangent.Parsing
-{
-    public static class Parse
-    {
-        public static ResultOrParseError<TangentProgram> TangentProgram(IEnumerable<Token> tokens)
-        {
+namespace Tangent.Parsing {
+    public static class Parse {
+        public static ResultOrParseError<TangentProgram> TangentProgram(IEnumerable<Token> tokens) {
             return TangentProgram(new List<Token>(tokens));
         }
-        private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens)
-        {
+
+        private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens) {
             if (!tokens.Any()) {
                 return new TangentProgram(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>(), Enumerable.Empty<string>());
             }
@@ -25,6 +22,7 @@ namespace Tangent.Parsing
             List<string> inputSources = tokens.Select(t => t.SourceInfo.Label).Distinct().ToList();
             List<PartialTypeDeclaration> partialTypes = new List<PartialTypeDeclaration>();
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
+            List<Tuple<TangentType, TangentType>> interfaceToImplementerBindings = new List<Tuple<TangentType, TangentType>>();
 
             while (tokens.Any()) {
                 int typeTake;
@@ -64,9 +62,15 @@ namespace Tangent.Parsing
 
             // Move to Phase 2 - Resolve types in parameters and function return types.
             Dictionary<TangentType, TangentType> conversions;
-            var resolvedTypes = TypeResolve.AllTypePlaceholders(types, genericArgumentMapping, out conversions);
+            var resolvedTypes = TypeResolve.AllTypePlaceholders(types, genericArgumentMapping, interfaceToImplementerBindings, out conversions);
             if (!resolvedTypes.Success) {
                 return new ResultOrParseError<Intermediate.TangentProgram>(resolvedTypes.Error);
+            }
+
+            // for now, convert interfaces to the sum type they represent.
+            foreach (var td in resolvedTypes.Result.Where(td => td.Returns is TypeClass)) {
+                var components = interfaceToImplementerBindings.Where(itoi => itoi.Item1 == td.Returns).Select(itoi => itoi.Item2).ToList();
+                td.Returns = SumType.For(components);
             }
 
             var resolvedFunctions = TypeResolve.AllPartialFunctionDeclarations(partialFunctions, resolvedTypes.Result, conversions);
@@ -106,15 +110,19 @@ namespace Tangent.Parsing
             foreach (var fn in resolvedFunctions.Result) {
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
                 if (partialFunction != null) {
-                    var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
-                        .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
-                        .Concat((partialFunction.Scope as ProductType) != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, (partialFunction.Scope as ProductType).DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
-                        .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f => new FunctionInvocation(f)))
-                        .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }));
+                    if (partialFunction.Scope is TypeClass) {
+                        lookup.Add(partialFunction, new InterfaceFunction(partialFunction.Scope as TypeClass));
+                    } else {
+                        var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
+                            .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
+                            .Concat((partialFunction.Scope as ProductType) != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, (partialFunction.Scope as ProductType).DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
+                            .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f => new FunctionInvocation(f)))
+                            .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }));
 
-                    Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
+                        Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
 
-                    lookup.Add(partialFunction, newb);
+                        lookup.Add(partialFunction, newb);
+                    }
                 }
             }
 
@@ -128,30 +136,28 @@ namespace Tangent.Parsing
                 fn.ReplaceTypeResolvedFunctions(lookup, workset);
             }
 
-            return new TangentProgram(resolvedTypes.Result, resolvedFunctions.Result.Select(fn =>
-            {
+            return new TangentProgram(resolvedTypes.Result, resolvedFunctions.Result.Select(fn => {
                 if (fn.Returns is TypeResolvedFunction) {
-                    return new ReductionDeclaration(fn.Takes, lookup[fn.Returns], fn.GenericParameters);
+                    var trf = fn.Returns as TypeResolvedFunction;
+                    if (trf.Scope is TypeClass) {
+                        return new ReductionDeclaration(fn.Takes, new InterfaceFunction(trf.Scope as TypeClass), fn.GenericParameters);
+                    } else {
+                        return new ReductionDeclaration(fn.Takes, lookup[fn.Returns], fn.GenericParameters);
+                    }
+
                 } else {
                     return fn;
                 }
             }).ToList(), inputSources);
         }
 
-        private static Function BuildBlock(TransformationScope scope, TangentType effectiveType, PartialBlock partialBlock, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
-        {
-            if (partialBlock != null) {
-                var block = BuildBlock(scope, effectiveType, partialBlock.Statements, bad, ambiguous);
+        private static Function BuildBlock(TransformationScope scope, TangentType effectiveType, PartialBlock partialBlock, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous) {
+            var block = BuildBlock(scope, effectiveType, partialBlock.Statements, bad, ambiguous);
 
-                return new Function(effectiveType, block);
-            }
-
-            // else, assume interface function.
-            return new Function(effectiveType, null);
+            return new Function(effectiveType, block);
         }
 
-        private static Block BuildBlock(TransformationScope scope, TangentType effectiveType, IEnumerable<PartialStatement> elements, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
-        {
+        private static Block BuildBlock(TransformationScope scope, TangentType effectiveType, IEnumerable<PartialStatement> elements, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous) {
             List<Expression> statements = new List<Expression>();
             if (!elements.Any()) {
                 if (effectiveType != TangentType.Void) { bad.Add(new IncomprehensibleStatementError(Enumerable.Empty<Expression>())); }
@@ -175,8 +181,7 @@ namespace Tangent.Parsing
             return new Block(statements);
         }
 
-        private static Expression ElementToExpression(TransformationScope scope, PartialElement element, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
-        {
+        private static Expression ElementToExpression(TransformationScope scope, PartialElement element, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous) {
             switch (element.Type) {
                 case ElementType.Identifier:
                     return new IdentifierExpression(((IdentifierElement)element).Identifier, element.SourceInfo);
@@ -193,8 +198,7 @@ namespace Tangent.Parsing
                     return ((ConstantElement)element).TypelessExpression;
                 case ElementType.Lambda:
                     var concrete = (LambdaElement)element;
-                    return new PartialLambdaExpression(concrete.Takes.Select(vde => VarDeclToParameterDeclaration(scope, vde, bad, ambiguous)).ToList(), scope, (newScope, returnType) =>
-                    {
+                    return new PartialLambdaExpression(concrete.Takes.Select(vde => VarDeclToParameterDeclaration(scope, vde, bad, ambiguous)).ToList(), scope, (newScope, returnType) => {
                         var errors = new List<IncomprehensibleStatementError>();
                         var ambiguities = new List<AmbiguousStatementError>();
                         var implementation = BuildBlock(newScope, returnType, concrete.Body.Block, errors, ambiguities);
@@ -214,8 +218,7 @@ namespace Tangent.Parsing
             }
         }
 
-        private static ParameterDeclaration VarDeclToParameterDeclaration(TransformationScope scope, VarDeclElement vde, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous)
-        {
+        private static ParameterDeclaration VarDeclToParameterDeclaration(TransformationScope scope, VarDeclElement vde, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous) {
             if (!vde.ParameterDeclaration.Takes.All(ppp => ppp.IsIdentifier)) {
                 throw new NotImplementedException("Parameterized variable declarations not currently supported.");
             }
@@ -231,8 +234,7 @@ namespace Tangent.Parsing
         }
 
 
-        private static IEnumerable<PartialReductionDeclaration> ExtractPartialFunctions(TangentType tt, HashSet<TangentType> searched = null)
-        {
+        private static IEnumerable<PartialReductionDeclaration> ExtractPartialFunctions(TangentType tt, HashSet<TangentType> searched = null) {
             searched = searched ?? new HashSet<TangentType>();
             switch (tt.ImplementationType) {
                 case KindOfType.Sum:
@@ -252,7 +254,7 @@ namespace Tangent.Parsing
                         return ((PartialProductType)tt).Functions;
                     }
 
-                    if(tt is PartialInterface) {
+                    if (tt is PartialInterface) {
                         return ((PartialInterface)tt).Functions;
                     }
 
@@ -263,14 +265,12 @@ namespace Tangent.Parsing
         }
 
 
-        private static ResultOrParseError<IEnumerable<ReductionDeclaration>> FanOutFunctionsWithSumTypes(IEnumerable<ReductionDeclaration> resolvedFunctions)
-        {
+        private static ResultOrParseError<IEnumerable<ReductionDeclaration>> FanOutFunctionsWithSumTypes(IEnumerable<ReductionDeclaration> resolvedFunctions) {
             List<ReductionDeclaration> result = new List<ReductionDeclaration>(resolvedFunctions);
             for (int ix = 0; ix < result.Count; ++ix) {
                 var entry = result[ix];
 
-                List<List<PhrasePart>> parts = entry.Takes.Select(pp =>
-                {
+                List<List<PhrasePart>> parts = entry.Takes.Select(pp => {
                     if (!pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.Sum) {
                         return ((SumType)pp.Parameter.Returns).Types.Select(tt => new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, tt))).ToList();
                     } else if (!pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.BoundGeneric) {

@@ -102,7 +102,7 @@ namespace Tangent.CilGeneration
 
             // And generic references should now resolve properly. I think.
             var variantTypes = sumType.Types.Select(tt => lookup(tt, true)).OrderBy(t => t.Name).ToArray();
-            var variantContainer = typeof(Variant<,>).Module.GetTypes().FirstOrDefault(t => t.Name.StartsWith("Variant`" + variantTypes.Length));
+            var variantContainer = typeof(Variant<,>).Module.GetTypes().FirstOrDefault(t => t.Name == "Variant`" + variantTypes.Length);
             if (variantContainer == null) {
                 throw new ApplicationException("Error finding runtime variant type of size " + variantTypes.Length);
             }

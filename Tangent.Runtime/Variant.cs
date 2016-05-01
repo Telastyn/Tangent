@@ -2,6 +2,43 @@ using System;
 
 namespace Tangent.Runtime {
 
+    public class Variant<A> {
+        public readonly object Value;
+        public readonly int Mode;
+
+        public Variant(A value) {
+            Value = value;
+            Mode = 1;
+        }
+
+        private A Value1
+        {
+            get
+            {
+                return (A)Value;
+            }
+        }
+
+        public void Process(Action<A> forA) {
+            switch (Mode) {
+                case 1:
+                    forA(Value1);
+                    return;
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        public TReturn Process<TReturn>(Func<A, TReturn> forA) {
+            switch (Mode) {
+                case 1:
+                    return forA(Value1);
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+    }
+
     public class Variant<A, B> {
         public readonly object Value;
         public readonly int Mode;
@@ -16,20 +53,24 @@ namespace Tangent.Runtime {
             Mode = 2;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -42,7 +83,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -72,26 +113,32 @@ namespace Tangent.Runtime {
             Mode = 3;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -107,7 +154,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -144,32 +191,40 @@ namespace Tangent.Runtime {
             Mode = 4;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -188,7 +243,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -232,38 +287,48 @@ namespace Tangent.Runtime {
             Mode = 5;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -285,7 +350,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -336,44 +401,56 @@ namespace Tangent.Runtime {
             Mode = 6;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -398,7 +475,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -456,50 +533,64 @@ namespace Tangent.Runtime {
             Mode = 7;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -527,7 +618,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -592,56 +683,72 @@ namespace Tangent.Runtime {
             Mode = 8;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -672,7 +779,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -744,62 +851,80 @@ namespace Tangent.Runtime {
             Mode = 9;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -833,7 +958,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -912,68 +1037,88 @@ namespace Tangent.Runtime {
             Mode = 10;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -1010,7 +1155,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -1096,74 +1241,96 @@ namespace Tangent.Runtime {
             Mode = 11;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -1203,7 +1370,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -1296,80 +1463,104 @@ namespace Tangent.Runtime {
             Mode = 12;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -1412,7 +1603,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -1512,86 +1703,112 @@ namespace Tangent.Runtime {
             Mode = 13;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
-        private M Value13 {
-            get {
+        private M Value13
+        {
+            get
+            {
                 return (M)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL, Action<M> forM) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -1637,7 +1854,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL, Func<M, TReturn> forM) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -1744,92 +1961,120 @@ namespace Tangent.Runtime {
             Mode = 14;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
-        private M Value13 {
-            get {
+        private M Value13
+        {
+            get
+            {
                 return (M)Value;
             }
         }
 
-        private N Value14 {
-            get {
+        private N Value14
+        {
+            get
+            {
                 return (N)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL, Action<M> forM, Action<N> forN) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -1878,7 +2123,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL, Func<M, TReturn> forM, Func<N, TReturn> forN) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -1992,98 +2237,128 @@ namespace Tangent.Runtime {
             Mode = 15;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
-        private M Value13 {
-            get {
+        private M Value13
+        {
+            get
+            {
                 return (M)Value;
             }
         }
 
-        private N Value14 {
-            get {
+        private N Value14
+        {
+            get
+            {
                 return (N)Value;
             }
         }
 
-        private O Value15 {
-            get {
+        private O Value15
+        {
+            get
+            {
                 return (O)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL, Action<M> forM, Action<N> forN, Action<O> forO) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -2135,7 +2410,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL, Func<M, TReturn> forM, Func<N, TReturn> forN, Func<O, TReturn> forO) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -2256,104 +2531,136 @@ namespace Tangent.Runtime {
             Mode = 16;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
-        private M Value13 {
-            get {
+        private M Value13
+        {
+            get
+            {
                 return (M)Value;
             }
         }
 
-        private N Value14 {
-            get {
+        private N Value14
+        {
+            get
+            {
                 return (N)Value;
             }
         }
 
-        private O Value15 {
-            get {
+        private O Value15
+        {
+            get
+            {
                 return (O)Value;
             }
         }
 
-        private P Value16 {
-            get {
+        private P Value16
+        {
+            get
+            {
                 return (P)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL, Action<M> forM, Action<N> forN, Action<O> forO, Action<P> forP) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -2408,7 +2715,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL, Func<M, TReturn> forM, Func<N, TReturn> forN, Func<O, TReturn> forO, Func<P, TReturn> forP) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -2536,110 +2843,144 @@ namespace Tangent.Runtime {
             Mode = 17;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
-        private M Value13 {
-            get {
+        private M Value13
+        {
+            get
+            {
                 return (M)Value;
             }
         }
 
-        private N Value14 {
-            get {
+        private N Value14
+        {
+            get
+            {
                 return (N)Value;
             }
         }
 
-        private O Value15 {
-            get {
+        private O Value15
+        {
+            get
+            {
                 return (O)Value;
             }
         }
 
-        private P Value16 {
-            get {
+        private P Value16
+        {
+            get
+            {
                 return (P)Value;
             }
         }
 
-        private Q Value17 {
-            get {
+        private Q Value17
+        {
+            get
+            {
                 return (Q)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL, Action<M> forM, Action<N> forN, Action<O> forO, Action<P> forP, Action<Q> forQ) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -2697,7 +3038,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL, Func<M, TReturn> forM, Func<N, TReturn> forN, Func<O, TReturn> forO, Func<P, TReturn> forP, Func<Q, TReturn> forQ) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -2832,116 +3173,152 @@ namespace Tangent.Runtime {
             Mode = 18;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
-        private M Value13 {
-            get {
+        private M Value13
+        {
+            get
+            {
                 return (M)Value;
             }
         }
 
-        private N Value14 {
-            get {
+        private N Value14
+        {
+            get
+            {
                 return (N)Value;
             }
         }
 
-        private O Value15 {
-            get {
+        private O Value15
+        {
+            get
+            {
                 return (O)Value;
             }
         }
 
-        private P Value16 {
-            get {
+        private P Value16
+        {
+            get
+            {
                 return (P)Value;
             }
         }
 
-        private Q Value17 {
-            get {
+        private Q Value17
+        {
+            get
+            {
                 return (Q)Value;
             }
         }
 
-        private R Value18 {
-            get {
+        private R Value18
+        {
+            get
+            {
                 return (R)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL, Action<M> forM, Action<N> forN, Action<O> forO, Action<P> forP, Action<Q> forQ, Action<R> forR) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -3002,7 +3379,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL, Func<M, TReturn> forM, Func<N, TReturn> forN, Func<O, TReturn> forO, Func<P, TReturn> forP, Func<Q, TReturn> forQ, Func<R, TReturn> forR) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -3144,122 +3521,160 @@ namespace Tangent.Runtime {
             Mode = 19;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
-        private M Value13 {
-            get {
+        private M Value13
+        {
+            get
+            {
                 return (M)Value;
             }
         }
 
-        private N Value14 {
-            get {
+        private N Value14
+        {
+            get
+            {
                 return (N)Value;
             }
         }
 
-        private O Value15 {
-            get {
+        private O Value15
+        {
+            get
+            {
                 return (O)Value;
             }
         }
 
-        private P Value16 {
-            get {
+        private P Value16
+        {
+            get
+            {
                 return (P)Value;
             }
         }
 
-        private Q Value17 {
-            get {
+        private Q Value17
+        {
+            get
+            {
                 return (Q)Value;
             }
         }
 
-        private R Value18 {
-            get {
+        private R Value18
+        {
+            get
+            {
                 return (R)Value;
             }
         }
 
-        private S Value19 {
-            get {
+        private S Value19
+        {
+            get
+            {
                 return (S)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL, Action<M> forM, Action<N> forN, Action<O> forO, Action<P> forP, Action<Q> forQ, Action<R> forR, Action<S> forS) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -3323,7 +3738,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL, Func<M, TReturn> forM, Func<N, TReturn> forN, Func<O, TReturn> forO, Func<P, TReturn> forP, Func<Q, TReturn> forQ, Func<R, TReturn> forR, Func<S, TReturn> forS) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -3472,128 +3887,168 @@ namespace Tangent.Runtime {
             Mode = 20;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
-        private M Value13 {
-            get {
+        private M Value13
+        {
+            get
+            {
                 return (M)Value;
             }
         }
 
-        private N Value14 {
-            get {
+        private N Value14
+        {
+            get
+            {
                 return (N)Value;
             }
         }
 
-        private O Value15 {
-            get {
+        private O Value15
+        {
+            get
+            {
                 return (O)Value;
             }
         }
 
-        private P Value16 {
-            get {
+        private P Value16
+        {
+            get
+            {
                 return (P)Value;
             }
         }
 
-        private Q Value17 {
-            get {
+        private Q Value17
+        {
+            get
+            {
                 return (Q)Value;
             }
         }
 
-        private R Value18 {
-            get {
+        private R Value18
+        {
+            get
+            {
                 return (R)Value;
             }
         }
 
-        private S Value19 {
-            get {
+        private S Value19
+        {
+            get
+            {
                 return (S)Value;
             }
         }
 
-        private T Value20 {
-            get {
+        private T Value20
+        {
+            get
+            {
                 return (T)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL, Action<M> forM, Action<N> forN, Action<O> forO, Action<P> forP, Action<Q> forQ, Action<R> forR, Action<S> forS, Action<T> forT) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -3660,7 +4115,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL, Func<M, TReturn> forM, Func<N, TReturn> forN, Func<O, TReturn> forO, Func<P, TReturn> forP, Func<Q, TReturn> forQ, Func<R, TReturn> forR, Func<S, TReturn> forS, Func<T, TReturn> forT) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -3816,134 +4271,176 @@ namespace Tangent.Runtime {
             Mode = 21;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
-        private M Value13 {
-            get {
+        private M Value13
+        {
+            get
+            {
                 return (M)Value;
             }
         }
 
-        private N Value14 {
-            get {
+        private N Value14
+        {
+            get
+            {
                 return (N)Value;
             }
         }
 
-        private O Value15 {
-            get {
+        private O Value15
+        {
+            get
+            {
                 return (O)Value;
             }
         }
 
-        private P Value16 {
-            get {
+        private P Value16
+        {
+            get
+            {
                 return (P)Value;
             }
         }
 
-        private Q Value17 {
-            get {
+        private Q Value17
+        {
+            get
+            {
                 return (Q)Value;
             }
         }
 
-        private R Value18 {
-            get {
+        private R Value18
+        {
+            get
+            {
                 return (R)Value;
             }
         }
 
-        private S Value19 {
-            get {
+        private S Value19
+        {
+            get
+            {
                 return (S)Value;
             }
         }
 
-        private T Value20 {
-            get {
+        private T Value20
+        {
+            get
+            {
                 return (T)Value;
             }
         }
 
-        private U Value21 {
-            get {
+        private U Value21
+        {
+            get
+            {
                 return (U)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL, Action<M> forM, Action<N> forN, Action<O> forO, Action<P> forP, Action<Q> forQ, Action<R> forR, Action<S> forS, Action<T> forT, Action<U> forU) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -4013,7 +4510,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL, Func<M, TReturn> forM, Func<N, TReturn> forN, Func<O, TReturn> forO, Func<P, TReturn> forP, Func<Q, TReturn> forQ, Func<R, TReturn> forR, Func<S, TReturn> forS, Func<T, TReturn> forT, Func<U, TReturn> forU) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -4176,140 +4673,184 @@ namespace Tangent.Runtime {
             Mode = 22;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
-        private M Value13 {
-            get {
+        private M Value13
+        {
+            get
+            {
                 return (M)Value;
             }
         }
 
-        private N Value14 {
-            get {
+        private N Value14
+        {
+            get
+            {
                 return (N)Value;
             }
         }
 
-        private O Value15 {
-            get {
+        private O Value15
+        {
+            get
+            {
                 return (O)Value;
             }
         }
 
-        private P Value16 {
-            get {
+        private P Value16
+        {
+            get
+            {
                 return (P)Value;
             }
         }
 
-        private Q Value17 {
-            get {
+        private Q Value17
+        {
+            get
+            {
                 return (Q)Value;
             }
         }
 
-        private R Value18 {
-            get {
+        private R Value18
+        {
+            get
+            {
                 return (R)Value;
             }
         }
 
-        private S Value19 {
-            get {
+        private S Value19
+        {
+            get
+            {
                 return (S)Value;
             }
         }
 
-        private T Value20 {
-            get {
+        private T Value20
+        {
+            get
+            {
                 return (T)Value;
             }
         }
 
-        private U Value21 {
-            get {
+        private U Value21
+        {
+            get
+            {
                 return (U)Value;
             }
         }
 
-        private V Value22 {
-            get {
+        private V Value22
+        {
+            get
+            {
                 return (V)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL, Action<M> forM, Action<N> forN, Action<O> forO, Action<P> forP, Action<Q> forQ, Action<R> forR, Action<S> forS, Action<T> forT, Action<U> forU, Action<V> forV) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -4382,7 +4923,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL, Func<M, TReturn> forM, Func<N, TReturn> forN, Func<O, TReturn> forO, Func<P, TReturn> forP, Func<Q, TReturn> forQ, Func<R, TReturn> forR, Func<S, TReturn> forS, Func<T, TReturn> forT, Func<U, TReturn> forU, Func<V, TReturn> forV) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -4552,146 +5093,192 @@ namespace Tangent.Runtime {
             Mode = 23;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
-        private M Value13 {
-            get {
+        private M Value13
+        {
+            get
+            {
                 return (M)Value;
             }
         }
 
-        private N Value14 {
-            get {
+        private N Value14
+        {
+            get
+            {
                 return (N)Value;
             }
         }
 
-        private O Value15 {
-            get {
+        private O Value15
+        {
+            get
+            {
                 return (O)Value;
             }
         }
 
-        private P Value16 {
-            get {
+        private P Value16
+        {
+            get
+            {
                 return (P)Value;
             }
         }
 
-        private Q Value17 {
-            get {
+        private Q Value17
+        {
+            get
+            {
                 return (Q)Value;
             }
         }
 
-        private R Value18 {
-            get {
+        private R Value18
+        {
+            get
+            {
                 return (R)Value;
             }
         }
 
-        private S Value19 {
-            get {
+        private S Value19
+        {
+            get
+            {
                 return (S)Value;
             }
         }
 
-        private T Value20 {
-            get {
+        private T Value20
+        {
+            get
+            {
                 return (T)Value;
             }
         }
 
-        private U Value21 {
-            get {
+        private U Value21
+        {
+            get
+            {
                 return (U)Value;
             }
         }
 
-        private V Value22 {
-            get {
+        private V Value22
+        {
+            get
+            {
                 return (V)Value;
             }
         }
 
-        private W Value23 {
-            get {
+        private W Value23
+        {
+            get
+            {
                 return (W)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL, Action<M> forM, Action<N> forN, Action<O> forO, Action<P> forP, Action<Q> forQ, Action<R> forR, Action<S> forS, Action<T> forT, Action<U> forU, Action<V> forV, Action<W> forW) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -4767,7 +5354,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL, Func<M, TReturn> forM, Func<N, TReturn> forN, Func<O, TReturn> forO, Func<P, TReturn> forP, Func<Q, TReturn> forQ, Func<R, TReturn> forR, Func<S, TReturn> forS, Func<T, TReturn> forT, Func<U, TReturn> forU, Func<V, TReturn> forV, Func<W, TReturn> forW) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:
@@ -4944,152 +5531,200 @@ namespace Tangent.Runtime {
             Mode = 24;
         }
 
-        private A Value1 {
-            get {
+        private A Value1
+        {
+            get
+            {
                 return (A)Value;
             }
         }
 
-        private B Value2 {
-            get {
+        private B Value2
+        {
+            get
+            {
                 return (B)Value;
             }
         }
 
-        private C Value3 {
-            get {
+        private C Value3
+        {
+            get
+            {
                 return (C)Value;
             }
         }
 
-        private D Value4 {
-            get {
+        private D Value4
+        {
+            get
+            {
                 return (D)Value;
             }
         }
 
-        private E Value5 {
-            get {
+        private E Value5
+        {
+            get
+            {
                 return (E)Value;
             }
         }
 
-        private F Value6 {
-            get {
+        private F Value6
+        {
+            get
+            {
                 return (F)Value;
             }
         }
 
-        private G Value7 {
-            get {
+        private G Value7
+        {
+            get
+            {
                 return (G)Value;
             }
         }
 
-        private H Value8 {
-            get {
+        private H Value8
+        {
+            get
+            {
                 return (H)Value;
             }
         }
 
-        private I Value9 {
-            get {
+        private I Value9
+        {
+            get
+            {
                 return (I)Value;
             }
         }
 
-        private J Value10 {
-            get {
+        private J Value10
+        {
+            get
+            {
                 return (J)Value;
             }
         }
 
-        private K Value11 {
-            get {
+        private K Value11
+        {
+            get
+            {
                 return (K)Value;
             }
         }
 
-        private L Value12 {
-            get {
+        private L Value12
+        {
+            get
+            {
                 return (L)Value;
             }
         }
 
-        private M Value13 {
-            get {
+        private M Value13
+        {
+            get
+            {
                 return (M)Value;
             }
         }
 
-        private N Value14 {
-            get {
+        private N Value14
+        {
+            get
+            {
                 return (N)Value;
             }
         }
 
-        private O Value15 {
-            get {
+        private O Value15
+        {
+            get
+            {
                 return (O)Value;
             }
         }
 
-        private P Value16 {
-            get {
+        private P Value16
+        {
+            get
+            {
                 return (P)Value;
             }
         }
 
-        private Q Value17 {
-            get {
+        private Q Value17
+        {
+            get
+            {
                 return (Q)Value;
             }
         }
 
-        private R Value18 {
-            get {
+        private R Value18
+        {
+            get
+            {
                 return (R)Value;
             }
         }
 
-        private S Value19 {
-            get {
+        private S Value19
+        {
+            get
+            {
                 return (S)Value;
             }
         }
 
-        private T Value20 {
-            get {
+        private T Value20
+        {
+            get
+            {
                 return (T)Value;
             }
         }
 
-        private U Value21 {
-            get {
+        private U Value21
+        {
+            get
+            {
                 return (U)Value;
             }
         }
 
-        private V Value22 {
-            get {
+        private V Value22
+        {
+            get
+            {
                 return (V)Value;
             }
         }
 
-        private W Value23 {
-            get {
+        private W Value23
+        {
+            get
+            {
                 return (W)Value;
             }
         }
 
-        private X Value24 {
-            get {
+        private X Value24
+        {
+            get
+            {
                 return (X)Value;
             }
         }
 
         public void Process(Action<A> forA, Action<B> forB, Action<C> forC, Action<D> forD, Action<E> forE, Action<F> forF, Action<G> forG, Action<H> forH, Action<I> forI, Action<J> forJ, Action<K> forK, Action<L> forL, Action<M> forM, Action<N> forN, Action<O> forO, Action<P> forP, Action<Q> forQ, Action<R> forR, Action<S> forS, Action<T> forT, Action<U> forU, Action<V> forV, Action<W> forW, Action<X> forX) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     forA(Value1);
                     return;
@@ -5168,7 +5803,7 @@ namespace Tangent.Runtime {
         }
 
         public TReturn Process<TReturn>(Func<A, TReturn> forA, Func<B, TReturn> forB, Func<C, TReturn> forC, Func<D, TReturn> forD, Func<E, TReturn> forE, Func<F, TReturn> forF, Func<G, TReturn> forG, Func<H, TReturn> forH, Func<I, TReturn> forI, Func<J, TReturn> forJ, Func<K, TReturn> forK, Func<L, TReturn> forL, Func<M, TReturn> forM, Func<N, TReturn> forN, Func<O, TReturn> forO, Func<P, TReturn> forP, Func<Q, TReturn> forQ, Func<R, TReturn> forR, Func<S, TReturn> forS, Func<T, TReturn> forT, Func<U, TReturn> forU, Func<V, TReturn> forV, Func<W, TReturn> forW, Func<X, TReturn> forX) {
-            switch(Mode) {
+            switch (Mode) {
                 case 1:
                     return forA(Value1);
                 case 2:

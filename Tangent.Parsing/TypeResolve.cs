@@ -102,7 +102,7 @@ namespace Tangent.Parsing {
             return results;
         }
 
-        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping, out Dictionary<TangentType, TangentType> placeholderConversions) {
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping, List<Tuple<TangentType, TangentType>> interfaceToImplementerBindings, out Dictionary<TangentType, TangentType> placeholderConversions) {
             AggregateParseError errors = new AggregateParseError(Enumerable.Empty<ParseError>());
             Dictionary<TangentType, TangentType> inNeedOfPopulation = new Dictionary<TangentType, TangentType>();
             Func<TangentType, TangentType> selector = t => t;
@@ -117,6 +117,7 @@ namespace Tangent.Parsing {
                     return newSum;
                 } else if (t is PartialProductType) {
                     var newb = new ProductType(Enumerable.Empty<PhrasePart>());
+                    interfaceToImplementerBindings.AddRange((t as PartialProductType).InterfaceReferences.Select(iface => new Tuple<TangentType, TangentType>(iface, newb)));
                     inNeedOfPopulation.Add((PartialProductType)t, newb);
                     return newb;
                 } else if (t is PartialTypeReference) {
@@ -174,7 +175,27 @@ namespace Tangent.Parsing {
             }
 
             newLookup = newLookup.Select(td => new TypeDeclaration(td.Takes, selector(td.Returns))).ToList();
-            // newLookup.Last().Takes.First().Parameter == ((newLookup.Last().Returns as SumType).Types.First() as GenericArgumentReferenceType).GenericParameter
+
+            var newBindings = new List<Tuple<TangentType, TangentType>>(interfaceToImplementerBindings.Count);
+            foreach (var entry in interfaceToImplementerBindings) {
+                var iface = entry.Item1;
+                if (entry.Item1 is PartialTypeReference) {
+                    var reference = (PartialTypeReference)entry.Item1;
+                    var resolvedType = ResolveType(reference.Identifiers, newLookup, reference.GenericArgumentPlaceholders.Select(ppd => genericArgumentMapping[ppd]));
+                    if (resolvedType.Success) {
+                        iface = resolvedType.Result;
+                    } else {
+                        errors = errors.Concat(resolvedType.Error);
+                    }
+                }
+
+                // TODO: impl?
+                newBindings.Add(new Tuple<TangentType, TangentType>(iface, entry.Item2));
+            }
+
+            interfaceToImplementerBindings.Clear();
+            interfaceToImplementerBindings.AddRange(newBindings);
+
             return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);
         }
 
@@ -202,10 +223,11 @@ namespace Tangent.Parsing {
                         var thisGeneric = (scope as TypeClass).ThisBindingInRequiredFunctions;
                         // first this, generic inference.
                         // Other thises, generic reference.
+                        // LASTWORKED: just using sum types for interfaces isn't going to work since this generic can't meaningfully get replaced.
                         if (!thisFound) {
                             genericFnParams = genericFnParams.Concat(new[] { thisGeneric });
                             phrase.Add(new PhrasePart(new ParameterDeclaration("this", GenericInferencePlaceholder.For(thisGeneric))));
-                        }else {
+                        } else {
                             phrase.Add(new PhrasePart(new ParameterDeclaration("this", GenericArgumentReferenceType.For(thisGeneric))));
                         }
                     } else {

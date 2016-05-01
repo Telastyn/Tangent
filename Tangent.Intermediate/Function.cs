@@ -12,6 +12,7 @@ namespace Tangent.Intermediate
 
         public Function(TangentType type, Block implementation)
         {
+            if(type == null) { throw new NotImplementedException(); }
             EffectiveType = type;
             Implementation = implementation;
         }

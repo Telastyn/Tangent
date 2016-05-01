@@ -5,10 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Tangent.Intermediate {
-    public class CtorCall : Function {
-        public CtorCall(BoundGenericProductType type) : base(type, null) { }
-        public CtorCall(ProductType type) : base(type, null) { }
-        public CtorCall(SumType type) : base(type, null) { }
+    public class InterfaceUpcast : Function {
+        public TypeClass TargetInterface { get { return EffectiveType as TypeClass; } }
+        public InterfaceUpcast(TypeClass targetInterface) : base(targetInterface, null) { }
         internal override void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset) {
             // nada.
         }

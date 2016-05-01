@@ -352,6 +352,12 @@ namespace Tangent.CilGeneration
                         return;
                     }
 
+                    var interfaceFn = invoke.FunctionDefinition.Returns as InterfaceFunction;
+                    if (interfaceFn != null) {
+                        gen.ThrowException(typeof(NotImplementedException));
+                        return;
+                    }
+
                     var opcode = invoke.FunctionDefinition.Returns as DirectOpCode;
                     if (opcode != null) {
                         gen.Emit(opcode.OpCode);
