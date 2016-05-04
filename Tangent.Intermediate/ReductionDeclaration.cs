@@ -116,7 +116,20 @@ namespace Tangent.Intermediate
                         }
 
                         break;
+                    } else if (!rhsEnum.Current.IsIdentifier && rhsEnum.Current.Parameter.RequiredArgumentType.ImplementationType == KindOfType.TypeClass) {
+                        if (rhsEnum.Current.Parameter.RequiredArgumentType == thisEnum.Current.Parameter.RequiredArgumentType) {
+                            break;
+                        }
+
+                        if (((TypeClass)rhsEnum.Current.Parameter.RequiredArgumentType).Implementations.Contains(thisEnum.Current.Parameter.RequiredArgumentType)) {
+                            yield return new SpecializationEntry(rhsEnum.Current.Parameter, thisEnum.Current.Parameter);
+                        } else {
+                            yield return null;
+                            yield break;
+                        }
+
                     } else {
+
                         switch (thisEnum.Current.Parameter.RequiredArgumentType.ImplementationType) {
                             case KindOfType.SingleValue:
                                 var single = (SingleValueType)thisEnum.Current.Parameter.RequiredArgumentType;
@@ -163,3 +176,4 @@ namespace Tangent.Intermediate
         }
     }
 }
+

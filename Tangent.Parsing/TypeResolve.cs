@@ -102,9 +102,10 @@ namespace Tangent.Parsing {
             return results;
         }
 
-        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping, List<Tuple<TangentType, TangentType>> interfaceToImplementerBindings, out Dictionary<TangentType, TangentType> placeholderConversions) {
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping, List<InterfaceBinding> interfaceToImplementerBindings, out Dictionary<TangentType, TangentType> placeholderConversions) {
             AggregateParseError errors = new AggregateParseError(Enumerable.Empty<ParseError>());
             Dictionary<TangentType, TangentType> inNeedOfPopulation = new Dictionary<TangentType, TangentType>();
+            List<Tuple<TangentType, TangentType>> bindings = new List<Tuple<TangentType, TangentType>>();
             Func<TangentType, TangentType> selector = t => t;
             selector = t => {
                 if (t.ImplementationType == KindOfType.Sum) {
@@ -117,7 +118,7 @@ namespace Tangent.Parsing {
                     return newSum;
                 } else if (t is PartialProductType) {
                     var newb = new ProductType(Enumerable.Empty<PhrasePart>());
-                    interfaceToImplementerBindings.AddRange((t as PartialProductType).InterfaceReferences.Select(iface => new Tuple<TangentType, TangentType>(iface, newb)));
+                    bindings.AddRange((t as PartialProductType).InterfaceReferences.Select(iface => new Tuple<TangentType, TangentType>(iface, newb)));
                     inNeedOfPopulation.Add((PartialProductType)t, newb);
                     return newb;
                 } else if (t is PartialTypeReference) {
@@ -176,8 +177,8 @@ namespace Tangent.Parsing {
 
             newLookup = newLookup.Select(td => new TypeDeclaration(td.Takes, selector(td.Returns))).ToList();
 
-            var newBindings = new List<Tuple<TangentType, TangentType>>(interfaceToImplementerBindings.Count);
-            foreach (var entry in interfaceToImplementerBindings) {
+            var newBindings = new List<InterfaceBinding>(bindings.Count);
+            foreach (var entry in bindings) {
                 var iface = entry.Item1;
                 if (entry.Item1 is PartialTypeReference) {
                     var reference = (PartialTypeReference)entry.Item1;
@@ -190,10 +191,9 @@ namespace Tangent.Parsing {
                 }
 
                 // TODO: impl?
-                newBindings.Add(new Tuple<TangentType, TangentType>(iface, entry.Item2));
+                newBindings.Add(new InterfaceBinding((TypeClass)iface, entry.Item2));
             }
 
-            interfaceToImplementerBindings.Clear();
             interfaceToImplementerBindings.AddRange(newBindings);
 
             return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);

@@ -10,6 +10,7 @@ namespace Tangent.Intermediate
     {
         public readonly IEnumerable<ReductionDeclaration> RequiredFunctions;
         public readonly ParameterDeclaration ThisBindingInRequiredFunctions;
+        public readonly List<TangentType> Implementations = new List<TangentType>();
 
         public TypeClass(IEnumerable<ReductionDeclaration> components)
             : base(KindOfType.TypeClass)

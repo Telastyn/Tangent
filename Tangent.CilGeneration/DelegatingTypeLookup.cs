@@ -7,26 +7,22 @@ using System.Text;
 using System.Threading.Tasks;
 using Tangent.Intermediate;
 
-namespace Tangent.CilGeneration
-{
-    public class DelegatingTypeLookup : ITypeLookup, IDisposable
-    {
+namespace Tangent.CilGeneration {
+    public class DelegatingTypeLookup : ITypeLookup, IDisposable {
         private readonly ITypeCompiler typeCompiler;
         private readonly IEnumerable<TypeDeclaration> declaredTypes;
         private readonly Dictionary<TangentType, Type> lookup = new Dictionary<TangentType, Type>();
         private readonly Dictionary<string, TypeBuilder> partialTypes = new Dictionary<string, TypeBuilder>();
         private readonly AppDomain compilationDomain;
 
-        public DelegatingTypeLookup(ITypeCompiler typeCompiler, IEnumerable<TypeDeclaration> declaredTypes, AppDomain compilationDomain)
-        {
+        public DelegatingTypeLookup(ITypeCompiler typeCompiler, IEnumerable<TypeDeclaration> declaredTypes, AppDomain compilationDomain) {
             this.typeCompiler = typeCompiler;
             this.declaredTypes = declaredTypes;
             this.compilationDomain = compilationDomain;
             this.compilationDomain.TypeResolve += OnTypeResolution;
         }
 
-        private Assembly OnTypeResolution(object sender, ResolveEventArgs args)
-        {
+        private Assembly OnTypeResolution(object sender, ResolveEventArgs args) {
             if (partialTypes.ContainsKey(args.Name)) {
                 var builder = partialTypes[args.Name];
                 var mapping = lookup.FirstOrDefault(kvp => kvp.Value == builder);
@@ -52,8 +48,7 @@ namespace Tangent.CilGeneration
         }
 
 
-        public void BakeTypes()
-        {
+        public void BakeTypes() {
             var candidates = lookup.Where(kvp => kvp.Value is TypeBuilder).ToList();
             int ct = candidates.Count;
             while (candidates.Count != 0) {
@@ -69,8 +64,7 @@ namespace Tangent.CilGeneration
             }
         }
 
-        public void AddGenericFunctionParameterMapping(ParameterDeclaration generic, GenericTypeParameterBuilder dotnetType)
-        {
+        public void AddGenericFunctionParameterMapping(ParameterDeclaration generic, GenericTypeParameterBuilder dotnetType) {
             var reference = GenericArgumentReferenceType.For(generic);
             var inference = GenericInferencePlaceholder.For(generic);
             if (!lookup.ContainsKey(reference)) {
@@ -82,8 +76,7 @@ namespace Tangent.CilGeneration
             }
         }
 
-        private void AddLookupEntry(TangentType tt, Type t)
-        {
+        private void AddLookupEntry(TangentType tt, Type t) {
             if (lookup.ContainsKey(tt)) {
                 if (partialTypes.ContainsKey(lookup[tt].Name)) {
                     partialTypes.Remove(lookup[tt].Name);
@@ -99,21 +92,21 @@ namespace Tangent.CilGeneration
             }
         }
 
-        private void PopulateLookupWith(TangentType t)
-        {
+        private void PopulateLookupWith(TangentType t) {
             switch (t.ImplementationType) {
                 case KindOfType.Enum:
                 case KindOfType.Product:
                 case KindOfType.Sum:
                 case KindOfType.BoundGeneric:
                 case KindOfType.Delegate:
+                case KindOfType.TypeClass:
                     // This should already be declared in our types.
                     var result = declaredTypes.FirstOrDefault(td => td.Returns == t);
                     if (result == null) {
                         result = new TypeDeclaration((PhrasePart)null, t);
                     }
 
-                    var type = typeCompiler.Compile(result, (placeholderTarget, placeholder) => { if (!lookup.ContainsKey(placeholderTarget)) { lookup.Add(placeholderTarget, placeholder); } }, (tt, create) => {  if (create) { return this[tt]; } else { if (lookup.ContainsKey(tt)) { return lookup[tt]; } else { return null; } } });
+                    var type = typeCompiler.Compile(result, (placeholderTarget, placeholder) => { if (!lookup.ContainsKey(placeholderTarget)) { lookup.Add(placeholderTarget, placeholder); } }, (tt, create) => { if (create) { return this[tt]; } else { if (lookup.ContainsKey(tt)) { return lookup[tt]; } else { return null; } } });
                     AddLookupEntry(result.Returns, type);
 
                     return;
@@ -151,8 +144,7 @@ namespace Tangent.CilGeneration
             }
         }
 
-        public void Dispose()
-        {
+        public void Dispose() {
             compilationDomain.TypeResolve -= OnTypeResolution;
         }
     }

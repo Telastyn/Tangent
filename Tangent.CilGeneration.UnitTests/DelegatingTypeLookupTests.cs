@@ -3,6 +3,7 @@ using System.Linq;
 using Moq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tangent.Intermediate;
+using System.Collections.Generic;
 
 namespace Tangent.CilGeneration.UnitTests
 {

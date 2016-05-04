@@ -34,6 +34,7 @@ namespace Tangent.Intermediate
 
                 switch (GeneralFunctionParameter.RequiredArgumentType.ImplementationType) {
                     case KindOfType.Sum:
+                    case KindOfType.TypeClass:
                         return DispatchType.SumType;
                     case KindOfType.Enum:
                         return DispatchType.SingleValue;

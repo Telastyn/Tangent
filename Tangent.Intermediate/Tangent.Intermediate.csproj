@@ -65,6 +65,7 @@
     <Compile Include="GenericParameterAccessExpression.cs" />
     <Compile Include="Identifier.cs" />
     <Compile Include="IdentifierExpression.cs" />
+    <Compile Include="InterfaceBinding.cs" />
     <Compile Include="InterfaceFunction.cs" />
     <Compile Include="InterfaceUpcast.cs" />
     <Compile Include="LambdaExpression.cs" />

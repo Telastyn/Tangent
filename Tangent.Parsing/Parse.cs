@@ -22,7 +22,7 @@ namespace Tangent.Parsing {
             List<string> inputSources = tokens.Select(t => t.SourceInfo.Label).Distinct().ToList();
             List<PartialTypeDeclaration> partialTypes = new List<PartialTypeDeclaration>();
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
-            List<Tuple<TangentType, TangentType>> interfaceToImplementerBindings = new List<Tuple<TangentType, TangentType>>();
+            List<InterfaceBinding> interfaceToImplementerBindings = new List<InterfaceBinding>();
 
             while (tokens.Any()) {
                 int typeTake;
@@ -67,12 +67,6 @@ namespace Tangent.Parsing {
                 return new ResultOrParseError<Intermediate.TangentProgram>(resolvedTypes.Error);
             }
 
-            // for now, convert interfaces to the sum type they represent.
-            foreach (var td in resolvedTypes.Result.Where(td => td.Returns is TypeClass)) {
-                var components = interfaceToImplementerBindings.Where(itoi => itoi.Item1 == td.Returns).Select(itoi => itoi.Item2).ToList();
-                td.Returns = SumType.For(components);
-            }
-
             var resolvedFunctions = TypeResolve.AllPartialFunctionDeclarations(partialFunctions, resolvedTypes.Result, conversions);
             if (!resolvedFunctions.Success) {
                 return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error);
@@ -96,6 +90,8 @@ namespace Tangent.Parsing {
                 }
             }
 
+            ctorCalls = ctorCalls.Concat(interfaceToImplementerBindings.Select(itoi => new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", itoi.Implementation)), new InterfaceUpcast(itoi.Interface)))).ToList();
+
             var enumAccesses = resolvedTypes.Result.Where(tt => tt.Returns.ImplementationType == KindOfType.Enum).Select(tt => tt.Returns).Cast<EnumType>().SelectMany(tt => tt.Values.Select(v => new ReductionDeclaration(v, new Function(tt, new Block(new[] { new EnumValueAccessExpression(tt.SingleValueTypeFor(v), null) }))))).ToList();
 
 
@@ -111,7 +107,7 @@ namespace Tangent.Parsing {
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
                 if (partialFunction != null) {
                     if (partialFunction.Scope is TypeClass) {
-                        lookup.Add(partialFunction, new InterfaceFunction(partialFunction.Scope as TypeClass));
+                        lookup.Add(partialFunction, new InterfaceFunction(partialFunction.Scope as TypeClass, partialFunction.EffectiveType));
                     } else {
                         var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
                             .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
@@ -140,7 +136,7 @@ namespace Tangent.Parsing {
                 if (fn.Returns is TypeResolvedFunction) {
                     var trf = fn.Returns as TypeResolvedFunction;
                     if (trf.Scope is TypeClass) {
-                        return new ReductionDeclaration(fn.Takes, new InterfaceFunction(trf.Scope as TypeClass), fn.GenericParameters);
+                        return new ReductionDeclaration(fn.Takes, new InterfaceFunction(trf.Scope as TypeClass, fn.Returns.EffectiveType), fn.GenericParameters);
                     } else {
                         return new ReductionDeclaration(fn.Takes, lookup[fn.Returns], fn.GenericParameters);
                     }
