@@ -55,6 +55,7 @@
     <Compile Include="DirectOpCode.cs" />
     <Compile Include="EnumType.cs" />
     <Compile Include="EnumWideningExpression.cs" />
+    <Compile Include="ThrowInvalidProgramExceptionExpression.cs" />
     <Compile Include="Expression.cs" />
     <Compile Include="ExpressionDeclaration.cs" />
     <Compile Include="Function.cs" />

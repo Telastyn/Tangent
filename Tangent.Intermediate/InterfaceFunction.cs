@@ -10,7 +10,7 @@ namespace Tangent.Intermediate
     public class InterfaceFunction : Function
     {
         public readonly TypeClass SourceInterface;
-        public InterfaceFunction(TypeClass forInterface, TangentType returnType) : base(returnType, new Block(Enumerable.Empty<Expression>()))
+        public InterfaceFunction(TypeClass forInterface, TangentType returnType) : base(returnType, new Block(new Expression[] { new ThrowInvalidProgramExceptionExpression() }))
         {
             SourceInterface = forInterface;
         }

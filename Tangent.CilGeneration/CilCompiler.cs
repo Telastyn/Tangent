@@ -35,6 +35,10 @@ namespace Tangent.CilGeneration
                 var fnLookup = new CilScope(rootClass, program.Functions, typeLookup);
                 var compiler = new CilFunctionCompiler(BuiltinFunctionLookup.Common, debuggingSymbolLookup);
 
+                foreach(var typeDeclaration in program.TypeDeclarations) {
+                    var tangentType = typeLookup[typeDeclaration.Returns];
+                }
+
                 typeLookup.BakeTypes();
                 fnLookup.Compile(compiler);
 

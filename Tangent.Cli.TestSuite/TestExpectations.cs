@@ -89,7 +89,7 @@ namespace Tangent.Cli.TestSuite
         {
             TimeSpan compileDuration;
             TimeSpan programDuration;
-            var result = Test.ProgramFile("PartialSpecialization.tan", out compileDuration, out programDuration);
+            var result = Test.DebugProgramFile("PartialSpecialization.tan", out compileDuration, out programDuration);
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "in generic", "in foo generic", "in foo int" }));
             Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");

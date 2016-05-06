@@ -23,6 +23,22 @@ namespace Tangent.Intermediate
             return cache.GetOrAdd(genericArg, pd => new GenericInferencePlaceholder(pd));
         }
 
+        public bool IsTypeClassInference
+        {
+            get
+            {
+                return TypeClassInferred != null;
+            }
+        }
+
+        public TypeClass TypeClassInferred
+        {
+            get
+            {
+                return ((KindType)GenericArgument.Returns).KindOf as TypeClass;
+            }
+        }
+
         public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
         {
             // TODO: verify generic constraint.

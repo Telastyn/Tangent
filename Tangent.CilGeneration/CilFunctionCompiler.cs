@@ -30,7 +30,9 @@ namespace Tangent.CilGeneration
             //gen.Emit(OpCodes.Break);
             AddDispatchCode(gen, fn, specializations, fnLookup, typeLookup, parameterCodes);
             AddFunctionCode(gen, fn.Returns.Implementation, fnLookup, typeLookup, closureScope, parameterCodes);
-            gen.Emit(OpCodes.Ret);
+            if (!(fn.Returns is InterfaceFunction)) {
+                gen.Emit(OpCodes.Ret);
+            }
         }
 
         private static void AddDispatchCode(ILGenerator gen, ReductionDeclaration fn, IEnumerable<ReductionDeclaration> specializations, IFunctionLookup fnLookup, ITypeLookup typeLookup, Dictionary<ParameterDeclaration, Action<ILGenerator>> parameterAccessors)
@@ -88,12 +90,13 @@ namespace Tangent.CilGeneration
                             break;
 
                         case DispatchType.GenericSpecialization:
+                            var inferredTypeClass = (specializationParam.GeneralFunctionParameter.RequiredArgumentType as GenericInferencePlaceholder)?.TypeClassInferred;
+                            FieldInfo typeClassAccessor = null;
+
                             // TODO: order specializations to prevent dispatching to something that is just going to dispatch again?
                             var specificTargetType = typeLookup[specializationParam.SpecificFunctionParameter.Returns];
                             //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
                             parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
-
-
                             //
                             // if param.GetType() != specificType
                             //
@@ -103,6 +106,12 @@ namespace Tangent.CilGeneration
                             //       don't know our parameter index at this point. Consider refactoring for perf.
                             //
                             gen.Emit(OpCodes.Box, typeLookup[specializationParam.GeneralFunctionParameter.RequiredArgumentType]);
+
+                            if (inferredTypeClass != null) {
+                                typeClassAccessor = typeLookup[inferredTypeClass].GetField("Value");
+                                gen.Emit(OpCodes.Ldfld, typeClassAccessor);
+                            }
+
                             gen.Emit(OpCodes.Callvirt, objGetType);
                             //gen.EmitWriteLine("Specialization GetType success.");
                             gen.Emit(OpCodes.Ldtoken, specificTargetType);
@@ -173,6 +182,13 @@ namespace Tangent.CilGeneration
                     {
                         parameterAccessors[parameter](gen);
                         gen.Emit(OpCodes.Box, typeLookup[parameter.RequiredArgumentType]);
+
+                        var inferredTypeClass = (parameter.RequiredArgumentType as GenericInferencePlaceholder)?.TypeClassInferred;
+                        if (inferredTypeClass != null) {
+                            var typeClassAccessor = typeLookup[inferredTypeClass].GetField("Value");
+                            gen.Emit(OpCodes.Ldfld, typeClassAccessor);
+                        }
+
                         if (unbox)
                         {
                             if (specialCasts[parameter].IsValueType)
@@ -391,13 +407,6 @@ namespace Tangent.CilGeneration
                         return;
                     }
 
-                    //var interfaceFn = invoke.FunctionDefinition.Returns as InterfaceFunction;
-                    //if (interfaceFn != null)
-                    //{
-                    //    gen.ThrowException(typeof(NotImplementedException));
-                    //    return;
-                    //}
-
                     var opcode = invoke.FunctionDefinition.Returns as DirectOpCode;
                     if (opcode != null)
                     {
@@ -480,6 +489,10 @@ namespace Tangent.CilGeneration
                 case ExpressionNodeType.Lambda:
                     var lambda = (LambdaExpression)expr;
                     BuildClosure(gen, lambda, fnLookup, typeLookup, closureScope, parameterCodes);
+                    return;
+
+                case ExpressionNodeType.InvalidProgramException:
+                    gen.ThrowException(typeof(InvalidOperationException));
                     return;
 
                 default:

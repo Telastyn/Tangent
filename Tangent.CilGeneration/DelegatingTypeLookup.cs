@@ -7,22 +7,26 @@ using System.Text;
 using System.Threading.Tasks;
 using Tangent.Intermediate;
 
-namespace Tangent.CilGeneration {
-    public class DelegatingTypeLookup : ITypeLookup, IDisposable {
+namespace Tangent.CilGeneration
+{
+    public class DelegatingTypeLookup : ITypeLookup, IDisposable
+    {
         private readonly ITypeCompiler typeCompiler;
         private readonly IEnumerable<TypeDeclaration> declaredTypes;
         private readonly Dictionary<TangentType, Type> lookup = new Dictionary<TangentType, Type>();
         private readonly Dictionary<string, TypeBuilder> partialTypes = new Dictionary<string, TypeBuilder>();
         private readonly AppDomain compilationDomain;
 
-        public DelegatingTypeLookup(ITypeCompiler typeCompiler, IEnumerable<TypeDeclaration> declaredTypes, AppDomain compilationDomain) {
+        public DelegatingTypeLookup(ITypeCompiler typeCompiler, IEnumerable<TypeDeclaration> declaredTypes, AppDomain compilationDomain)
+        {
             this.typeCompiler = typeCompiler;
             this.declaredTypes = declaredTypes;
             this.compilationDomain = compilationDomain;
             this.compilationDomain.TypeResolve += OnTypeResolution;
         }
 
-        private Assembly OnTypeResolution(object sender, ResolveEventArgs args) {
+        private Assembly OnTypeResolution(object sender, ResolveEventArgs args)
+        {
             if (partialTypes.ContainsKey(args.Name)) {
                 var builder = partialTypes[args.Name];
                 var mapping = lookup.FirstOrDefault(kvp => kvp.Value == builder);
@@ -48,7 +52,8 @@ namespace Tangent.CilGeneration {
         }
 
 
-        public void BakeTypes() {
+        public void BakeTypes()
+        {
             var candidates = lookup.Where(kvp => kvp.Value is TypeBuilder).ToList();
             int ct = candidates.Count;
             while (candidates.Count != 0) {
@@ -64,7 +69,8 @@ namespace Tangent.CilGeneration {
             }
         }
 
-        public void AddGenericFunctionParameterMapping(ParameterDeclaration generic, GenericTypeParameterBuilder dotnetType) {
+        public void AddGenericFunctionParameterMapping(ParameterDeclaration generic, GenericTypeParameterBuilder dotnetType)
+        {
             var reference = GenericArgumentReferenceType.For(generic);
             var inference = GenericInferencePlaceholder.For(generic);
             if (!lookup.ContainsKey(reference)) {
@@ -76,7 +82,8 @@ namespace Tangent.CilGeneration {
             }
         }
 
-        private void AddLookupEntry(TangentType tt, Type t) {
+        private void AddLookupEntry(TangentType tt, Type t)
+        {
             if (lookup.ContainsKey(tt)) {
                 if (partialTypes.ContainsKey(lookup[tt].Name)) {
                     partialTypes.Remove(lookup[tt].Name);
@@ -92,7 +99,8 @@ namespace Tangent.CilGeneration {
             }
         }
 
-        private void PopulateLookupWith(TangentType t) {
+        private void PopulateLookupWith(TangentType t)
+        {
             switch (t.ImplementationType) {
                 case KindOfType.Enum:
                 case KindOfType.Product:
@@ -122,11 +130,22 @@ namespace Tangent.CilGeneration {
                     throw new NotImplementedException("Something is asking for the type of a SingleValueType. We should never get here.");
 
                 case KindOfType.Builtin:
-                    lookup.Add(TangentType.Void, typeof(void));
-                    lookup.Add(TangentType.String, typeof(string));
-                    lookup.Add(TangentType.Int, typeof(int));
-                    lookup.Add(TangentType.Double, typeof(double));
-                    lookup.Add(TangentType.Bool, typeof(bool));
+                    if (t == TangentType.Void) {
+                        lookup.Add(TangentType.Void, typeof(void));
+                    } else if (t == TangentType.String) {
+                        lookup.Add(TangentType.String, typeof(string));
+                    } else if (t == TangentType.Int) {
+                        lookup.Add(TangentType.Int, typeof(int));
+                    } else if (t == TangentType.Double) {
+                        lookup.Add(TangentType.Double, typeof(double));
+                    } else if (t == TangentType.Bool) {
+                        lookup.Add(TangentType.Bool, typeof(bool));
+                    } else if (t == TangentType.Any) {
+                        lookup.Add(TangentType.Any, typeof(object));
+                    } else {
+                        throw new NotImplementedException();
+                    }
+
                     return;
 
                 case KindOfType.Kind:
@@ -144,7 +163,8 @@ namespace Tangent.CilGeneration {
             }
         }
 
-        public void Dispose() {
+        public void Dispose()
+        {
             compilationDomain.TypeResolve -= OnTypeResolution;
         }
     }
