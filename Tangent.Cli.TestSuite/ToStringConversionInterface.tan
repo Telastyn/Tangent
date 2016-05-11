@@ -1,0 +1,15 @@
+﻿convertible to string :> interface {
+  (this) => string;
+}
+
+Cow :> cow :< convertible to string {
+  (this) => string { "moo..." }
+}
+
+(x: convertible to string) speak => void {
+  print x;
+}
+
+entrypoint => void {
+  cow speak;
+}

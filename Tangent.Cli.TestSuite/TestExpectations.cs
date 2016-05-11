@@ -180,6 +180,16 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void ToStringConversionInterface()
+        {
+            TimeSpan compileDuration;
+            TimeSpan programDuration;
+            var result = Test.DebugProgramFile("ToStringConversionInterface.tan", out compileDuration, out programDuration);
+            Assert.AreEqual("moo...", result.Trim());
+            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
+        }
+
+        [TestMethod]
         [Ignore]
         public void InterfaceNotEquals(){
             TimeSpan compileDuration;
