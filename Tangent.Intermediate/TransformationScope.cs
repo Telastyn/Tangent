@@ -27,6 +27,11 @@ namespace Tangent.Intermediate
 
         private List<Expression> InterpretTowards(TangentType target, List<Expression> input, IEnumerable<List<Expression>> history)
         {
+            // TODO: optimize; History can be cleared on non-conversion, and this only needs checked on conversion.
+            if (history.Any(entry => entry.Count == input.Count && entry.Zip(input, (i, e) => new { inputEntry = i, historyEntry = e }).All(pair => pair.inputEntry.EffectiveType == pair.historyEntry.EffectiveType))) {
+                return new List<Expression>();
+            }
+
             if (input.Count == 1) {
                 if (target == input[0].EffectiveType) {
                     return input;
