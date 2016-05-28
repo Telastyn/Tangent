@@ -110,6 +110,9 @@
     <None Include="ToStringFunctionInterfacePassing.tan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="ToStringStandaloneBinding.tan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.CilGeneration\Tangent.CilGeneration.csproj">

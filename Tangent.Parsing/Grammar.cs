@@ -193,6 +193,16 @@ namespace Tangent.Parsing {
                 LiteralParser.SemiColon,
                 (phrase, op, type, sc) => new PartialReductionDeclaration(phrase, new PartialFunction(type, null, null)));
 
+        // (id|type-param-decl)+ inline-interface-binding { function-decl* }
+        public static readonly Parser<PartialInterfaceBinding> StandaloneInterfaceBinding =
+            Parser.Combine(
+                (ID.Select(expr => new PartialPhrasePart(expr)).Or(TypeDeclParam.Select(ppd => new PartialPhrasePart(ppd)), "Type Phrase Part").OneOrMore),
+                InlineInterfaceBinding.OneOrMore,
+                LiteralParser.OpenCurly,
+                FunctionDeclaration.ZeroOrMore,
+                LiteralParser.CloseCurly,
+                (typeRef, ifs, o, fns, c) => new PartialInterfaceBinding(typeRef, ifs, fns));
+
         // interface { interface-function-signature+ }
         public static readonly Parser<TangentType> InterfaceDecl =
             Parser.Combine(

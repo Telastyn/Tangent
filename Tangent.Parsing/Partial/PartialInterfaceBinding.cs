@@ -3,20 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tangent.Intermediate;
 
 namespace Tangent.Parsing.Partial
 {
     public class PartialInterfaceBinding
     {
         public readonly List<PartialPhrasePart> TypePhrase;
-        public readonly List<PartialPhrasePart> TypeClassPhrase;
+        public readonly List<TangentType> InterfaceReferences;
         public readonly List<PartialReductionDeclaration> Functions;
 
-        public PartialInterfaceBinding(List<PartialPhrasePart> type, List<PartialPhrasePart> typeClass, List<PartialReductionDeclaration> functions = null)
+        public PartialInterfaceBinding(IEnumerable<PartialPhrasePart> type, IEnumerable<TangentType> interfaceReferences, IEnumerable<PartialReductionDeclaration> functions = null)
         {
-            TypePhrase = type ?? new List<PartialPhrasePart>();
-            TypeClassPhrase = typeClass ?? new List<PartialPhrasePart>();
-            Functions = functions ?? new List<PartialReductionDeclaration>();
+            TypePhrase = new List<PartialPhrasePart>(type ?? Enumerable.Empty<PartialPhrasePart>());
+            InterfaceReferences = new List<TangentType>(interfaceReferences ?? Enumerable.Empty<TangentType>());
+            if (!InterfaceReferences.Any()) { throw new InvalidOperationException("Somehow interface binding got created with no interfaces..."); }
+            Functions = new List<PartialReductionDeclaration>(functions ?? Enumerable.Empty<PartialReductionDeclaration>());
         }
     }
 }
