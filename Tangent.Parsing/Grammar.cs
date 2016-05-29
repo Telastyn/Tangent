@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 using Tangent.Intermediate;
 using Tangent.Parsing.Partial;
 
-namespace Tangent.Parsing {
-    public static class Grammar {
+namespace Tangent.Parsing
+{
+    public static class Grammar
+    {
         public static readonly Parser<IdentifierExpression> ID = IdentifierParser.Common;
         private static readonly Parser<string> Pipe = new StringLiteralParser("|");
         private static readonly Parser<string> Comma = new StringLiteralParser(",");
@@ -201,7 +203,7 @@ namespace Tangent.Parsing {
                 LiteralParser.OpenCurly,
                 FunctionDeclaration.ZeroOrMore,
                 LiteralParser.CloseCurly,
-                (typeRef, ifs, o, fns, c) => new PartialInterfaceBinding(typeRef, ifs, fns));
+                (typeRef, ifs, o, fns, c) => ConstructStandaloneBinding(typeRef, ifs, fns));
 
         // interface { interface-function-signature+ }
         public static readonly Parser<TangentType> InterfaceDecl =
@@ -226,7 +228,8 @@ namespace Tangent.Parsing {
             TypeImpl,
             (phrase, arrow, impl) => ConstructTypeDeclaration(phrase, impl));
 
-        private static TangentType ConstructSumTypeFromAliasChain(IEnumerable<TangentType> aliases, TangentType optionalClass) {
+        private static TangentType ConstructSumTypeFromAliasChain(IEnumerable<TangentType> aliases, TangentType optionalClass)
+        {
             if (optionalClass != null) {
                 return SumType.For(aliases.Concat(new[] { optionalClass }));
             } else {
@@ -238,7 +241,8 @@ namespace Tangent.Parsing {
             }
         }
 
-        private static TangentType ConstructProductType(IEnumerable<PartialPhrasePart> constructorBits, IEnumerable<TangentType> interfaceReferences, IEnumerable<PartialReductionDeclaration> body) {
+        private static TangentType ConstructProductType(IEnumerable<PartialPhrasePart> constructorBits, IEnumerable<TangentType> interfaceReferences, IEnumerable<PartialReductionDeclaration> body)
+        {
             interfaceReferences = interfaceReferences ?? Enumerable.Empty<TangentType>();
             var result = new PartialProductType(constructorBits, body, new List<PartialParameterDeclaration>(), interfaceReferences);
             var boundFunctions = result.Functions.Select(fn => new PartialReductionDeclaration(fn.Takes, new PartialFunction(fn.Returns.EffectiveType, fn.Returns.Implementation, result))).ToList();
@@ -247,14 +251,26 @@ namespace Tangent.Parsing {
             return result;
         }
 
-        private static TangentType ConstructInterface(IEnumerable<PartialReductionDeclaration> signatures) {
+        private static TangentType ConstructInterface(IEnumerable<PartialReductionDeclaration> signatures)
+        {
             var result = new PartialInterface(Enumerable.Empty<PartialReductionDeclaration>(), Enumerable.Empty<PartialParameterDeclaration>());
             var boundFunctions = signatures.Select(fn => new PartialReductionDeclaration(fn.Takes, new PartialFunction(fn.Returns.EffectiveType, fn.Returns.Implementation, result))).ToList();
             result.Functions.AddRange(boundFunctions);
             return result;
         }
 
-        private static PartialTypeDeclaration ConstructTypeDeclaration(IEnumerable<PartialPhrasePart> typePhrase, TangentType implementation) {
+        private static PartialInterfaceBinding ConstructStandaloneBinding(IEnumerable<PartialPhrasePart> typePhrase, IEnumerable<TangentType> interfaces, IEnumerable<PartialReductionDeclaration> functions)
+        {
+            var generics = typePhrase.Where(tp => !tp.IsIdentifier).Select(tp => tp.Parameter);
+            var result = new PartialInterfaceBinding(typePhrase, interfaces.Cast<PartialTypeReference>().Select(ptr => new PartialTypeReference(ptr.Identifiers, generics)));
+            // TODO: clean this stuff up.
+            result.Functions.Clear();
+            result.Functions.AddRange(functions.Select(fn => new PartialReductionDeclaration(fn.Takes, new PartialFunction(fn.Returns.EffectiveType, fn.Returns.Implementation, result))));
+            return result;
+        }
+
+        private static PartialTypeDeclaration ConstructTypeDeclaration(IEnumerable<PartialPhrasePart> typePhrase, TangentType implementation)
+        {
             // Take any generics and propogate to implementation bits.
             var generics = typePhrase.Where(ppp => !ppp.IsIdentifier).Select(ppp => ppp.Parameter).ToList();
             if (generics.Any()) {
@@ -264,7 +280,8 @@ namespace Tangent.Parsing {
             return new PartialTypeDeclaration(typePhrase, implementation);
         }
 
-        private static void SetGenericParams(TangentType implementation, IEnumerable<PartialParameterDeclaration> generics) {
+        private static void SetGenericParams(TangentType implementation, IEnumerable<PartialParameterDeclaration> generics)
+        {
             var product = implementation as PartialProductType;
             if (product != null) {
                 (product.GenericArguments as List<PartialParameterDeclaration>).AddRange(generics);

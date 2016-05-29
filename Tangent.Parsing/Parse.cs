@@ -22,12 +22,14 @@ namespace Tangent.Parsing {
             List<string> inputSources = tokens.Select(t => t.SourceInfo.Label).Distinct().ToList();
             List<PartialTypeDeclaration> partialTypes = new List<PartialTypeDeclaration>();
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
+            List<PartialInterfaceBinding> partialStandaloneInterfaceBindings = new List<PartialInterfaceBinding>();
             List<InterfaceBinding> interfaceToImplementerBindings = new List<InterfaceBinding>();
 
             while (tokens.Any()) {
                 int typeTake;
                 var type = Grammar.TypeDecl.Parse(tokens, out typeTake);
                 int fnTake;
+                int ifTake;
                 if (type.Success) {
                     partialTypes.Add(type.Result);
                     partialFunctions.AddRange(ExtractPartialFunctions(type.Result.Returns));
@@ -38,7 +40,14 @@ namespace Tangent.Parsing {
                         partialFunctions.Add(fn.Result);
                         tokens.RemoveRange(0, fnTake);
                     } else {
-                        return new ResultOrParseError<TangentProgram>(typeTake >= fnTake ? type.Error : fn.Error);
+                        var binding = Grammar.StandaloneInterfaceBinding.Parse(tokens, out ifTake);
+                        if (binding.Success) {
+                            partialStandaloneInterfaceBindings.Add(binding.Result);
+                            partialFunctions.AddRange(binding.Result.Functions);
+                            tokens.RemoveRange(0, ifTake);
+                        } else {
+                            return new ResultOrParseError<TangentProgram>(typeTake >= fnTake ? type.Error : fn.Error);
+                        }
                     }
                 }
             }
@@ -55,16 +64,16 @@ namespace Tangent.Parsing {
             Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping;
             var typeResult = TypeResolve.AllPartialTypeDeclarations(partialTypes, builtInTypes, out genericArgumentMapping);
             if (!typeResult.Success) {
-                return new ResultOrParseError<Intermediate.TangentProgram>(typeResult.Error);
+                return new ResultOrParseError<TangentProgram>(typeResult.Error);
             }
 
             var types = typeResult.Result;
 
             // Move to Phase 2 - Resolve types in parameters and function return types.
             Dictionary<TangentType, TangentType> conversions;
-            var resolvedTypes = TypeResolve.AllTypePlaceholders(types, genericArgumentMapping, interfaceToImplementerBindings, out conversions);
+            var resolvedTypes = TypeResolve.AllTypePlaceholders(types, genericArgumentMapping, interfaceToImplementerBindings, partialStandaloneInterfaceBindings, out conversions);
             if (!resolvedTypes.Success) {
-                return new ResultOrParseError<Intermediate.TangentProgram>(resolvedTypes.Error);
+                return new ResultOrParseError<TangentProgram>(resolvedTypes.Error);
             }
 
             var resolvedFunctions = TypeResolve.AllPartialFunctionDeclarations(partialFunctions, resolvedTypes.Result, conversions);

@@ -7,9 +7,12 @@ using Tangent.Parsing.Errors;
 using Tangent.Parsing.Partial;
 using Tangent.Parsing.TypeResolved;
 
-namespace Tangent.Parsing {
-    public static class TypeResolve {
-        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllPartialTypeDeclarations(IEnumerable<PartialTypeDeclaration> partialTypes, IEnumerable<TypeDeclaration> builtInTypes, out Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping) {
+namespace Tangent.Parsing
+{
+    public static class TypeResolve
+    {
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllPartialTypeDeclarations(IEnumerable<PartialTypeDeclaration> partialTypes, IEnumerable<TypeDeclaration> builtInTypes, out Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping)
+        {
             List<TypeDeclaration> types = new List<TypeDeclaration>(builtInTypes);
             var simpleTypes = partialTypes.Where(ptd => ptd.Takes.All(pp => pp.IsIdentifier));
             types.AddRange(simpleTypes.Select(ptd => new TypeDeclaration(ptd.Takes.Select(ppp => new PhrasePart(ppp.Identifier.Identifier)), ptd.Returns)));
@@ -52,7 +55,8 @@ namespace Tangent.Parsing {
             return types;
         }
 
-        public static ResultOrParseError<TypeDeclaration> TryPartialTypeDeclaration(PartialTypeDeclaration partial, IEnumerable<TypeDeclaration> types, bool hardError) {
+        public static ResultOrParseError<TypeDeclaration> TryPartialTypeDeclaration(PartialTypeDeclaration partial, IEnumerable<TypeDeclaration> types, bool hardError)
+        {
             var scope = new TransformationScope(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => new TypeAccess(td))));
             List<PhrasePart> takes = new List<PhrasePart>();
             foreach (var t in partial.Takes) {
@@ -82,7 +86,8 @@ namespace Tangent.Parsing {
             return new TypeDeclaration(takes, partial.Returns);
         }
 
-        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types, Dictionary<TangentType, TangentType> conversions) {
+        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types, Dictionary<TangentType, TangentType> conversions)
+        {
             var errors = new AggregateParseError(Enumerable.Empty<ParseError>());
             var results = new List<ReductionDeclaration>();
 
@@ -102,7 +107,8 @@ namespace Tangent.Parsing {
             return results;
         }
 
-        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping, List<InterfaceBinding> interfaceToImplementerBindings, out Dictionary<TangentType, TangentType> placeholderConversions) {
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping, List<InterfaceBinding> interfaceToImplementerBindings, List<PartialInterfaceBinding> standaloneInterfaceBindings, out Dictionary<TangentType, TangentType> placeholderConversions)
+        {
             AggregateParseError errors = new AggregateParseError(Enumerable.Empty<ParseError>());
             Dictionary<TangentType, TangentType> inNeedOfPopulation = new Dictionary<TangentType, TangentType>();
             List<Tuple<TangentType, TangentType>> bindings = new List<Tuple<TangentType, TangentType>>();
@@ -143,6 +149,28 @@ namespace Tangent.Parsing {
 
             var newLookup = typeDecls.Select(td => new TypeDeclaration(td.Takes, selector(td.Returns))).ToList();
             var references = new HashSet<PartialTypeReference>();
+            foreach (var interfaceDecl in standaloneInterfaceBindings) {
+                foreach (var generic in interfaceDecl.TypePhrase.Where(ppp => !ppp.IsIdentifier)) {
+                    // TODO: resolve these partial generics back to the generic in the real type during ResolveType.
+                    throw new NotImplementedException("Sorry, standalone generic interface bindings don't currently work.");
+                }
+
+                var resolvedType = ResolveType(interfaceDecl.TypePhrase.Select(ppp => new IdentifierExpression(ppp.Identifier.Identifier, ppp.Identifier.SourceInfo)), newLookup, Enumerable.Empty<ParameterDeclaration>());
+                if (resolvedType.Success) {
+                    inNeedOfPopulation.Add(interfaceDecl, resolvedType.Result);
+                    foreach (var referencedInterface in interfaceDecl.InterfaceReferences) {
+                        if (referencedInterface is PartialTypeReference) {
+                            var resolvedInterface = selector(referencedInterface);
+                            bindings.Add(Tuple.Create(resolvedInterface, resolvedType.Result));
+                        } else {
+                            throw new ApplicationException("Shouldn't get here.");
+                        }
+                    }
+                } else {
+                    errors = errors.Concat(resolvedType.Error);
+                }
+            }
+
 
             foreach (var entry in inNeedOfPopulation) {
                 if (entry.Key is PartialProductType) {
@@ -164,6 +192,8 @@ namespace Tangent.Parsing {
                     // Nothing, just need it in placeholder lists so that sum types with placeholders get fixed.
                 } else if (entry.Key is PartialInterface) {
                     // Nothing, just need it in placeholder lists so that anything that found it earlier gets fixed.
+                }else if(entry.Key is PartialInterfaceBinding) {
+                    // Nothing. Just need the mapping here so that scopes get sent to the right location.
                 } else {
                     throw new NotImplementedException();
                 }
@@ -199,7 +229,8 @@ namespace Tangent.Parsing {
             return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);
         }
 
-        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types, Dictionary<TangentType, TangentType> conversions) {
+        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types, Dictionary<TangentType, TangentType> conversions)
+        {
             var errors = new AggregateParseError(Enumerable.Empty<ParseError>());
             var phrase = new List<PhrasePart>();
             bool thisFound = false;
@@ -262,7 +293,8 @@ namespace Tangent.Parsing {
             return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType.Result, fn.Implementation, scope), genericFnParams));
         }
 
-        internal static ResultOrParseError<ProductType> PartialProductType(PartialProductType partialType, ProductType target, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments) {
+        internal static ResultOrParseError<ProductType> PartialProductType(PartialProductType partialType, ProductType target, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
+        {
             var errors = new AggregateParseError(Enumerable.Empty<ParseError>());
 
             foreach (var part in partialType.DataConstructorParts) {
@@ -281,7 +313,8 @@ namespace Tangent.Parsing {
             return target;
         }
 
-        internal static ResultOrParseError<PhrasePart> Resolve(PartialPhrasePart partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null) {
+        internal static ResultOrParseError<PhrasePart> Resolve(PartialPhrasePart partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
+        {
             if (partial.IsIdentifier) {
                 return new PhrasePart(partial.Identifier.Identifier);
             }
@@ -294,7 +327,8 @@ namespace Tangent.Parsing {
             }
         }
 
-        internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null) {
+        internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
+        {
             var type = ResolveType(partial.Returns, types, ctorGenericArguments ?? Enumerable.Empty<ParameterDeclaration>());
             if (!type.Success) {
                 return new ResultOrParseError<ParameterDeclaration>(type.Error);
@@ -321,7 +355,8 @@ namespace Tangent.Parsing {
         }
 
 
-        private static ResultOrParseError<GenericInferencePlaceholder> Resolve(PartialTypeInferenceExpression inference, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null) {
+        private static ResultOrParseError<GenericInferencePlaceholder> Resolve(PartialTypeInferenceExpression inference, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
+        {
 
             var type = ResolveType(inference.InferenceExpression, types, ctorGenericArguments ?? Enumerable.Empty<ParameterDeclaration>());
             if (!type.Success) {
@@ -331,7 +366,8 @@ namespace Tangent.Parsing {
             return GenericInferencePlaceholder.For(new ParameterDeclaration(inference.InferenceName, type.Result.Kind));
         }
 
-        internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<Expression> identifiers, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments) {
+        internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<Expression> identifiers, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
+        {
             var scope = new TransformationScope(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => (TransformationRule)new TypeAccess(td))).Concat(genericArguments.Select(ga => new GenericParameterAccess(ga))));
             var result = scope.InterpretTowards(TangentType.Any.Kind, identifiers.ToList());
             if (result.Count == 1) {
@@ -387,7 +423,8 @@ namespace Tangent.Parsing {
             }
         }
 
-        private static ResultOrParseError<TangentType> ResolvePlaceholderReference(PartialTypeReference reference, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments) {
+        private static ResultOrParseError<TangentType> ResolvePlaceholderReference(PartialTypeReference reference, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
+        {
             if (reference.ResolvedType == null) {
                 var nested = ResolveType(reference.Identifiers, types, genericArguments);
                 if (nested.Success) {
@@ -400,7 +437,8 @@ namespace Tangent.Parsing {
             return reference.ResolvedType;
         }
 
-        private static TangentType ConvertGenericReferencesToInferences(TangentType input) {
+        private static TangentType ConvertGenericReferencesToInferences(TangentType input)
+        {
             switch (input.ImplementationType) {
                 case KindOfType.BoundGeneric:
                     var boundGeneric = input as BoundGenericType;
@@ -425,7 +463,8 @@ namespace Tangent.Parsing {
             }
         }
 
-        private static ResultOrParseError<Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder>> ExtractAndCompileInferredTypes(PartialReductionDeclaration partialFunctionDecl, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> typeGenerics) {
+        private static ResultOrParseError<Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder>> ExtractAndCompileInferredTypes(PartialReductionDeclaration partialFunctionDecl, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> typeGenerics)
+        {
             var inferenceParameters = partialFunctionDecl.Takes.Where(ppp => !ppp.IsIdentifier).SelectMany(ppp => ppp.Parameter.Returns.Where(expr => expr.NodeType == ExpressionNodeType.TypeInference)).Cast<PartialTypeInferenceExpression>().ToList();
             var dependencyGraph = new Dictionary<PartialTypeInferenceExpression, HashSet<PartialTypeInferenceExpression>>();
             foreach (var tie in inferenceParameters) {
@@ -448,7 +487,8 @@ namespace Tangent.Parsing {
             return result;
         }
 
-        private static void BuildInferenceDependencyGraph(PartialTypeInferenceExpression tie, Dictionary<PartialTypeInferenceExpression, HashSet<PartialTypeInferenceExpression>> graph) {
+        private static void BuildInferenceDependencyGraph(PartialTypeInferenceExpression tie, Dictionary<PartialTypeInferenceExpression, HashSet<PartialTypeInferenceExpression>> graph)
+        {
             if (graph.ContainsKey(tie)) { return; }
             graph.Add(tie, new HashSet<PartialTypeInferenceExpression>());
             foreach (var dep in tie.InferenceExpression.Where(expr => expr.NodeType == ExpressionNodeType.TypeInference).Cast<PartialTypeInferenceExpression>()) {
@@ -457,7 +497,8 @@ namespace Tangent.Parsing {
             }
         }
 
-        private static PartialPhrasePart FixInferences(PartialPhrasePart part, Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder> inferredTypes) {
+        private static PartialPhrasePart FixInferences(PartialPhrasePart part, Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder> inferredTypes)
+        {
             if (part.IsIdentifier) { return part; }
             Func<Expression, Expression> fixer = expr => {
                 var partial = expr as PartialTypeInferenceExpression;
