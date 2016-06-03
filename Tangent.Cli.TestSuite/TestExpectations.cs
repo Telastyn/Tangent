@@ -201,6 +201,20 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void MultifileIfTrueRealCompiler()
+        {
+            var result = Test.ProgramFile(new[] { "IfTrue-NeedsLib.tan", "conditional-lib.tan" });
+            Assert.AreEqual("w00t.", result.Trim());
+        }
+
+        [TestMethod]
+        public void MultifileIfTrueDebuggingCompiler()
+        {
+            var result = Test.DebugProgramFile(new[] { "IfTrue-NeedsLib.tan", "conditional-lib.tan" });
+            Assert.AreEqual("w00t.", result.Trim());
+        }
+
+        [TestMethod]
         [Ignore]
         public void InterfaceNotEquals(){
             TimeSpan compileDuration;

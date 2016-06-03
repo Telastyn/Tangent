@@ -1,0 +1,3 @@
+﻿entrypoint => void {
+    if true print "w00t." else print "zzz.";
+}

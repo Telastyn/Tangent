@@ -12,7 +12,7 @@ namespace Tangent.Cli
 {
     public class Program
     {
-        public static readonly string Usage = "Tangent.Cli.Exe <SourceFile> [DestFile]";
+        public static readonly string Usage = "Tangent.Cli.Exe <SourceFile> [SourceFile2..N] [DestFile]";
 
         public static void Main(string[] args)
         {
@@ -26,10 +26,15 @@ namespace Tangent.Cli
             if (args.Length == 1) {
                 dest = Path.Combine(Path.GetDirectoryName(args[0]), Path.GetFileNameWithoutExtension(args[0]));
             } else {
-                dest = args[1];
+                dest = args[args.Length - 1];
             }
 
-            var tokenization = Tokenize.ProgramFile(File.ReadAllText(args[0]), args[0]);
+            IEnumerable<Token> tokenization = Enumerable.Empty<Token>();
+
+            for (int x = 0; x == 0 || x < args.Length - 1; ++x) {
+                tokenization = tokenization.Concat(Tokenize.ProgramFile(File.ReadAllText(args[x]), args[x]));
+            }
+
             var intermediateProgram = Parse.TangentProgram(tokenization);
             if (!intermediateProgram.Success) {
                 Console.Error.WriteLine(intermediateProgram.Error); // TODO: make better.
