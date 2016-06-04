@@ -32,6 +32,7 @@ namespace Tangent.Parsing
         public static readonly LiteralParser TypeArrow = new LiteralParser(TokenIdentifier.TypeArrow);
         public static readonly LiteralParser FunctionArrow = new LiteralParser(TokenIdentifier.FunctionArrow);
         public static readonly LiteralParser InterfaceBindingOperator = new LiteralParser(TokenIdentifier.InterfaceBindingOperator);
+        public static readonly LiteralParser InitializerEquals = new LiteralParser(TokenIdentifier.InitializerEquals);
         public static readonly LiteralParser Colon = new LiteralParser(TokenIdentifier.Colon);
         public static readonly LiteralParser SemiColon = new LiteralParser(TokenIdentifier.SemiColon);
         public static readonly LiteralParser LazyOperator = new LiteralParser(TokenIdentifier.LazyOperator);
@@ -46,6 +47,7 @@ namespace Tangent.Parsing
                 case ":>": return TypeArrow;
                 case "=>": return FunctionArrow;
                 case ":<": return InterfaceBindingOperator;
+                case ":=": return InitializerEquals;
                 case ":": return Colon;
                 case ";": return SemiColon;
                 case "~>": return LazyOperator;

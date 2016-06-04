@@ -16,6 +16,8 @@ namespace Tangent.Intermediate
             get { return ":"; }
         }
 
+        public readonly Guid Tracer = Guid.NewGuid();
+
         private TangentType requiredArgumentType = null;
         public TangentType RequiredArgumentType
         {

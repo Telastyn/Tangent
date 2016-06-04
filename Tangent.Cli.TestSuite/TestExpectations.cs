@@ -19,7 +19,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void Moo()
         {
-            var result = Test.ProgramFile("moo.tan");
+            var result = Test.DebugProgramFile("moo.tan");
             Assert.AreEqual("moo.", result.Trim());
         }
 
@@ -212,6 +212,17 @@ namespace Tangent.Cli.TestSuite
         {
             var result = Test.DebugProgramFile(new[] { "IfTrue-NeedsLib.tan", "conditional-lib.tan" });
             Assert.AreEqual("w00t.", result.Trim());
+        }
+
+        [TestMethod]
+        public void BasicLocals()
+        {
+            TimeSpan compileDuration;
+            TimeSpan programDuration;
+            var result = Test.DebugProgramFile("BasicLocals.tan", out compileDuration, out programDuration);
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "42", "43" }));
+            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
         }
 
         [TestMethod]

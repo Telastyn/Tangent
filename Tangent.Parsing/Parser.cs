@@ -35,6 +35,11 @@ namespace Tangent.Parsing
             return new CombinedParser<A, B, C, D, E, T>(a, b, c, d, e, selector);
         }
 
+        public static Parser<T> Combine<A, B, C, D, E, F, T>(Parser<A> a, Parser<B> b, Parser<C> c, Parser<D> d, Parser<E> e, Parser<F> f, Func<A, B, C, D, E, F, T> selector)
+        {
+            return new CombinedParser<A, B, C, D, E, F, T>(a, b, c, d, e, f, selector);
+        }
+
         public static Parser<IEnumerable<T>> Delimited<D, T>(Parser<D> delimiting, Parser<T> meaningful, bool requiresOne = true, bool optionalTrailingDelimiter = false)
         {
             return new DelimitedParser<T, D>(delimiting, meaningful, requiresOne, optionalTrailingDelimiter);

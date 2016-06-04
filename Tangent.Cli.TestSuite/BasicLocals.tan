@@ -1,0 +1,6 @@
+﻿entrypoint => void {
+  :x:int := 42;
+  print x;
+  x = x + 1;
+  print x;
+}

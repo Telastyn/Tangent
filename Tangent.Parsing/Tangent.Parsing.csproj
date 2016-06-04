@@ -85,7 +85,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Errors\ResultOrError.cs" />
     <Compile Include="Errors\ResultOrParseError.cs" />
-    <Compile Include="Errors\StatementGrokErrors.cs" />
     <Compile Include="RepeatingParser.cs" />
     <Compile Include="ShortcuttingOrParser.cs" />
     <Compile Include="StringConstantParser.cs" />

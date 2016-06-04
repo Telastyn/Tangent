@@ -8,7 +8,7 @@ using Tangent.Tokenization;
 
 namespace Tangent.Parsing
 {
-    public class OptionalParser<T>: Parser<T> 
+    public class OptionalParser<T> : Parser<T>
     {
         private readonly Parser<T> internalParser;
 

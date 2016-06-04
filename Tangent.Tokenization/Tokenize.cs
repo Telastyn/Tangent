@@ -19,6 +19,7 @@ namespace Tangent.Tokenization
 
                 var token = Match("=>", TokenIdentifier.FunctionArrow, input, ix, inputLabel) ??
                     Match(":>", TokenIdentifier.TypeArrow, input, ix, inputLabel) ??
+                    Match(":=", TokenIdentifier.InitializerEquals, input, ix, inputLabel) ??
                     Match("~>", TokenIdentifier.LazyOperator, input, ix, inputLabel) ??
                     Match(":<", TokenIdentifier.InterfaceBindingOperator, input, ix, inputLabel) ??
                     Match(":", TokenIdentifier.Colon, input, ix, inputLabel) ??

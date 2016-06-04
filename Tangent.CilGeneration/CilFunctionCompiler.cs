@@ -25,7 +25,12 @@ namespace Tangent.CilGeneration
         {
             fnLookup = new FallbackCompositeFunctionLookup(fnLookup, builtins);
             var gen = target.GetILGenerator();
-            var parameterCodes = fn.Takes.Where(pp => !pp.IsIdentifier).Select((pp, ix) => new KeyValuePair<ParameterDeclaration, Action<ILGenerator>>(pp.Parameter, g => g.Emit(OpCodes.Ldarg, (Int16)ix))).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            var parameterCodes = fn.Takes.Where(pp => !pp.IsIdentifier).Select((pp, ix) => new KeyValuePair<ParameterDeclaration, PropertyCodes>(pp.Parameter, new PropertyCodes(g => g.Emit(OpCodes.Ldarg, (Int16)ix), null))).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            int localix = 0;
+            foreach (var local in fn.Returns.Implementation.Locals) {
+                gen.DeclareLocal(typeLookup[local.Returns]);
+                parameterCodes.Add(local, new PropertyCodes(g => g.Emit(OpCodes.Ldloc, localix), g => g.Emit(OpCodes.Stloc, localix)));
+            }
 
             //gen.Emit(OpCodes.Break);
             AddDispatchCode(gen, fn, specializations, fnLookup, typeLookup, parameterCodes);
@@ -35,10 +40,9 @@ namespace Tangent.CilGeneration
             }
         }
 
-        private static void AddDispatchCode(ILGenerator gen, ReductionDeclaration fn, IEnumerable<ReductionDeclaration> specializations, IFunctionLookup fnLookup, ITypeLookup typeLookup, Dictionary<ParameterDeclaration, Action<ILGenerator>> parameterAccessors)
+        private static void AddDispatchCode(ILGenerator gen, ReductionDeclaration fn, IEnumerable<ReductionDeclaration> specializations, IFunctionLookup fnLookup, ITypeLookup typeLookup, Dictionary<ParameterDeclaration, PropertyCodes> parameterAccessors)
         {
-            if (!specializations.Any())
-            {
+            if (!specializations.Any()) {
                 return;
             }
 
@@ -55,21 +59,18 @@ namespace Tangent.CilGeneration
             var parameterTypeLocals = new Dictionary<ParameterDeclaration, LocalBuilder>();
 
             // For now, we can't have nested specializations, so just go in order, doing the checks.
-            foreach (var specialization in specializations)
-            {
+            foreach (var specialization in specializations) {
                 Label next = gen.DefineLabel();
                 var specializationDetails = specialization.SpecializationAgainst(fn).Specializations;
                 var modes = new Dictionary<ParameterDeclaration, Tuple<Type, Type>>();
                 var specialCasts = new Dictionary<ParameterDeclaration, Type>();
-                foreach (var specializationParam in specializationDetails)
-                {
-                    switch (specializationParam.SpecializationType)
-                    {
+                foreach (var specializationParam in specializationDetails) {
+                    switch (specializationParam.SpecializationType) {
                         case DispatchType.SingleValue:
                             var single = (SingleValueType)specializationParam.SpecificFunctionParameter.Returns;
 
                             // If the specialization is not met, go to next specialization.
-                            parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
+                            parameterAccessors[specializationParam.GeneralFunctionParameter].Accessor(gen);
                             gen.Emit(OpCodes.Ldc_I4, single.NumericEquivalent);
                             gen.Emit(OpCodes.Ceq);
                             gen.Emit(OpCodes.Brfalse, next);
@@ -82,7 +83,7 @@ namespace Tangent.CilGeneration
                             var targetMode = GetVariantMode(dotNetSum, dotNetTarget);
                             modes.Add(specializationParam.GeneralFunctionParameter, Tuple.Create(dotNetSum, dotNetTarget));
                             var modeField = dotNetSum.GetField("Mode");
-                            parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
+                            parameterAccessors[specializationParam.GeneralFunctionParameter].Accessor(gen);
                             gen.Emit(OpCodes.Ldfld, modeField);
                             gen.Emit(OpCodes.Ldc_I4, targetMode);
                             gen.Emit(OpCodes.Ceq);
@@ -96,7 +97,7 @@ namespace Tangent.CilGeneration
                             // TODO: order specializations to prevent dispatching to something that is just going to dispatch again?
                             var specificTargetType = typeLookup[specializationParam.SpecificFunctionParameter.Returns];
                             //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
-                            parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
+                            parameterAccessors[specializationParam.GeneralFunctionParameter].Accessor(gen);
                             //
                             // if param.GetType() != specificType
                             //
@@ -126,7 +127,7 @@ namespace Tangent.CilGeneration
                             var specificPartialTargetType = typeLookup[specializationParam.SpecificFunctionParameter.RequiredArgumentType];
                             specificPartialTargetType = specificPartialTargetType.GetGenericTypeDefinition();
                             //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
-                            parameterAccessors[specializationParam.GeneralFunctionParameter](gen);
+                            parameterAccessors[specializationParam.GeneralFunctionParameter].Accessor(gen);
 
                             //
                             // if param.GetType().IsGenericType && param.GetType().GetGenericTypeDefinition() == specificType (partial specialization)
@@ -134,13 +135,11 @@ namespace Tangent.CilGeneration
                             gen.Emit(OpCodes.Box, typeLookup[specializationParam.GeneralFunctionParameter.RequiredArgumentType]);
                             gen.Emit(OpCodes.Callvirt, objGetType);
                             LocalBuilder paramTypeLocal;
-                            if (!parameterTypeLocals.ContainsKey(specializationParam.GeneralFunctionParameter))
-                            {
+                            if (!parameterTypeLocals.ContainsKey(specializationParam.GeneralFunctionParameter)) {
                                 paramTypeLocal = gen.DeclareLocal(typeof(Type));
                                 parameterTypeLocals.Add(specializationParam.GeneralFunctionParameter, paramTypeLocal);
                                 gen.Emit(OpCodes.Stloc, paramTypeLocal);
-                            } else
-                            {
+                            } else {
                                 paramTypeLocal = parameterTypeLocals[specializationParam.GeneralFunctionParameter];
                             }
 
@@ -162,25 +161,20 @@ namespace Tangent.CilGeneration
                 }
 
                 Action<ParameterDeclaration, bool> emitParameterDispatch = (parameter, unbox) => {
-                    if (modes.ContainsKey(parameter))
-                    {
+                    if (modes.ContainsKey(parameter)) {
                         var valueFld = modes[parameter].Item1.GetField("Value");
-                        parameterAccessors[parameter](gen);
+                        parameterAccessors[parameter].Accessor(gen);
                         gen.Emit(OpCodes.Ldfld, valueFld);
 
-                        if (unbox)
-                        {
-                            if (modes[parameter].Item2.IsValueType)
-                            {
+                        if (unbox) {
+                            if (modes[parameter].Item2.IsValueType) {
                                 gen.Emit(OpCodes.Unbox_Any, modes[parameter].Item2);
-                            } else
-                            {
+                            } else {
                                 gen.Emit(OpCodes.Castclass, modes[parameter].Item2);
                             }
                         }
-                    } else if (specialCasts.ContainsKey(parameter))
-                    {
-                        parameterAccessors[parameter](gen);
+                    } else if (specialCasts.ContainsKey(parameter)) {
+                        parameterAccessors[parameter].Accessor(gen);
                         gen.Emit(OpCodes.Box, typeLookup[parameter.RequiredArgumentType]);
 
                         var inferredTypeClass = (parameter.RequiredArgumentType as GenericInferencePlaceholder)?.TypeClassInferred;
@@ -189,21 +183,16 @@ namespace Tangent.CilGeneration
                             gen.Emit(OpCodes.Ldfld, typeClassAccessor);
                         }
 
-                        if (unbox)
-                        {
-                            if (specialCasts[parameter].IsValueType)
-                            {
+                        if (unbox) {
+                            if (specialCasts[parameter].IsValueType) {
                                 gen.Emit(OpCodes.Unbox_Any, specialCasts[parameter]);
-                            } else
-                            {
+                            } else {
                                 gen.Emit(OpCodes.Castclass, specialCasts[parameter]);
                             }
                         }
-                    } else
-                    {
-                        parameterAccessors[parameter](gen);
-                        if (!unbox)
-                        {
+                    } else {
+                        parameterAccessors[parameter].Accessor(gen);
+                        if (!unbox) {
                             gen.Emit(OpCodes.Box, typeLookup[parameter.RequiredArgumentType]);
                             gen.Emit(OpCodes.Castclass, typeof(object));
                         }
@@ -211,8 +200,7 @@ namespace Tangent.CilGeneration
                 };
 
                 // Cool. Load parameters, call function and return.
-                if (specialization.GenericParameters.Any())
-                {
+                if (specialization.GenericParameters.Any()) {
                     // Arg storage
                     var argArray = gen.DeclareLocal(typeof(object[]));
 
@@ -221,8 +209,7 @@ namespace Tangent.CilGeneration
                     gen.Emit(OpCodes.Stloc, argArray);
 
                     int ix = 0;
-                    foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier))
-                    {
+                    foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
                         gen.Emit(OpCodes.Ldloc, argArray);
                         gen.Emit(OpCodes.Ldc_I4, ix);
                         emitParameterDispatch(parameter.Parameter, false);
@@ -240,8 +227,7 @@ namespace Tangent.CilGeneration
                     // Function to walk types and bind inferences:
                     Action<TangentType, Action> inferenceTypeWalker = null;
                     inferenceTypeWalker = new Action<TangentType, Action>((tt, typeAccessor) => {
-                        switch (tt.ImplementationType)
-                        {
+                        switch (tt.ImplementationType) {
                             case KindOfType.BoundGeneric:
                                 // List<T>, List<int>, something.
                                 // Get args and work with them.
@@ -252,10 +238,8 @@ namespace Tangent.CilGeneration
                                 gen.Emit(OpCodes.Stloc, genericArgArray);
 
                                 int argumentIndex = 0;
-                                foreach (var boundGenericArgument in ((BoundGenericType)tt).TypeArguments)
-                                {
-                                    switch (boundGenericArgument.ImplementationType)
-                                    {
+                                foreach (var boundGenericArgument in ((BoundGenericType)tt).TypeArguments) {
+                                    switch (boundGenericArgument.ImplementationType) {
                                         case KindOfType.BoundGeneric:
                                         case KindOfType.InferencePoint:
                                             // Nested type.
@@ -297,8 +281,7 @@ namespace Tangent.CilGeneration
                     });
 
                     // Now, bind them.
-                    foreach (var partialSpecialization in specializationDetails.Where(s => s.SpecializationType == DispatchType.PartialSpecialization))
-                    {
+                    foreach (var partialSpecialization in specializationDetails.Where(s => s.SpecializationType == DispatchType.PartialSpecialization)) {
                         inferenceTypeWalker(partialSpecialization.SpecificFunctionParameter.RequiredArgumentType, () => {
                             // We already stored param.GetType() to a local. Use that.
                             gen.Emit(OpCodes.Ldloc, parameterTypeLocals[partialSpecialization.GeneralFunctionParameter]);
@@ -315,18 +298,14 @@ namespace Tangent.CilGeneration
                     gen.Emit(OpCodes.Ldnull);
                     gen.Emit(OpCodes.Ldloc, argArray);
                     gen.Emit(OpCodes.Call, invoke);  // fn.Invoke(null, args);
-                    if (specialization.Returns.EffectiveType == TangentType.Void)
-                    {
+                    if (specialization.Returns.EffectiveType == TangentType.Void) {
                         gen.Emit(OpCodes.Pop);
-                    } else
-                    {
+                    } else {
                         // TODO: verify that return type isn't impacted by inference.
                         gen.Emit(OpCodes.Castclass, typeLookup[specialization.Returns.EffectiveType]);
                     }
-                } else
-                {
-                    foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier))
-                    {
+                } else {
+                    foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
                         emitParameterDispatch(parameter.Parameter, true);
                     }
 
@@ -345,10 +324,8 @@ namespace Tangent.CilGeneration
         private static int GetVariantMode(Type variantType, Type targetType)
         {
             var genericParams = variantType.BaseType.GetGenericArguments();
-            for (int i = 1; i <= genericParams.Length; ++i)
-            {
-                if (genericParams[i - 1].AssemblyQualifiedName == targetType.AssemblyQualifiedName)
-                {
+            for (int i = 1; i <= genericParams.Length; ++i) {
+                if (genericParams[i - 1].AssemblyQualifiedName == targetType.AssemblyQualifiedName) {
                     return i;
                 }
             }
@@ -358,39 +335,34 @@ namespace Tangent.CilGeneration
 
         private void AddDebuggingInfo(ILGenerator gen, Expression expr)
         {
-            if (expr.SourceInfo != null)
-            {
+            if (expr.SourceInfo != null) {
                 System.Diagnostics.Debug.WriteLine(expr.SourceInfo);
                 gen.MarkSequencePoint(debuggingDocWriter[expr.SourceInfo.Label], expr.SourceInfo.StartPosition.Line, expr.SourceInfo.StartPosition.Column, expr.SourceInfo.EndPosition.Line, expr.SourceInfo.EndPosition.Column);
             }
         }
 
-        private void AddFunctionCode(ILGenerator gen, Block impl, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, Action<ILGenerator>> parameterCodes)
+        private void AddFunctionCode(ILGenerator gen, Block impl, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes)
         {
             var statements = impl.Statements.ToList();
-            for (int ix = 0; ix < statements.Count; ++ix)
-            {
+            for (int ix = 0; ix < statements.Count; ++ix) {
                 var stmt = statements[ix];
                 AddDebuggingInfo(gen, stmt);
                 AddExpression(stmt, gen, fnLookup, typeLookup, closureScope, parameterCodes, ix == statements.Count - 1);
             }
         }
 
-        private void AddExpression(Expression expr, ILGenerator gen, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, Action<ILGenerator>> parameterCodes, bool lastStatement)
+        private void AddExpression(Expression expr, ILGenerator gen, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes, bool lastStatement)
         {
-            switch (expr.NodeType)
-            {
+            switch (expr.NodeType) {
                 case ExpressionNodeType.FunctionInvocation:
                     var invoke = (FunctionInvocationExpression)expr;
                     AddDebuggingInfo(gen, expr);
-                    foreach (var p in invoke.Arguments)
-                    {
+                    foreach (var p in invoke.Arguments) {
                         AddExpression(p, gen, fnLookup, typeLookup, closureScope, parameterCodes, false);
                     }
 
                     var ctor = invoke.FunctionDefinition.Returns as CtorCall;
-                    if (ctor != null)
-                    {
+                    if (ctor != null) {
                         var ctorParamTypes = invoke.Arguments.Select(a => typeLookup[a.EffectiveType]).ToArray();
                         var ctorFn = typeLookup[invoke.EffectiveType].GetConstructor(ctorParamTypes);
                         gen.Emit(OpCodes.Newobj, ctorFn);
@@ -398,8 +370,7 @@ namespace Tangent.CilGeneration
                     }
 
                     var upcast = invoke.FunctionDefinition.Returns as InterfaceUpcast;
-                    if (upcast != null)
-                    {
+                    if (upcast != null) {
                         // for now, it is just a sumtype built by the compiler.
                         var ctorParamTypes = invoke.Arguments.Select(a => typeLookup[a.EffectiveType]).ToArray();
                         var ctorFn = typeLookup[invoke.EffectiveType].GetConstructor(ctorParamTypes);
@@ -408,20 +379,17 @@ namespace Tangent.CilGeneration
                     }
 
                     var opcode = invoke.FunctionDefinition.Returns as DirectOpCode;
-                    if (opcode != null)
-                    {
+                    if (opcode != null) {
                         gen.Emit(opcode.OpCode);
                         return;
                     }
 
                     // else, MethodInfo invocation.
                     if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
-                    if (invoke.GenericArguments.Any())
-                    {
+                    if (invoke.GenericArguments.Any()) {
                         var parameterizedFn = fnLookup[invoke.FunctionDefinition].MakeGenericMethod(invoke.Arguments.Select(a => typeLookup[a.EffectiveType]).ToArray());
                         gen.EmitCall(OpCodes.Call, parameterizedFn, null);
-                    } else
-                    {
+                    } else {
                         gen.EmitCall(OpCodes.Call, fnLookup[invoke.FunctionDefinition], null);
                     }
 
@@ -432,15 +400,14 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.ParameterAccess:
                     var access = (ParameterAccessExpression)expr;
-                    parameterCodes[access.Parameter](gen);
+                    parameterCodes[access.Parameter].Accessor(gen);
 
                     return;
 
                 case ExpressionNodeType.DelegateInvocation:
                     var invocation = (DelegateInvocationExpression)expr;
                     AddExpression(invocation.DelegateAccess, gen, fnLookup, typeLookup, closureScope, parameterCodes, false);
-                    foreach (var entry in invocation.Arguments)
-                    {
+                    foreach (var entry in invocation.Arguments) {
                         AddExpression(entry, gen, fnLookup, typeLookup, closureScope, parameterCodes, false);
                     }
 
@@ -456,16 +423,13 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.Constant:
                     var constant = (ConstantExpression)expr;
-                    if (constant.EffectiveType == TangentType.String)
-                    {
+                    if (constant.EffectiveType == TangentType.String) {
                         gen.Emit(OpCodes.Ldstr, (string)constant.Value);
                         return;
-                    } else if (constant.EffectiveType == TangentType.Int)
-                    {
+                    } else if (constant.EffectiveType == TangentType.Int) {
                         gen.Emit(OpCodes.Ldc_I4, (int)constant.Value);
                         return;
-                    } else
-                    {
+                    } else {
                         throw new NotImplementedException();
                     }
 
@@ -481,7 +445,7 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.CtorParamAccess:
                     var ctorAccess = (CtorParameterAccessExpression)expr;
-                    parameterCodes[ctorAccess.ThisParam](gen);
+                    parameterCodes[ctorAccess.ThisParam].Accessor(gen);
                     var thisType = typeLookup[ctorAccess.ThisParam.Returns];
                     gen.Emit(OpCodes.Ldfld, thisType.GetField(CilScope.GetNameFor(ctorAccess.CtorParam, typeLookup)));
                     return;
@@ -495,6 +459,17 @@ namespace Tangent.CilGeneration
                     gen.ThrowException(typeof(InvalidOperationException));
                     return;
 
+                case ExpressionNodeType.LocalAccess:
+                    var localAccess = (LocalAccessExpression)expr;
+                    parameterCodes[localAccess.Local].Accessor(gen);
+                    return;
+
+                case ExpressionNodeType.LocalAssignment:
+                    var localAssignment = (LocalAssignmentExpression)expr;
+                    AddExpression(localAssignment.Value, gen, fnLookup, typeLookup, closureScope, parameterCodes, lastStatement);
+                    parameterCodes[localAssignment.Local.Local].Mutator(gen);
+                    return;
+
                 default:
                     throw new NotImplementedException();
             }
@@ -503,7 +478,7 @@ namespace Tangent.CilGeneration
         /// <summary>
         /// Build closure, pushing the action onto the top of the stack.
         /// </summary>
-        private void BuildClosure(ILGenerator gen, LambdaExpression lambda, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, Action<ILGenerator>> parameterCodes)
+        private void BuildClosure(ILGenerator gen, LambdaExpression lambda, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes)
         {
             // Build the anonymous type.
             var closure = closureScope.DefineNestedType("closure" + closureCounter++);
@@ -514,15 +489,14 @@ namespace Tangent.CilGeneration
             gen.Emit(OpCodes.Newobj, closureCtor);
             gen.Emit(OpCodes.Stloc, obj);
 
-            var closureReferences = new Dictionary<ParameterDeclaration, Action<ILGenerator>>();
-            foreach (var parameter in parameterCodes)
-            {
+            var closureReferences = new Dictionary<ParameterDeclaration, PropertyCodes>();
+            foreach (var parameter in parameterCodes) {
                 gen.Emit(OpCodes.Ldloc, obj);
                 var fld = closure.DefineField(CilScope.GetNameFor(parameter.Key, typeLookup), typeLookup[parameter.Key.Returns], System.Reflection.FieldAttributes.Public);
-                parameter.Value(gen);
+                parameter.Value.Accessor(gen);
                 gen.Emit(OpCodes.Stfld, fld);
 
-                closureReferences.Add(parameter.Key, g => { g.Emit(OpCodes.Ldarg_0); g.Emit(OpCodes.Ldfld, fld); });
+                closureReferences.Add(parameter.Key, new PropertyCodes(g => { g.Emit(OpCodes.Ldarg_0); g.Emit(OpCodes.Ldfld, fld); }, null));
             }
 
             // Build actual function in anonymous type.
@@ -531,10 +505,9 @@ namespace Tangent.CilGeneration
             var closureFn = closure.DefineMethod("Implementation", System.Reflection.MethodAttributes.Public, returnType, parameterTypes);
             closureFn.SetReturnType(returnType);
             int ix = 1;
-            foreach (var pd in lambda.ResolvedParameters)
-            {
+            foreach (var pd in lambda.ResolvedParameters) {
                 var paramBuilder = closureFn.DefineParameter(ix++, ParameterAttributes.In, CilScope.GetNameFor(pd, typeLookup));
-                closureReferences.Add(pd, g => g.Emit(OpCodes.Ldarg, (Int16)ix - 1));
+                closureReferences.Add(pd, new PropertyCodes(g => g.Emit(OpCodes.Ldarg, (Int16)ix - 1), g => g.Emit(OpCodes.Starg, (Int16)ix - 1)));
             }
 
             var closureGen = closureFn.GetILGenerator();

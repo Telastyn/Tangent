@@ -60,7 +60,7 @@ namespace Tangent.Intermediate
                          ((DelegateType)element.Parameter.RequiredArgumentType).Returns == inType) {
 
                         // We have something like ~>int == int
-                        parameterCollector.Add(new LambdaExpression(Enumerable.Empty<ParameterDeclaration>(), inType, new Block(new[] { inputEnum.Current }), inputEnum.Current.SourceInfo));
+                        parameterCollector.Add(new LambdaExpression(Enumerable.Empty<ParameterDeclaration>(), inType, new Block(new[] { inputEnum.Current }, Enumerable.Empty<ParameterDeclaration>()), inputEnum.Current.SourceInfo));
                         sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
                     } else if (!element.Parameter.RequiredArgumentType.CompatibilityMatches(inType, inferenceCollector)) {
                         return PhraseMatchResult.Failure;

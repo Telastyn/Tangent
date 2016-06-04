@@ -46,7 +46,7 @@ namespace Tangent.Intermediate
                         Enumerable.Empty<PhrasePart>(),
                         new Function(
                             towardsType,
-                            new Block(VoidStatements.Statements.Concat(new[] { interpretation })))),
+                            new Block(VoidStatements.Statements.Concat(new[] { interpretation }), Enumerable.Empty<ParameterDeclaration>()))),
                     Enumerable.Empty<Expression>(),
                     Enumerable.Empty<TangentType>(),
                     SourceInfo));

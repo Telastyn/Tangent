@@ -8,13 +8,17 @@ using Tangent.Parsing.Partial;
 using Tangent.Parsing.TypeResolved;
 using Tangent.Tokenization;
 
-namespace Tangent.Parsing {
-    public static class Parse {
-        public static ResultOrParseError<TangentProgram> TangentProgram(IEnumerable<Token> tokens) {
+namespace Tangent.Parsing
+{
+    public static class Parse
+    {
+        public static ResultOrParseError<TangentProgram> TangentProgram(IEnumerable<Token> tokens)
+        {
             return TangentProgram(new List<Token>(tokens));
         }
 
-        private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens) {
+        private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens)
+        {
             if (!tokens.Any()) {
                 return new TangentProgram(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>(), Enumerable.Empty<string>());
             }
@@ -101,13 +105,12 @@ namespace Tangent.Parsing {
 
             ctorCalls = ctorCalls.Concat(interfaceToImplementerBindings.Select(itoi => new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", itoi.Implementation)), new InterfaceUpcast(itoi.Interface)))).ToList();
 
-            var enumAccesses = resolvedTypes.Result.Where(tt => tt.Returns.ImplementationType == KindOfType.Enum).Select(tt => tt.Returns).Cast<EnumType>().SelectMany(tt => tt.Values.Select(v => new ReductionDeclaration(v, new Function(tt, new Block(new[] { new EnumValueAccessExpression(tt.SingleValueTypeFor(v), null) }))))).ToList();
+            var enumAccesses = resolvedTypes.Result.Where(tt => tt.Returns.ImplementationType == KindOfType.Enum).Select(tt => tt.Returns).Cast<EnumType>().SelectMany(tt => tt.Values.Select(v => new ReductionDeclaration(v, new Function(tt, new Block(new[] { new EnumValueAccessExpression(tt.SingleValueTypeFor(v), null) }, Enumerable.Empty<ParameterDeclaration>()))))).ToList();
 
 
             // And now Phase 3 - Statement parsing based on syntax.
             var lookup = new Dictionary<Function, Function>();
-            var bad = new List<IncomprehensibleStatementError>();
-            var ambiguous = new List<AmbiguousStatementError>();
+            var errors = new List<ParseError>();
             resolvedFunctions = new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(BuiltinFunctions.All).Concat(enumAccesses));
             resolvedFunctions = FanOutFunctionsWithSumTypes(resolvedFunctions.Result);
             if (!resolvedFunctions.Success) { return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error); }
@@ -118,21 +121,23 @@ namespace Tangent.Parsing {
                     if (partialFunction.Scope is TypeClass) {
                         lookup.Add(partialFunction, new InterfaceFunction(partialFunction.Scope as TypeClass, partialFunction.EffectiveType));
                     } else {
+                        var locals = BuildLocals(partialFunction.Implementation.Locals, types, errors).ToList();
                         var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
                             .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
                             .Concat((partialFunction.Scope as ProductType) != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, (partialFunction.Scope as ProductType).DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
                             .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f => new FunctionInvocation(f)))
-                            .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }));
+                            .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }))
+                            .CreateNestedScope(locals);
 
-                        Function newb = BuildBlock(scope, partialFunction.EffectiveType, partialFunction.Implementation, bad, ambiguous);
+                        Function newb = BuildBlock(scope, types, partialFunction.EffectiveType, partialFunction.Implementation, locals, errors);
 
                         lookup.Add(partialFunction, newb);
                     }
                 }
             }
 
-            if (bad.Any() || ambiguous.Any()) {
-                return new ResultOrParseError<TangentProgram>(new StatementGrokErrors(bad, ambiguous));
+            if (errors.Any()) {
+                return new ResultOrParseError<TangentProgram>(new AggregateParseError(errors));
             }
 
             // 3a - Replace TypeResolvedFunctions with fully resolved ones.
@@ -156,46 +161,65 @@ namespace Tangent.Parsing {
             }).ToList(), inputSources);
         }
 
-        private static Function BuildBlock(TransformationScope scope, TangentType effectiveType, PartialBlock partialBlock, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous) {
-            var block = BuildBlock(scope, effectiveType, partialBlock.Statements, bad, ambiguous);
+        private static IEnumerable<ParameterDeclaration> BuildLocals(IEnumerable<VarDeclElement> locals, IEnumerable<TypeDeclaration> types, List<ParseError> errors)
+        {
+            foreach (var entry in locals) {
+                var decl = TypeResolve.Resolve(entry.ParameterDeclaration, types);
+                if (!decl.Success) {
+                    errors.Add(decl.Error);
+                } else {
+                    yield return decl.Result;
+                }
+            }
+        }
+
+        private static Function BuildBlock(TransformationScope scope, IEnumerable<TypeDeclaration> types, TangentType effectiveType, PartialBlock partialBlock, IEnumerable<ParameterDeclaration> locals, List<ParseError> errors)
+        {
+            var block = BuildBlock(scope, types, effectiveType, partialBlock.Statements, locals, errors);
 
             return new Function(effectiveType, block);
         }
 
-        private static Block BuildBlock(TransformationScope scope, TangentType effectiveType, IEnumerable<PartialStatement> elements, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous) {
+        private static Block BuildBlock(TransformationScope scope, IEnumerable<TypeDeclaration> types, TangentType effectiveType, IEnumerable<PartialStatement> elements, IEnumerable<ParameterDeclaration> locals, List<ParseError> errors)
+        {
             List<Expression> statements = new List<Expression>();
             if (!elements.Any()) {
-                if (effectiveType != TangentType.Void) { bad.Add(new IncomprehensibleStatementError(Enumerable.Empty<Expression>())); }
-                return new Block(Enumerable.Empty<Expression>());
+                if (effectiveType != TangentType.Void) { errors.Add(new IncomprehensibleStatementError(Enumerable.Empty<Expression>())); }
+                return new Block(Enumerable.Empty<Expression>(), Enumerable.Empty<ParameterDeclaration>());
             }
 
             var allElements = elements.ToList();
             for (int ix = 0; ix < allElements.Count; ++ix) {
                 var line = allElements[ix];
-                var statementBits = line.FlatTokens.Select(t => ElementToExpression(scope, t, bad, ambiguous)).ToList();
+                var statementBits = line.FlatTokens.Select(t => ElementToExpression(scope, types, t, errors)).ToList();
                 var statement = scope.InterpretTowards((effectiveType != null && ix == allElements.Count - 1) ? effectiveType : TangentType.Void, statementBits);
                 if (statement.Count == 0) {
-                    bad.Add(new IncomprehensibleStatementError(statementBits));
+                    errors.Add(new IncomprehensibleStatementError(statementBits));
                 } else if (statement.Count > 1) {
-                    ambiguous.Add(new AmbiguousStatementError(statementBits, statement));
+                    errors.Add(new AmbiguousStatementError(statementBits, statement));
                 } else {
                     statements.Add(statement.First());
                 }
             }
 
-            return new Block(statements);
+            return new Block(statements, locals);
         }
 
-        private static Expression ElementToExpression(TransformationScope scope, PartialElement element, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous) {
+        private static Expression ElementToExpression(TransformationScope scope, IEnumerable<TypeDeclaration> types, PartialElement element, List<ParseError> errors)
+        {
             switch (element.Type) {
                 case ElementType.Identifier:
                     return new IdentifierExpression(((IdentifierElement)element).Identifier, element.SourceInfo);
                 case ElementType.Block:
                     var stmts = ((BlockElement)element).Block.Statements.ToList();
+                    var locals = BuildLocals(((BlockElement)element).Block.Locals, types, errors);
+                    if (locals.Any()) {
+                        scope = scope.CreateNestedScope(locals);
+                    }
                     var last = stmts.Last();
                     stmts.RemoveAt(stmts.Count - 1);
-                    var notLast = BuildBlock(scope, null, stmts, bad, ambiguous);
-                    var lastExpr = last.FlatTokens.Select(e => ElementToExpression(scope, e, bad, ambiguous)).ToList();
+                    var notLast = BuildBlock(scope, types, null, stmts, locals, errors);
+                    var lastExpr = last.FlatTokens.Select(e => ElementToExpression(scope, types, e, errors)).ToList();
                     var info = lastExpr.Aggregate((LineColumnRange)null, (a, expr) => expr.SourceInfo.Combine(a));
                     info = notLast.Statements.Any() ? notLast.Statements.Aggregate(info, (a, stmt) => a.Combine(stmt.SourceInfo)) : info;
                     return new ParenExpression(notLast, lastExpr, info);
@@ -203,16 +227,18 @@ namespace Tangent.Parsing {
                     return ((ConstantElement)element).TypelessExpression;
                 case ElementType.Lambda:
                     var concrete = (LambdaElement)element;
-                    return new PartialLambdaExpression(concrete.Takes.Select(vde => VarDeclToParameterDeclaration(scope, vde, bad, ambiguous)).ToList(), scope, (newScope, returnType) => {
-                        var errors = new List<IncomprehensibleStatementError>();
-                        var ambiguities = new List<AmbiguousStatementError>();
-                        var implementation = BuildBlock(newScope, returnType, concrete.Body.Block, errors, ambiguities);
-                        if (errors.Any()) {
+                    return new PartialLambdaExpression(concrete.Takes.Select(vde => VarDeclToParameterDeclaration(scope, vde, errors)).ToList(), scope, (newScope, returnType) => {
+                        var lambdaErrors = new List<ParseError>();
+                        if (concrete.Body.Block.Locals.Any()) {
+                            throw new NotImplementedException("TODO: make locals in lambdas work.");
+                        }
+                        var implementation = BuildBlock(newScope, types, returnType, concrete.Body.Block, Enumerable.Empty<ParameterDeclaration>(), lambdaErrors);
+                        if (lambdaErrors.Where(e => !(e is AmbiguousStatementError)).Any()) {
                             return null;
                         }
 
-                        if (ambiguities.Any()) {
-                            return new AmbiguousExpression(ambiguities.SelectMany(a => a.PossibleInterpretations));
+                        if (lambdaErrors.Where(e => e is AmbiguousStatementError).Any()) {
+                            return new AmbiguousExpression(lambdaErrors.Where(e => e is AmbiguousStatementError).Select(e => e as AmbiguousStatementError).SelectMany(a => a.PossibleInterpretations));
                         }
 
                         // RMS: being lazy. Should probably have an Either or a BlockExpr.
@@ -223,7 +249,8 @@ namespace Tangent.Parsing {
             }
         }
 
-        private static ParameterDeclaration VarDeclToParameterDeclaration(TransformationScope scope, VarDeclElement vde, List<IncomprehensibleStatementError> bad, List<AmbiguousStatementError> ambiguous) {
+        private static ParameterDeclaration VarDeclToParameterDeclaration(TransformationScope scope, VarDeclElement vde, List<ParseError> error)
+        {
             if (!vde.ParameterDeclaration.Takes.All(ppp => ppp.IsIdentifier)) {
                 throw new NotImplementedException("Parameterized variable declarations not currently supported.");
             }
@@ -233,13 +260,14 @@ namespace Tangent.Parsing {
             if (result.Success) {
                 return result.Result;
             } else {
-                bad.Add(new IncomprehensibleStatementError(vde.ParameterDeclaration.Returns));
+                error.Add(new IncomprehensibleStatementError(vde.ParameterDeclaration.Returns));
                 return null;
             }
         }
 
 
-        private static IEnumerable<PartialReductionDeclaration> ExtractPartialFunctions(TangentType tt, HashSet<TangentType> searched = null) {
+        private static IEnumerable<PartialReductionDeclaration> ExtractPartialFunctions(TangentType tt, HashSet<TangentType> searched = null)
+        {
             searched = searched ?? new HashSet<TangentType>();
             switch (tt.ImplementationType) {
                 case KindOfType.Sum:
@@ -270,7 +298,8 @@ namespace Tangent.Parsing {
         }
 
 
-        private static ResultOrParseError<IEnumerable<ReductionDeclaration>> FanOutFunctionsWithSumTypes(IEnumerable<ReductionDeclaration> resolvedFunctions) {
+        private static ResultOrParseError<IEnumerable<ReductionDeclaration>> FanOutFunctionsWithSumTypes(IEnumerable<ReductionDeclaration> resolvedFunctions)
+        {
             List<ReductionDeclaration> result = new List<ReductionDeclaration>(resolvedFunctions);
             for (int ix = 0; ix < result.Count; ++ix) {
                 var entry = result[ix];

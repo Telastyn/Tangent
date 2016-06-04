@@ -15,6 +15,11 @@ namespace Tangent.Intermediate
             Rules = Prioritize(rules).ToList();
         }
 
+        private TransformationScope(TransformationScope parent, IEnumerable<ParameterDeclaration> nestedLocals)
+        {
+            Rules = new[] { nestedLocals.SelectMany(l => LocalAccess.RulesForLocal(l)) }.Concat(parent.Rules);
+        }
+
         public List<Expression> InterpretStatement(List<Expression> input)
         {
             return InterpretTowards(TangentType.Void, input);
@@ -55,6 +60,15 @@ namespace Tangent.Intermediate
             }
 
             return new List<Expression>();
+        }
+
+        public TransformationScope CreateNestedScope(IEnumerable<ParameterDeclaration> locals)
+        {
+            if (!locals.Any()) {
+                return this;
+            }
+
+            return new TransformationScope(this, locals);
         }
 
         public static IEnumerable<IEnumerable<TransformationRule>> Prioritize(IEnumerable<TransformationRule> rules)

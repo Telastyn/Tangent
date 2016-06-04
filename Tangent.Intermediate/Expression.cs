@@ -26,7 +26,9 @@ namespace Tangent.Intermediate
         PartialLambda = 16,
         Lambda = 17,
         DelegateInvocation = 18,
-        InvalidProgramException = 19
+        InvalidProgramException = 19,
+        LocalAccess = 20,
+        LocalAssignment = 21,
     }
 
     public abstract class Expression

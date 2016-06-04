@@ -55,6 +55,9 @@
     <Compile Include="DirectOpCode.cs" />
     <Compile Include="EnumType.cs" />
     <Compile Include="EnumWideningExpression.cs" />
+    <Compile Include="Field.cs" />
+    <Compile Include="LocalAccessExpression.cs" />
+    <Compile Include="LocalAssignmentExpression.cs" />
     <Compile Include="ThrowInvalidProgramExceptionExpression.cs" />
     <Compile Include="Expression.cs" />
     <Compile Include="ExpressionDeclaration.cs" />
@@ -96,6 +99,8 @@
     <Compile Include="Transformations\FunctionInvocation.cs" />
     <Compile Include="Transformations\GenericParameterAccess.cs" />
     <Compile Include="Transformations\LazyOperator.cs" />
+    <Compile Include="Transformations\LocalAccess.cs" />
+    <Compile Include="Transformations\LocalAssignment.cs" />
     <Compile Include="Transformations\ParameterAccess.cs" />
     <Compile Include="Transformations\SingleValueAccessor.cs" />
     <Compile Include="Transformations\TypeAccess.cs" />

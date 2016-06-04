@@ -122,8 +122,8 @@ namespace Tangent.Parsing
         public static readonly Parser<PartialElement> LambdaExpr =
             Parser.Combine(
                 Parser.Options("Lambda parameters",
-                    ID.Select(id => (IEnumerable<VarDeclElement>)new[] { new VarDeclElement(new PartialParameterDeclaration(id, null), id.SourceInfo) }),
-                    Parser.Combine(LiteralParser.OpenParen, ID.OneOrMore, LiteralParser.CloseParen, (o, ids, c) => new VarDeclElement(new PartialParameterDeclaration(ids, null), LineColumnRange.CombineAll(ids.Select(id => id.SourceInfo)))).OneOrMore
+                    ID.Select(id => (IEnumerable<VarDeclElement>)new[] { new VarDeclElement(new PartialParameterDeclaration(id, null), null, id.SourceInfo) }),
+                    Parser.Combine(LiteralParser.OpenParen, ID.OneOrMore, LiteralParser.CloseParen, (o, ids, c) => new VarDeclElement(new PartialParameterDeclaration(ids, null), null, LineColumnRange.CombineAll(ids.Select(id => id.SourceInfo)))).OneOrMore
                 // TODO: full param decl?
                 ),
                 LiteralParser.FunctionArrow,
@@ -144,19 +144,29 @@ namespace Tangent.Parsing
                 LiteralParser.OpenParen,
                 Expr.OneOrMore,
                 LiteralParser.CloseParen,
-                (o, exprs, c) => (PartialElement)new BlockElement(new PartialBlock(new[] { new PartialStatement(exprs) })));
+                (o, exprs, c) => (PartialElement)new BlockElement(new PartialBlock(new[] { new PartialStatement(exprs) }, Enumerable.Empty<VarDeclElement>())));
 
         public static readonly Parser<PartialStatement> Statement =
                 Expr.OneOrMore.Select(
                     (exprs) => new PartialStatement(exprs));
 
-        // { statement* }
+        public static readonly Parser<VarDeclElement> LocalVar =
+            Parser.Combine(
+                LiteralParser.Colon,
+                ID.OneOrMore,
+                LiteralParser.Colon,
+                ID.OneOrMore,
+                LiteralParser.InitializerEquals,
+                Statement,
+                (c1, name, c2, typeref, ie, initializer) => new VarDeclElement(new PartialParameterDeclaration(name, typeref.Select(tr => (Expression)tr).ToList()), initializer, LineColumnRange.CombineAll(name.Select(id => id.SourceInfo).Concat(typeref.Select(tr => tr.SourceInfo)).Concat(initializer.FlatTokens.Select(ft => ft.SourceInfo)))));
+
+        // { (local-vardecl|statement)* }
         public static readonly Parser<PartialBlock> BlockDecl =
             Parser.Combine(
                 LiteralParser.OpenCurly,
-                Parser.Delimited(LiteralParser.SemiColon, Statement, false, true),
+                Parser.Delimited(LiteralParser.SemiColon, LocalVar.Select(lv => new Tuple<PartialStatement, VarDeclElement>(null, lv)).Or(Statement.Select(s => new Tuple<PartialStatement, VarDeclElement>(s, null)), "Statement or Local Variable"), false, true),
                 LiteralParser.CloseCurly,
-                (o, stmts, c) => new PartialBlock(stmts));
+                (o, lines, c) => new PartialBlock(BuildStatements(lines).ToList(), lines.Where(t => t.Item2 != null).Select(t => t.Item2)));
 
         // function-phrase => type-expr block
         public static readonly Parser<PartialReductionDeclaration> FunctionDeclaration =
@@ -278,6 +288,19 @@ namespace Tangent.Parsing
             }
 
             return new PartialTypeDeclaration(typePhrase, implementation);
+        }
+
+        private static IEnumerable<PartialStatement> BuildStatements(IEnumerable<Tuple<PartialStatement, VarDeclElement>> lines)
+        {
+            foreach(var entry in lines) {
+                if (entry.Item1 != null) {
+                    yield return entry.Item1;
+                } else {
+
+                    // otherwise, we need to initialize the local at this step.
+                    yield return new PartialStatement(entry.Item2.ParameterDeclaration.Takes.Select(id => new IdentifierElement(id.Identifier.Identifier, id.Identifier.SourceInfo)).Concat(new[] { new IdentifierElement("=", null) }).Concat(entry.Item2.Initializer.FlatTokens));
+                }
+            }
         }
 
         private static void SetGenericParams(TangentType implementation, IEnumerable<PartialParameterDeclaration> generics)

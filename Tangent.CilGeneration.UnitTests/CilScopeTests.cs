@@ -30,7 +30,7 @@ namespace Tangent.CilGeneration.UnitTests
             var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("BasicMethodHappyPath"), AssemblyBuilderAccess.Run);
             var module = assembly.DefineDynamicModule("BasicMethodHappyPath");
             var t = module.DefineType("BasicMethodHappyPath");
-            var fn = new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
+            var fn = new ReductionDeclaration("foo", new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>(), Enumerable.Empty<ParameterDeclaration>())));
             var scope = new CilScope(t, new[] { fn }, emptyTypeLookup);
 
             scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common, emptyDebuggingDocWriter));
@@ -53,7 +53,7 @@ namespace Tangent.CilGeneration.UnitTests
             var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("MethodWithParamsHappyPath"), AssemblyBuilderAccess.Run);
             var module = assembly.DefineDynamicModule("MethodWithParamsHappyPath");
             var t = module.DefineType("MethodWithParamsHappyPath");
-            var fn = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
+            var fn = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>(), Enumerable.Empty<ParameterDeclaration>())));
             var scope = new CilScope(t, new[] { fn }, mockLookup.Object);
 
             scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common, emptyDebuggingDocWriter));
@@ -77,8 +77,8 @@ namespace Tangent.CilGeneration.UnitTests
             var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("MethodWithParamsHappyPath"), AssemblyBuilderAccess.Run);
             var module = assembly.DefineDynamicModule("MethodWithParamsHappyPath");
             var t = module.DefineType("MethodWithParamsHappyPath");
-            var fn = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
-            var fn2 = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT.SingleValueTypeFor("b"))) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>())));
+            var fn = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT)) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>(), Enumerable.Empty<ParameterDeclaration>())));
+            var fn2 = new ReductionDeclaration(new PhrasePart[] { new PhrasePart("foo"), new PhrasePart(new ParameterDeclaration("bar", enumT.SingleValueTypeFor("b"))) }, new Function(TangentType.Void, new Block(Enumerable.Empty<Expression>(), Enumerable.Empty<ParameterDeclaration>())));
             var scope = new CilScope(t, new[] { fn, fn2 }, mockLookup.Object);
 
             scope.Compile(new CilFunctionCompiler(EmptyFunctionLookup.Common, emptyDebuggingDocWriter));
@@ -110,7 +110,7 @@ namespace Tangent.CilGeneration.UnitTests
                         BuiltinFunctions.PrintString, 
                         new[]{new ConstantExpression<string>(TangentType.String, "moo.", null)},
                         new TangentType[]{},
-                        null)})));
+                        null)}, Enumerable.Empty<ParameterDeclaration>())));
 
             var scope = new CilScope(t, new[] { fn }, emptyTypeLookup);
 
