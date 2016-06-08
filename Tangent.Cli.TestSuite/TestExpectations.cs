@@ -226,6 +226,17 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void BasicFields()
+        {
+            TimeSpan compileDuration;
+            TimeSpan programDuration;
+            var result = Test.DebugProgramFile("BasicFields.tan", out compileDuration, out programDuration);
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "47", "47", "5" }));
+            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
+        }
+
+        [TestMethod]
         [Ignore]
         public void InterfaceNotEquals(){
             TimeSpan compileDuration;

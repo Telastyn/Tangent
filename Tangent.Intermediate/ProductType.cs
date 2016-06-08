@@ -9,12 +9,14 @@ namespace Tangent.Intermediate
     public class ProductType : TangentType
     {
         public readonly List<PhrasePart> DataConstructorParts;
+        public readonly List<Field> Fields;
         private IEnumerable<ParameterDeclaration> genericElements = null;
 
-        public ProductType(IEnumerable<PhrasePart> dataConstructorParts)
+        public ProductType(IEnumerable<PhrasePart> dataConstructorParts, IEnumerable<Field> fields)
             : base(KindOfType.Product)
         {
             this.DataConstructorParts = new List<PhrasePart>(dataConstructorParts);
+            this.Fields = new List<Field>(fields);
         }
 
         public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)

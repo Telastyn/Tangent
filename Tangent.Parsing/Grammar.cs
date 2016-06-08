@@ -150,15 +150,18 @@ namespace Tangent.Parsing
                 Expr.OneOrMore.Select(
                     (exprs) => new PartialStatement(exprs));
 
+        public static readonly Parser<IEnumerable<Expression>> SimpleTypeReference =
+            ID.Select(id => (Expression)id).Or(LazyOperator.Select(id => (Expression)id), "type reference").OneOrMore;
+
         public static readonly Parser<VarDeclElement> LocalVar =
             Parser.Combine(
                 LiteralParser.Colon,
                 ID.OneOrMore,
                 LiteralParser.Colon,
-                ID.OneOrMore,
+                SimpleTypeReference,
                 LiteralParser.InitializerEquals,
                 Statement,
-                (c1, name, c2, typeref, ie, initializer) => new VarDeclElement(new PartialParameterDeclaration(name, typeref.Select(tr => (Expression)tr).ToList()), initializer, LineColumnRange.CombineAll(name.Select(id => id.SourceInfo).Concat(typeref.Select(tr => tr.SourceInfo)).Concat(initializer.FlatTokens.Select(ft => ft.SourceInfo)))));
+                (c1, name, c2, typeref, ie, initializer) => new VarDeclElement(new PartialParameterDeclaration(name, typeref.ToList()), initializer, LineColumnRange.CombineAll(name.Select(id => id.SourceInfo).Concat(typeref.Select(tr => tr.SourceInfo)).Concat(initializer.FlatTokens.Select(ft => ft.SourceInfo)))));
 
         // { (local-vardecl|statement)* }
         public static readonly Parser<PartialBlock> BlockDecl =
@@ -177,7 +180,19 @@ namespace Tangent.Parsing
                 BlockDecl,
                 (phrase, op, type, block) => new PartialReductionDeclaration(phrase, new PartialFunction(type, block, null)));
 
-        public static readonly Parser<IEnumerable<PartialReductionDeclaration>> ClassBody = FunctionDeclaration.ZeroOrMore;
+        // (id|thisParam)+ : type-ref := statement
+        public static readonly Parser<VarDeclElement> FieldDeclaration =
+            Parser.Combine(
+                ID.Select(id => new PartialPhrasePart(id)).Or(thisParam, "Field name part").OneOrMore,
+                LiteralParser.Colon,
+                SimpleTypeReference,
+                LiteralParser.InitializerEquals,
+                Statement,
+                LiteralParser.SemiColon,
+                (name, c, typeref, ie, initializer, sc) => new VarDeclElement(new PartialParameterDeclaration(name, typeref.ToList()), initializer, LineColumnRange.CombineAll(name.Select(id => id.IsIdentifier ? id.Identifier.SourceInfo : null).Concat(typeref.Select(tr => tr.SourceInfo)).Concat(initializer.FlatTokens.Select(ft => ft.SourceInfo)))));
+                
+
+        public static readonly Parser<IEnumerable<Tuple<VarDeclElement, PartialReductionDeclaration>>> ClassBody = FieldDeclaration.Select(fd => new Tuple<VarDeclElement, PartialReductionDeclaration>(fd, null)).Or(FunctionDeclaration.Select(fd => new Tuple<VarDeclElement, PartialReductionDeclaration>(null, fd)), "Class member").ZeroOrMore;
 
         // (function-phrase - |) inline-interface-bindings? { class-body }
         public static readonly Parser<TangentType> ClassDecl =
@@ -251,10 +266,12 @@ namespace Tangent.Parsing
             }
         }
 
-        private static TangentType ConstructProductType(IEnumerable<PartialPhrasePart> constructorBits, IEnumerable<TangentType> interfaceReferences, IEnumerable<PartialReductionDeclaration> body)
+        private static TangentType ConstructProductType(IEnumerable<PartialPhrasePart> constructorBits, IEnumerable<TangentType> interfaceReferences, IEnumerable<Tuple<VarDeclElement,PartialReductionDeclaration>> body)
         {
             interfaceReferences = interfaceReferences ?? Enumerable.Empty<TangentType>();
-            var result = new PartialProductType(constructorBits, body, new List<PartialParameterDeclaration>(), interfaceReferences);
+            var fields = body.Where(e => e.Item1 != null).Select(e => e.Item1).ToList();
+            var fns = body.Where(e => e.Item2 != null).Select(e => e.Item2).ToList();
+            var result = new PartialProductType(constructorBits, fns, fields, new List<PartialParameterDeclaration>(), interfaceReferences);
             var boundFunctions = result.Functions.Select(fn => new PartialReductionDeclaration(fn.Takes, new PartialFunction(fn.Returns.EffectiveType, fn.Returns.Implementation, result))).ToList();
             result.Functions.Clear();
             result.Functions.AddRange(boundFunctions);
@@ -292,7 +309,7 @@ namespace Tangent.Parsing
 
         private static IEnumerable<PartialStatement> BuildStatements(IEnumerable<Tuple<PartialStatement, VarDeclElement>> lines)
         {
-            foreach(var entry in lines) {
+            foreach (var entry in lines) {
                 if (entry.Item1 != null) {
                     yield return entry.Item1;
                 } else {

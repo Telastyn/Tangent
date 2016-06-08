@@ -106,7 +106,16 @@ namespace Tangent.Parsing
             ctorCalls = ctorCalls.Concat(interfaceToImplementerBindings.Select(itoi => new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", itoi.Implementation)), new InterfaceUpcast(itoi.Interface)))).ToList();
 
             var enumAccesses = resolvedTypes.Result.Where(tt => tt.Returns.ImplementationType == KindOfType.Enum).Select(tt => tt.Returns).Cast<EnumType>().SelectMany(tt => tt.Values.Select(v => new ReductionDeclaration(v, new Function(tt, new Block(new[] { new EnumValueAccessExpression(tt.SingleValueTypeFor(v), null) }, Enumerable.Empty<ParameterDeclaration>()))))).ToList();
+            var fieldFunctions = new List<ReductionDeclaration>();
+            foreach (var productType in allProductTypes) {
+                foreach (var field in productType.Fields) {
+                    fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", productType))), new FieldAccessorFunction(productType, field)));
+                    fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", productType))).Concat(
+                        new[] { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", field.Declaration.Returns)) }), new FieldMutatorFunction(productType, field)));
+                }
+            }
 
+            resolvedFunctions = new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(fieldFunctions));
 
             // And now Phase 3 - Statement parsing based on syntax.
             var lookup = new Dictionary<Function, Function>();
@@ -133,6 +142,33 @@ namespace Tangent.Parsing
 
                         lookup.Add(partialFunction, newb);
                     }
+                }
+            }
+
+            foreach (var productType in allProductTypes) {
+                foreach (var field in productType.Fields) {
+                    field.ResolveInitializerPlaceholders(placeholder => {
+                        var castPlaceholder = placeholder as InitializerPlaceholder;
+
+                        // Initializers can't use locals (directly), and don't have parameters.
+                        var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
+                                .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f => new FunctionInvocation(f)))
+                                .Concat(ConstructorParameterAccess.For(null, productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)))
+                                .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }));
+
+                        var expr = castPlaceholder.UnresolvedInitializer.FlatTokens.Select(pe => ElementToExpression(scope, types, pe, errors)).ToList();
+                        var result = scope.InterpretTowards(field.Declaration.Returns, expr);
+
+                        if (result.Count == 0) {
+                            errors.Add(new IncomprehensibleStatementError(expr));
+                            return placeholder;
+                        } else if (result.Count > 1) {
+                            errors.Add(new AmbiguousStatementError(expr, result));
+                            return placeholder;
+                        } else {
+                            return result.First();
+                        }
+                    });
                 }
             }
 

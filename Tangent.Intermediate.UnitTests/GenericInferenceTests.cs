@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Tangent.Intermediate.UnitTests
@@ -26,7 +27,7 @@ namespace Tangent.Intermediate.UnitTests
             var genericParam = new ParameterDeclaration("T", TangentType.Any);
             var inferencePlaceholder = GenericInferencePlaceholder.For(genericParam);
             var T = new ParameterDeclaration("T", TangentType.Any.Kind);
-            var genericList = new TypeDeclaration(new PhrasePart[] { new PhrasePart("List"), new PhrasePart(T) }, new ProductType(new[] { new PhrasePart(new ParameterDeclaration("obj", GenericArgumentReferenceType.For(T))) }));
+            var genericList = new TypeDeclaration(new PhrasePart[] { new PhrasePart("List"), new PhrasePart(T) }, new ProductType(new[] { new PhrasePart(new ParameterDeclaration("obj", GenericArgumentReferenceType.For(T))) }, Enumerable.Empty<Field>()));
             var listInt = BoundGenericType.For(genericList, new[] { TangentType.Int });
             var listInferT = BoundGenericType.For(genericList, new[] { inferencePlaceholder });
             var results = new Dictionary<ParameterDeclaration, TangentType>();
@@ -43,7 +44,7 @@ namespace Tangent.Intermediate.UnitTests
             var genericParam = new ParameterDeclaration("TT", TangentType.Any);
             var inferencePlaceholder = GenericInferencePlaceholder.For(genericParam);
             var T = new ParameterDeclaration("T", TangentType.Any.Kind);
-            var genericList = new TypeDeclaration(new PhrasePart[] { new PhrasePart("List"), new PhrasePart(T) }, new ProductType(new[] { new PhrasePart(new ParameterDeclaration("obj", GenericArgumentReferenceType.For(T))) }));
+            var genericList = new TypeDeclaration(new PhrasePart[] { new PhrasePart("List"), new PhrasePart(T) }, new ProductType(new[] { new PhrasePart(new ParameterDeclaration("obj", GenericArgumentReferenceType.For(T))) }, Enumerable.Empty<Field>()));
             var listInt = BoundGenericType.For(genericList, new[] { TangentType.Int });
             var listInferT = BoundGenericType.For(genericList, new[] { inferencePlaceholder });
             var results = new Dictionary<ParameterDeclaration, TangentType>();
@@ -63,7 +64,7 @@ namespace Tangent.Intermediate.UnitTests
             var inferencePlaceholder2 = GenericInferencePlaceholder.For(genericParam2);
             var K = new ParameterDeclaration("typeK", TangentType.Any.Kind);
             var V = new ParameterDeclaration("typeV", TangentType.Any.Kind);
-            var genericMap = new TypeDeclaration(new PhrasePart[] { new PhrasePart("Map"), new PhrasePart(K), new PhrasePart(V) }, new ProductType(new[] { new PhrasePart(new ParameterDeclaration("key", GenericArgumentReferenceType.For(K))), new PhrasePart(new ParameterDeclaration("value", GenericArgumentReferenceType.For(V))) }));
+            var genericMap = new TypeDeclaration(new PhrasePart[] { new PhrasePart("Map"), new PhrasePart(K), new PhrasePart(V) }, new ProductType(new[] { new PhrasePart(new ParameterDeclaration("key", GenericArgumentReferenceType.For(K))), new PhrasePart(new ParameterDeclaration("value", GenericArgumentReferenceType.For(V))) }, Enumerable.Empty<Field>()));
             var mapIntString = BoundGenericType.For(genericMap, new[] { TangentType.Int, TangentType.String });
             var mapInfer = BoundGenericType.For(genericMap, new[] { inferencePlaceholder1, inferencePlaceholder2 });
             var results = new Dictionary<ParameterDeclaration, TangentType>();
@@ -83,7 +84,7 @@ namespace Tangent.Intermediate.UnitTests
             var inferencePlaceholder2 = GenericInferencePlaceholder.For(genericParam2);
             var K = new ParameterDeclaration("typeK", TangentType.Any.Kind);
             var V = new ParameterDeclaration("typeV", TangentType.Any.Kind);
-            var genericMap = new TypeDeclaration(new PhrasePart[] { new PhrasePart("Map"), new PhrasePart(K), new PhrasePart(V) }, new ProductType(new[] { new PhrasePart(new ParameterDeclaration("key", GenericArgumentReferenceType.For(K))), new PhrasePart(new ParameterDeclaration("value", GenericArgumentReferenceType.For(V))) }));
+            var genericMap = new TypeDeclaration(new PhrasePart[] { new PhrasePart("Map"), new PhrasePart(K), new PhrasePart(V) }, new ProductType(new[] { new PhrasePart(new ParameterDeclaration("key", GenericArgumentReferenceType.For(K))), new PhrasePart(new ParameterDeclaration("value", GenericArgumentReferenceType.For(V))) }, Enumerable.Empty<Field>()));
             var mapIntString = BoundGenericType.For(genericMap, new[] { TangentType.Int, TangentType.String });
             var mapInfer = BoundGenericType.For(genericMap, new[] { inferencePlaceholder2, inferencePlaceholder1 });
             var results = new Dictionary<ParameterDeclaration, TangentType>();
@@ -101,7 +102,7 @@ namespace Tangent.Intermediate.UnitTests
             var genericParam = new ParameterDeclaration("T", TangentType.Any);
             var inferencePlaceholder = GenericInferencePlaceholder.For(genericParam);
             var T = new ParameterDeclaration("T", TangentType.Any.Kind);
-            var genericList = new TypeDeclaration(new PhrasePart[] { new PhrasePart("List"), new PhrasePart(T) }, new ProductType(new[] { new PhrasePart(new ParameterDeclaration("obj", GenericArgumentReferenceType.For(T))) }));
+            var genericList = new TypeDeclaration(new PhrasePart[] { new PhrasePart("List"), new PhrasePart(T) }, new ProductType(new[] { new PhrasePart(new ParameterDeclaration("obj", GenericArgumentReferenceType.For(T))) }, Enumerable.Empty<Field>()));
             var listListInt = BoundGenericType.For(genericList, new[] { BoundGenericType.For(genericList, new[] { TangentType.Int }) });
             var listListInferT = BoundGenericType.For(genericList, new[] { BoundGenericType.For(genericList, new[] { inferencePlaceholder }) });
             var results = new Dictionary<ParameterDeclaration, TangentType>();
@@ -133,7 +134,7 @@ namespace Tangent.Intermediate.UnitTests
             var inferencePlaceholder2 = GenericInferencePlaceholder.For(genericParam2);
             var K = new ParameterDeclaration("typeK", TangentType.Any.Kind);
             var V = new ParameterDeclaration("typeV", TangentType.Any.Kind);
-            var genericMap = new TypeDeclaration(new PhrasePart[] { new PhrasePart("Map"), new PhrasePart(K), new PhrasePart(V) }, new ProductType(new[] { new PhrasePart(new ParameterDeclaration("key", GenericArgumentReferenceType.For(K))), new PhrasePart(new ParameterDeclaration("value", GenericArgumentReferenceType.For(V))) }));
+            var genericMap = new TypeDeclaration(new PhrasePart[] { new PhrasePart("Map"), new PhrasePart(K), new PhrasePart(V) }, new ProductType(new[] { new PhrasePart(new ParameterDeclaration("key", GenericArgumentReferenceType.For(K))), new PhrasePart(new ParameterDeclaration("value", GenericArgumentReferenceType.For(V))) }, Enumerable.Empty<Field>()));
             var mapIntString = BoundGenericType.For(genericMap, new[] { TangentType.Int, TangentType.String });
             var mapInfer = BoundGenericType.For(genericMap, new[] { inferencePlaceholder1, inferencePlaceholder2 });
             var results = new Dictionary<ParameterDeclaration, TangentType>();

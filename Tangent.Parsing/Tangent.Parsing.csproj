@@ -50,6 +50,9 @@
     <Compile Include="Errors\AmbiguousStatementError.cs" />
     <Compile Include="Errors\ExpectedLiteralParseError.cs" />
     <Compile Include="Errors\ExpectedTokenParseError.cs" />
+    <Compile Include="Errors\FieldWithoutIdentifiersError.cs" />
+    <Compile Include="Errors\FieldWithoutThisError.cs" />
+    <Compile Include="Errors\FieldWithTooManyThisError.cs" />
     <Compile Include="Errors\GenericSumTypeFunctionWithReturnTypeRelyingOnInference.cs" />
     <Compile Include="Errors\IncomprehensibleStatementError.cs" />
     <Compile Include="Errors\ThisAsGeneric.cs" />
@@ -90,6 +93,7 @@
     <Compile Include="StringConstantParser.cs" />
     <Compile Include="StringLiteralParser.cs" />
     <Compile Include="TypeResolve.cs" />
+    <Compile Include="TypeResolved\InitializerPlaceholder.cs" />
     <Compile Include="TypeResolved\TypeResolvedFunction.cs" />
   </ItemGroup>
   <ItemGroup>

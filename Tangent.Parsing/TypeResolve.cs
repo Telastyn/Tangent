@@ -123,7 +123,7 @@ namespace Tangent.Parsing
                     }
                     return newSum;
                 } else if (t is PartialProductType) {
-                    var newb = new ProductType(Enumerable.Empty<PhrasePart>());
+                    var newb = new ProductType(Enumerable.Empty<PhrasePart>(), Enumerable.Empty<Field>());
                     bindings.AddRange((t as PartialProductType).InterfaceReferences.Select(iface => new Tuple<TangentType, TangentType>(iface, newb)));
                     inNeedOfPopulation.Add((PartialProductType)t, newb);
                     return newb;
@@ -192,7 +192,7 @@ namespace Tangent.Parsing
                     // Nothing, just need it in placeholder lists so that sum types with placeholders get fixed.
                 } else if (entry.Key is PartialInterface) {
                     // Nothing, just need it in placeholder lists so that anything that found it earlier gets fixed.
-                }else if(entry.Key is PartialInterfaceBinding) {
+                } else if (entry.Key is PartialInterfaceBinding) {
                     // Nothing. Just need the mapping here so that scopes get sent to the right location.
                 } else {
                     throw new NotImplementedException();
@@ -306,6 +306,10 @@ namespace Tangent.Parsing
                 }
             }
 
+            foreach (var field in partialType.Fields) {
+                var resolved = ResolveField(field, types, target, genericArguments);
+            }
+
             if (errors.Errors.Any()) {
                 return new ResultOrParseError<ProductType>(errors);
             }
@@ -351,6 +355,7 @@ namespace Tangent.Parsing
                     }
                 }
             }
+
             return new ParameterDeclaration(takeResolutions, ctorGenericArguments == null ? type.Result : ConvertGenericReferencesToInferences(type.Result));
         }
 
@@ -435,6 +440,29 @@ namespace Tangent.Parsing
             }
 
             return reference.ResolvedType;
+        }
+
+        private static ResultOrParseError<Field> ResolveField(VarDeclElement field, IEnumerable<TypeDeclaration> types, ProductType target, IEnumerable<ParameterDeclaration> genericArguments)
+        {
+            var parameters = field.ParameterDeclaration.Takes.Where(ppp => !ppp.IsIdentifier).ToList();
+            if (parameters.Count == 0) {
+                return new ResultOrParseError<Field>(new FieldWithoutThisError());
+            }
+
+            if (parameters.Count > 1) {
+                return new ResultOrParseError<Field>(new FieldWithTooManyThisError());
+            }
+
+            if (parameters.Count == field.ParameterDeclaration.Takes.Count) {
+                return new ResultOrParseError<Field>(new FieldWithoutIdentifiersError());
+            }
+
+            var decl = Resolve(field.ParameterDeclaration, types, genericArguments);
+            if (!decl.Success) {
+                return new ResultOrParseError<Field>(decl.Error);
+            }
+
+            return new Field(decl.Result, new InitializerPlaceholder(field.Initializer));
         }
 
         private static TangentType ConvertGenericReferencesToInferences(TangentType input)

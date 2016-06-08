@@ -56,6 +56,8 @@
     <Compile Include="EnumType.cs" />
     <Compile Include="EnumWideningExpression.cs" />
     <Compile Include="Field.cs" />
+    <Compile Include="FieldAccessorFunction.cs" />
+    <Compile Include="FieldMutatorFunction.cs" />
     <Compile Include="LocalAccessExpression.cs" />
     <Compile Include="LocalAssignmentExpression.cs" />
     <Compile Include="ThrowInvalidProgramExceptionExpression.cs" />

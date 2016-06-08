@@ -29,6 +29,7 @@ namespace Tangent.Intermediate
         InvalidProgramException = 19,
         LocalAccess = 20,
         LocalAssignment = 21,
+        InitializerPlaceholder = 22
     }
 
     public abstract class Expression
