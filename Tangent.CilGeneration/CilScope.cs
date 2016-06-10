@@ -11,55 +11,64 @@ namespace Tangent.CilGeneration
 {
     public class CilScope : IFunctionLookup
     {
-        private readonly Dictionary<ReductionDeclaration, MethodBuilder> functionStubs;
+        private Dictionary<ReductionDeclaration, MethodBuilder> functionStubs;
         private readonly Dictionary<ReductionDeclaration, IEnumerable<ReductionDeclaration>> specializations = new Dictionary<ReductionDeclaration, IEnumerable<ReductionDeclaration>>();
         private readonly ITypeLookup typeLookup;
         private readonly TypeBuilder scope;
+        private readonly Action initializer;
 
         public CilScope(TypeBuilder scope, IEnumerable<ReductionDeclaration> functions, ITypeLookup typeLookup)
         {
             this.typeLookup = typeLookup;
 
-            functionStubs = functions.Where(fn => fn.Returns.Implementation != null)
-                .ToDictionary(fn => fn, fn =>
-                {
-                    var dotnetFn = scope.DefineMethod(
-                        GetNameFor(fn),
-                        System.Reflection.MethodAttributes.Public | System.Reflection.MethodAttributes.Static);
+            initializer = () => {
+                functionStubs = functions.Where(fn => fn.Returns.Implementation != null)
+                    .ToDictionary(fn => fn, fn => {
+                        var dotnetFn = scope.DefineMethod(
+                            GetNameFor(fn),
+                            System.Reflection.MethodAttributes.Public | System.Reflection.MethodAttributes.Static);
 
-                    if (fn.GenericParameters.Any()) {
-                        var dotNetGenerics = dotnetFn.DefineGenericParameters(fn.GenericParameters.Select(pd => string.Join(" ", pd.Takes)).ToArray());
+                        if (fn.GenericParameters.Any()) {
+                            var dotNetGenerics = dotnetFn.DefineGenericParameters(fn.GenericParameters.Select(pd => string.Join(" ", pd.Takes)).ToArray());
 
-                        // TODO: constraints
+                            // TODO: constraints
 
-                        foreach (var entry in fn.GenericParameters.Zip(dotNetGenerics, (pd, g) => Tuple.Create(pd, g))) {
-                            typeLookup.AddGenericFunctionParameterMapping(entry.Item1, entry.Item2);
+                            foreach (var entry in fn.GenericParameters.Zip(dotNetGenerics, (pd, g) => Tuple.Create(pd, g))) {
+                                typeLookup.AddGenericFunctionParameterMapping(entry.Item1, entry.Item2);
+                            }
                         }
-                    }
 
-                    dotnetFn.SetReturnType(typeLookup[fn.Returns.EffectiveType]);
-                    dotnetFn.SetParameters(
-                        fn.Takes.Where(t => !t.IsIdentifier).Select(t =>
-                            t.Parameter.RequiredArgumentType.ImplementationType == KindOfType.SingleValue ?
-                            typeLookup[((SingleValueType)t.Parameter.RequiredArgumentType).ValueType] :
-                            typeLookup[t.Parameter.RequiredArgumentType]).ToArray());
+                        dotnetFn.SetReturnType(typeLookup[fn.Returns.EffectiveType]);
+                        dotnetFn.SetParameters(
+                            fn.Takes.Where(t => !t.IsIdentifier).Select(t =>
+                                t.Parameter.RequiredArgumentType.ImplementationType == KindOfType.SingleValue ?
+                                typeLookup[((SingleValueType)t.Parameter.RequiredArgumentType).ValueType] :
+                                typeLookup[t.Parameter.RequiredArgumentType]).ToArray());
 
-                    return dotnetFn;
-                });
+                        return dotnetFn;
+                    });
 
-            foreach (var fn in functionStubs.Keys.ToList()) {
-                var fnSpecializations = functions.Where(fnsp => fnsp.IsSpecializationOf(fn)).ToList();
-                this.specializations.Add(fn, fnSpecializations);
-            }
+                foreach (var fn in functionStubs.Keys.ToList()) {
+                    var fnSpecializations = functions.Where(fnsp => fnsp.IsSpecializationOf(fn)).ToList();
+                    this.specializations.Add(fn, fnSpecializations);
+                }
+            };
 
             this.scope = scope;
         }
 
         public void Compile(IFunctionCompiler compiler)
         {
+            // gross. Done to deal with cyclic dependencies in master compiler. TODO: fix.
+            if (functionStubs == null) { initializer(); }
             foreach (var kvp in functionStubs) {
                 compiler.BuildFunctionImplementation(kvp.Key, kvp.Value, specializations[kvp.Key], scope, this, typeLookup);
             }
+        }
+
+        public void GenerateFieldInitExpression(IFunctionCompiler compiler, Expression expr, ILGenerator gen)
+        {
+            compiler.AddExpression(expr, gen, this, typeLookup, scope, new Dictionary<ParameterDeclaration, PropertyCodes>(), false);
         }
 
         public string GetNameFor(ReductionDeclaration rule)
@@ -108,7 +117,7 @@ namespace Tangent.CilGeneration
                 }
             }
 
-            string result = string.Join(" ", rule.Takes.Select(pp => pp.IsIdentifier? pp.Identifier.Value : string.Format("({0})", typeLookup(pp.Parameter.Returns).Name))) + ": " + paramTypeName;
+            string result = string.Join(" ", rule.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier.Value : string.Format("({0})", typeLookup(pp.Parameter.Returns).Name))) + ": " + paramTypeName;
             return result;
         }
 

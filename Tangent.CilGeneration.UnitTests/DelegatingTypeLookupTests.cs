@@ -32,7 +32,7 @@ namespace Tangent.CilGeneration.UnitTests
                 var typeDecl = new TypeDeclaration("foo", new EnumType(new Identifier[] { "bar" }));
                 int times = 0;
                 var mockCompiler = new Mock<ITypeCompiler>();
-                mockCompiler.Setup(c => c.Compile(typeDecl, It.IsAny<Action<TangentType, Type>>(), It.IsAny<Func<TangentType, bool, Type>>())).Returns(typeof(DateTimeOffset)).Callback(() => times++);
+                mockCompiler.Setup(c => c.Compile(typeDecl, It.IsAny<Action<TangentType, Type>>(), It.IsAny<Func<TangentType, bool, Type>>(), It.IsAny<Action<Field, System.Reflection.FieldInfo>>())).Returns(typeof(DateTimeOffset)).Callback(() => times++);
                 using (var lookup = new DelegatingTypeLookup(mockCompiler.Object, new[] { typeDecl }, AppDomain.CurrentDomain)) {
 
                     var result = lookup[typeDecl.Returns];

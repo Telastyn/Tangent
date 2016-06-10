@@ -17,7 +17,7 @@ namespace Tangent.Intermediate
 
         private TransformationScope(TransformationScope parent, IEnumerable<ParameterDeclaration> nestedLocals)
         {
-            Rules = new[] { nestedLocals.SelectMany(l => LocalAccess.RulesForLocal(l)) }.Concat(parent.Rules);
+            Rules = new[] { nestedLocals.SelectMany(l => LocalAccess.RulesForLocal(l)).ToList() }.Concat(parent.Rules);
         }
 
         public List<Expression> InterpretStatement(List<Expression> input)

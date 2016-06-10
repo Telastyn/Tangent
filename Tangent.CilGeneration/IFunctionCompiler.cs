@@ -11,5 +11,6 @@ namespace Tangent.CilGeneration
     public interface IFunctionCompiler
     {
         void BuildFunctionImplementation(ReductionDeclaration fn, MethodBuilder target, IEnumerable<ReductionDeclaration> specializations, TypeBuilder closureScope, IFunctionLookup fnLookup, ITypeLookup typeLookup);
+        void AddExpression(Expression expr, ILGenerator gen, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes, bool lastStatement);
     }
 }

@@ -351,7 +351,7 @@ namespace Tangent.CilGeneration
             }
         }
 
-        private void AddExpression(Expression expr, ILGenerator gen, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes, bool lastStatement)
+        public void AddExpression(Expression expr, ILGenerator gen, IFunctionLookup fnLookup, ITypeLookup typeLookup, TypeBuilder closureScope, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes, bool lastStatement)
         {
             switch (expr.NodeType) {
                 case ExpressionNodeType.FunctionInvocation:
@@ -381,6 +381,19 @@ namespace Tangent.CilGeneration
                     var opcode = invoke.FunctionDefinition.Returns as DirectOpCode;
                     if (opcode != null) {
                         gen.Emit(opcode.OpCode);
+                        return;
+                    }
+
+                    // TODO: move field things to expressions?
+                    var fieldAccess = invoke.FunctionDefinition.Returns as FieldAccessorFunction;
+                    if (fieldAccess != null) {
+                        gen.Emit(OpCodes.Ldfld, typeLookup[fieldAccess.TargetField]);
+                        return;
+                    }
+
+                    var fieldMutator = invoke.FunctionDefinition.Returns as FieldMutatorFunction;
+                    if (fieldMutator != null) {
+                        gen.Emit(OpCodes.Stfld, typeLookup[fieldMutator.TargetField]);
                         return;
                     }
 
@@ -445,7 +458,13 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.CtorParamAccess:
                     var ctorAccess = (CtorParameterAccessExpression)expr;
-                    parameterCodes[ctorAccess.ThisParam].Accessor(gen);
+                    if (!parameterCodes.ContainsKey(ctorAccess.ThisParam)) {
+                        // Assume we're in some initializer.
+                        gen.Emit(OpCodes.Ldarg_0);
+                    } else {
+                        parameterCodes[ctorAccess.ThisParam].Accessor(gen);
+                    }
+
                     var thisType = typeLookup[ctorAccess.ThisParam.Returns];
                     gen.Emit(OpCodes.Ldfld, thisType.GetField(CilScope.GetNameFor(ctorAccess.CtorParam, typeLookup)));
                     return;

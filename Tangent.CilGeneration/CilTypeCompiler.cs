@@ -13,18 +13,21 @@ namespace Tangent.CilGeneration
     {
         private static int anonymousTypeIndex = 1;
         private readonly ModuleBuilder builder;
-        public CilTypeCompiler(ModuleBuilder builder)
+        private readonly Action<Expression, ILGenerator> initCompiler;
+
+        public CilTypeCompiler(ModuleBuilder builder, Action<Expression, ILGenerator> initCompiler)
         {
             this.builder = builder;
+            this.initCompiler = initCompiler;
         }
 
-        public Type Compile(TypeDeclaration typeDecl, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup)
+        public Type Compile(TypeDeclaration typeDecl, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup, Action<Field, System.Reflection.FieldInfo> onFieldCreation)
         {
             switch (typeDecl.Returns.ImplementationType) {
                 case KindOfType.Enum:
                     return BuildEnum(typeDecl, placeholder, lookup);
                 case KindOfType.Product:
-                    return BuildClass(typeDecl, placeholder, lookup);
+                    return BuildClass(typeDecl, placeholder, lookup, onFieldCreation);
                 case KindOfType.Sum:
                 case KindOfType.TypeClass:
                     return BuildVariant(typeDecl, placeholder, lookup);
@@ -49,7 +52,7 @@ namespace Tangent.CilGeneration
             return enumBuilder.CreateType();
         }
 
-        private Type BuildClass(TypeDeclaration target, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup)
+        private Type BuildClass(TypeDeclaration target, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup, Action<Field, System.Reflection.FieldInfo> onFieldCreation)
         {
             var typeName = GetNameFor(target);
             var productType = (ProductType)target.Returns;
@@ -80,6 +83,12 @@ namespace Tangent.CilGeneration
                 gen.Emit(OpCodes.Ldarg_0);
                 gen.Emit(OpCodes.Ldarg, ix + 1);
                 gen.Emit(OpCodes.Stfld, field);
+            }
+
+            foreach(var entry in productType.Fields) {
+                var field = classBuilder.DefineField(CilScope.GetNameFor(entry.Declaration, tt => lookup(tt, true)), lookup(entry.Declaration.Returns, true), System.Reflection.FieldAttributes.Public);
+                onFieldCreation(entry, field);
+                initCompiler(entry.Initializer, gen);
             }
 
             gen.Emit(OpCodes.Ret);

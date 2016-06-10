@@ -29,13 +29,15 @@ namespace Tangent.CilGeneration
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule(filename + (entrypoint == null ? ".dll" : ".exe"), Path.GetFileName(targetPath) + (entrypoint == null ? ".dll" : ".exe"), true);
 
             Dictionary<string, ISymbolDocumentWriter> debuggingSymbolLookup = program.InputLabels.ToDictionary(l => l, l => moduleBuilder.DefineDocument(l, Guid.Empty, Guid.Empty, Guid.Empty));
-            using (var typeLookup = new DelegatingTypeLookup(new CilTypeCompiler(moduleBuilder), program.TypeDeclarations, AppDomain.CurrentDomain)) {
+            CilScope fnLookup = null;
+            CilFunctionCompiler compiler = null;
+            using (var typeLookup = new DelegatingTypeLookup(new CilTypeCompiler(moduleBuilder, (expr, gen) => fnLookup.GenerateFieldInitExpression(compiler, expr, gen)), program.TypeDeclarations, AppDomain.CurrentDomain)) {
 
                 var rootClass = moduleBuilder.DefineType("_");
-                var fnLookup = new CilScope(rootClass, program.Functions, typeLookup);
-                var compiler = new CilFunctionCompiler(BuiltinFunctionLookup.Common, debuggingSymbolLookup);
+                compiler = new CilFunctionCompiler(BuiltinFunctionLookup.Common, debuggingSymbolLookup);
+                fnLookup = new CilScope(rootClass, program.Functions, typeLookup);
 
-                foreach(var typeDeclaration in program.TypeDeclarations) {
+                foreach (var typeDeclaration in program.TypeDeclarations) {
                     var tangentType = typeLookup[typeDeclaration.Returns];
                 }
 

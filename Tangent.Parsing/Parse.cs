@@ -130,7 +130,7 @@ namespace Tangent.Parsing
                     if (partialFunction.Scope is TypeClass) {
                         lookup.Add(partialFunction, new InterfaceFunction(partialFunction.Scope as TypeClass, partialFunction.EffectiveType));
                     } else {
-                        var locals = BuildLocals(partialFunction.Implementation.Locals, types, errors).ToList();
+                        var locals = BuildLocals(partialFunction.Implementation.Locals, resolvedTypes.Result, errors).ToList();
                         var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
                             .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
                             .Concat((partialFunction.Scope as ProductType) != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, (partialFunction.Scope as ProductType).DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
@@ -153,7 +153,7 @@ namespace Tangent.Parsing
                         // Initializers can't use locals (directly), and don't have parameters.
                         var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
                                 .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f => new FunctionInvocation(f)))
-                                .Concat(ConstructorParameterAccess.For(null, productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)))
+                                .Concat(ConstructorParameterAccess.For(field.Declaration.Takes.First(pp => !pp.IsIdentifier).Parameter, productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)))
                                 .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }));
 
                         var expr = castPlaceholder.UnresolvedInitializer.FlatTokens.Select(pe => ElementToExpression(scope, types, pe, errors)).ToList();
@@ -170,6 +170,8 @@ namespace Tangent.Parsing
                         }
                     });
                 }
+
+                // TODO: reorder fields based on initialization dependencies (or error).
             }
 
             if (errors.Any()) {

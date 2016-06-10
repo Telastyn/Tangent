@@ -40,10 +40,10 @@ namespace Tangent.CilGeneration.UnitTests
         {
             var assembly = AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName("BuildEnumHappyPath"), AssemblyBuilderAccess.Run);
             var module = assembly.DefineDynamicModule("BuildEnumHappyPath");
-            var compiler = new CilTypeCompiler(module);
+            var compiler = new CilTypeCompiler(module, (expr, gen) => { });
             var typeDecl = new TypeDeclaration(new Identifier[] { "foo", "bar" }, new EnumType(new Identifier[] { "a", "b", "c" }));
 
-            var result = compiler.Compile(typeDecl, (pt, p) => { }, (tt, create) => typeof(int));
+            var result = compiler.Compile(typeDecl, (pt, p) => { }, (tt, create) => typeof(int), (field, fi) => { });
             Assert.AreEqual("foo bar", result.Name);
             var values = Enum.GetValues(result);
             Assert.AreEqual(3, values.Length);

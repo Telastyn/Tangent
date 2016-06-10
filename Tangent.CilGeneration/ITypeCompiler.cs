@@ -9,6 +9,6 @@ namespace Tangent.CilGeneration
 {
     public interface ITypeCompiler
     {
-        Type Compile(TypeDeclaration typeDecl, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup);
+        Type Compile(TypeDeclaration typeDecl, Action<TangentType, Type> placeholder, Func<TangentType, bool, Type> lookup, Action<Field, System.Reflection.FieldInfo> onFieldCreation);
     }
 }

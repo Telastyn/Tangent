@@ -308,6 +308,11 @@ namespace Tangent.Parsing
 
             foreach (var field in partialType.Fields) {
                 var resolved = ResolveField(field, types, target, genericArguments);
+                if (resolved.Success) {
+                    target.Fields.Add(resolved.Result);
+                } else {
+                    errors = errors.Concat(resolved.Error);
+                }
             }
 
             if (errors.Errors.Any()) {
@@ -457,12 +462,12 @@ namespace Tangent.Parsing
                 return new ResultOrParseError<Field>(new FieldWithoutIdentifiersError());
             }
 
-            var decl = Resolve(field.ParameterDeclaration, types, genericArguments);
-            if (!decl.Success) {
-                return new ResultOrParseError<Field>(decl.Error);
+            var fieldType = ResolveType(field.ParameterDeclaration.Returns, types, genericArguments);
+            if (!fieldType.Success) {
+                return new ResultOrParseError<Field>(fieldType.Error);
             }
 
-            return new Field(decl.Result, new InitializerPlaceholder(field.Initializer));
+            return new Field(new ParameterDeclaration(field.ParameterDeclaration.Takes.Select(ppp=>ppp.IsIdentifier? new PhrasePart(ppp.Identifier.Identifier) : new PhrasePart(new ParameterDeclaration("this", target))), fieldType.Result), new InitializerPlaceholder(field.Initializer));
         }
 
         private static TangentType ConvertGenericReferencesToInferences(TangentType input)

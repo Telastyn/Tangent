@@ -15,6 +15,7 @@ namespace Tangent.CilGeneration
         private readonly IEnumerable<TypeDeclaration> declaredTypes;
         private readonly Dictionary<TangentType, Type> lookup = new Dictionary<TangentType, Type>();
         private readonly Dictionary<string, TypeBuilder> partialTypes = new Dictionary<string, TypeBuilder>();
+        private readonly Dictionary<Field, FieldInfo> fieldLookup = new Dictionary<Field, FieldInfo>();
         private readonly AppDomain compilationDomain;
 
         public DelegatingTypeLookup(ITypeCompiler typeCompiler, IEnumerable<TypeDeclaration> declaredTypes, AppDomain compilationDomain)
@@ -51,6 +52,13 @@ namespace Tangent.CilGeneration
             }
         }
 
+        public FieldInfo this[Field f]
+        {
+            get
+            {
+                return fieldLookup[f];
+            }
+        }
 
         public void BakeTypes()
         {
@@ -114,7 +122,11 @@ namespace Tangent.CilGeneration
                         result = new TypeDeclaration((PhrasePart)null, t);
                     }
 
-                    var type = typeCompiler.Compile(result, (placeholderTarget, placeholder) => { if (!lookup.ContainsKey(placeholderTarget)) { lookup.Add(placeholderTarget, placeholder); } }, (tt, create) => { if (create) { return this[tt]; } else { if (lookup.ContainsKey(tt)) { return lookup[tt]; } else { return null; } } });
+                    var type = typeCompiler.Compile(result, 
+                        (placeholderTarget, placeholder) => { if (!lookup.ContainsKey(placeholderTarget)) { lookup.Add(placeholderTarget, placeholder); } }, 
+                        (tt, create) => { if (create) { return this[tt]; } else { if (lookup.ContainsKey(tt)) { return lookup[tt]; } else { return null; } } },
+                        (field, fi) => fieldLookup.Add(field,fi));
+
                     AddLookupEntry(result.Returns, type);
 
                     return;
