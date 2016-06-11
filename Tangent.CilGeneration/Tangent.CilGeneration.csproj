@@ -52,6 +52,7 @@
     <Compile Include="IFunctionLookup.cs" />
     <Compile Include="ITypeCompiler.cs" />
     <Compile Include="ITypeLookup.cs" />
+    <Compile Include="NewCilCompiler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DelegatingTypeLookup.cs" />
     <Compile Include="PropertyCodes.cs" />
