@@ -4,9 +4,9 @@
 }
 
 entrypoint => void {
-  print new Foo 5;
+  print new Foo 5;     // 47
   :x:foo := new Foo 5;
-  print x;
+  print x;             // still 47
   x.test = 5;
-  print x;
+  print x;             // 5
 }

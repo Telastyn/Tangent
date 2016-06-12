@@ -41,8 +41,7 @@ namespace Tangent.Cli
                 return;
             }
 
-            var compiler = new CilCompiler();
-            compiler.Compile(intermediateProgram.Result, dest);
+            NewCilCompiler.Compile(intermediateProgram.Result, dest);
             Debug.WriteLine("Compile Duration: " + timer.Elapsed);
         }
     }
