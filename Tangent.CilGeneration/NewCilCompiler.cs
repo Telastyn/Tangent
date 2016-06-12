@@ -22,7 +22,7 @@ namespace Tangent.CilGeneration
         private readonly Dictionary<TangentType, Type> typeLookup = new Dictionary<TangentType, Type>();
         private readonly Dictionary<Field, FieldInfo> fieldLookup = new Dictionary<Field, FieldInfo>();
         private readonly Dictionary<ParameterDeclaration, FieldInfo> ctorParamLookup = new Dictionary<ParameterDeclaration, FieldInfo>();
-        private readonly Dictionary<ProductType, ConstructorInfo> productCtorLookup = new Dictionary<ProductType, ConstructorInfo>();
+        private readonly Dictionary<TangentType, ConstructorInfo> productCtorLookup = new Dictionary<TangentType, ConstructorInfo>();
         private readonly Dictionary<TangentType, Dictionary<Type, ConstructorInfo>> variantCtorLookup = new Dictionary<TangentType, Dictionary<Type, ConstructorInfo>>();
         private readonly Dictionary<TangentType, FieldInfo> variantValueLookup = new Dictionary<TangentType, FieldInfo>();
         private readonly Dictionary<TangentType, FieldInfo> variantModeLookup = new Dictionary<TangentType, FieldInfo>();
@@ -125,6 +125,8 @@ namespace Tangent.CilGeneration
                     return BuildVariant(typeDecl);
                 case KindOfType.BoundGeneric:
                     return InstantiateGeneric(target as BoundGenericType);
+                case KindOfType.BoundGenericProduct:
+                    return InstantiateGeneric(target as BoundGenericProductType);
                 case KindOfType.Delegate:
                     return BuildDelegateType(target as DelegateType);
                 default:
@@ -296,7 +298,21 @@ namespace Tangent.CilGeneration
         {
             Type genericType = Compile(boundGeneric.GenericTypeDeclatation.Returns);
             var arguments = boundGeneric.TypeArguments.Select(tt => Compile(tt)).ToArray();
-            return genericType.MakeGenericType(arguments);
+            var instance = genericType.MakeGenericType(arguments);
+            typeLookup.Add(boundGeneric, instance);
+            return instance;
+        }
+
+        private Type InstantiateGeneric(BoundGenericProductType boundGeneric)
+        {
+            Type genericType = Compile(boundGeneric.GenericProductType);
+            var arguments = boundGeneric.TypeArguments.Select(tt => Compile(tt)).ToArray();
+            var instance = genericType.MakeGenericType(arguments);
+            var genericCtor = productCtorLookup[boundGeneric.GenericProductType];
+            var instanceCtor = TypeBuilder.GetConstructor(instance, genericCtor);
+            productCtorLookup.Add(boundGeneric, instanceCtor);
+            typeLookup.Add(boundGeneric, instance);
+            return instance;
         }
 
         private Type BuildDelegateType(DelegateType tangentDelegateType)
@@ -322,6 +338,11 @@ namespace Tangent.CilGeneration
         private void BuildImplementation(ReductionDeclaration fn, MethodBuilder builder)
         {
             var specializations = program.Functions.Where(other => other.IsSpecializationOf(fn)).ToList();
+            foreach(var specialization in specializations) {
+                // Force specializations to be built so that any generic types exist in our lookup.
+                Compile(specialization);
+            }
+
             var gen = builder.GetILGenerator();
 
             // TODO: refactor these codes once closures are more well baked.
@@ -666,12 +687,13 @@ namespace Tangent.CilGeneration
                     var ctor = invoke.FunctionDefinition.Returns as CtorCall;
                     if (ctor != null) {
                         var ctorParamTypes = invoke.Arguments.Select(a => Compile(a.EffectiveType)).ToArray();
-                        Compile(invoke.EffectiveType);
+                        var ctorType = Compile(invoke.EffectiveType);
                         ConstructorInfo ctorFn;
 
                         switch (invoke.EffectiveType.ImplementationType) {
                             case KindOfType.Product:
-                                ctorFn = productCtorLookup[invoke.EffectiveType as ProductType];
+                            case KindOfType.BoundGenericProduct:
+                                ctorFn = productCtorLookup[invoke.EffectiveType];
                                 break;
                             case KindOfType.Sum:
                             case KindOfType.TypeClass:
@@ -934,6 +956,12 @@ namespace Tangent.CilGeneration
 
             foreach (var entry in typeLookup) {
                 if (entry.Value.Name == args.Name) {
+                    if(entry.Value is TypeBuilder) {
+                        // WARNING: This is required, otherwise we return an AssemblyBuilder, which in turn yields a TypeLoadException on some CreateTypes (BasicADT causes it).
+                        var type = (entry.Value as TypeBuilder).CreateType();
+                        return type.Assembly;
+                    }
+
                     return entry.Value.Assembly;
                 }
             }

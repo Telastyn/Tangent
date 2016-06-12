@@ -31,8 +31,10 @@ namespace Tangent.Cli.TestSuite
                 Assert.Fail(string.Format("Errors during compilation: {0}", intermediateProgram.Error));
             }
 
-            var compiler = new CilCompiler();
-            compiler.Compile(intermediateProgram.Result, Path.GetFileNameWithoutExtension(paths.First()));
+            //var compiler = new CilCompiler();
+            //compiler.Compile(intermediateProgram.Result, Path.GetFileNameWithoutExtension(paths.First()));
+
+            NewCilCompiler.Compile(intermediateProgram.Result, Path.GetFileNameWithoutExtension(paths.First()));
 
             var discard = TimeSpan.Zero;
             return RunCompiledProgram(targetExe, out discard);
@@ -56,7 +58,7 @@ namespace Tangent.Cli.TestSuite
             programDuration = TimeSpan.Zero;
             return DebugProgramFile(path);
         }
-        
+
         public static string ProgramFile(string path)
         {
             var discard = TimeSpan.Zero;
