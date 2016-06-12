@@ -219,7 +219,11 @@ namespace Tangent.CilGeneration
             foreach (var entry in productType.Fields) {
                 var field = classBuilder.DefineField(GetNameFor(entry.Declaration), Compile(entry.Declaration.Returns), System.Reflection.FieldAttributes.Public);
                 fieldLookup.Add(entry, field);
-                throw new NotImplementedException("Field initialization yet to do.");
+                gen.Emit(OpCodes.Ldarg_0);
+                var thisAccessor = new Dictionary<ParameterDeclaration, PropertyCodes>() { { entry.Declaration.Takes.First(pp => !pp.IsIdentifier).Parameter, new PropertyCodes(g => g.Emit(OpCodes.Ldarg_0), null) } };
+                // TODO: make sure closures work here.
+                AddExpression(entry.Initializer, gen, thisAccessor, rootType, false);
+                gen.Emit(OpCodes.Stfld, field);
             }
 
             gen.Emit(OpCodes.Ret);
