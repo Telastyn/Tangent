@@ -40,21 +40,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BuiltinFunctionLookup.cs" />
-    <Compile Include="CilFunctionCompiler.cs" />
-    <Compile Include="CilCompiler.cs" />
-    <Compile Include="CilScope.cs" />
-    <Compile Include="CilTypeCompiler.cs" />
-    <Compile Include="DictionaryFunctionLookup.cs" />
-    <Compile Include="EmptyFunctionLookup.cs" />
-    <Compile Include="FallbackCompositeFunctionLookup.cs" />
-    <Compile Include="IFunctionCompiler.cs" />
-    <Compile Include="IFunctionLookup.cs" />
-    <Compile Include="ITypeCompiler.cs" />
-    <Compile Include="ITypeLookup.cs" />
     <Compile Include="NewCilCompiler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="DelegatingTypeLookup.cs" />
     <Compile Include="PropertyCodes.cs" />
   </ItemGroup>
   <ItemGroup>
