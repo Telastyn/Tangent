@@ -150,8 +150,8 @@ namespace Tangent.CilGeneration
                 foreach (var entry in fn.GenericParameters.Zip(dotNetGenerics, (pd, g) => Tuple.Create(pd, g))) {
                     var genRef = GenericArgumentReferenceType.For(entry.Item1);
                     var genInf = GenericInferencePlaceholder.For(entry.Item1);
-                    typeLookup.Add(genRef, entry.Item2);
-                    typeLookup.Add(genInf, entry.Item2);
+                    if (!typeLookup.ContainsKey(genRef)) { typeLookup.Add(genRef, entry.Item2); }
+                    if (!typeLookup.ContainsKey(genInf)) { typeLookup.Add(genInf, entry.Item2); }
                 }
             }
 
@@ -342,7 +342,7 @@ namespace Tangent.CilGeneration
         private void BuildImplementation(ReductionDeclaration fn, MethodBuilder builder)
         {
             var specializations = program.Functions.Where(other => other.IsSpecializationOf(fn)).ToList();
-            foreach(var specialization in specializations) {
+            foreach (var specialization in specializations) {
                 // Force specializations to be built so that any generic types exist in our lookup.
                 Compile(specialization);
             }
@@ -753,6 +753,33 @@ namespace Tangent.CilGeneration
 
                     return;
 
+                case ExpressionNodeType.CtorCall:
+                    var ctorExpr = expr as CtorCallExpression;
+
+                    var ctorExprParamTypes = ctorExpr.Arguments.Select(a => Compile(a.EffectiveType)).ToArray();
+                    var ctorExprType = Compile(ctorExpr.EffectiveType);
+                    ConstructorInfo ctorExprFn;
+
+                    foreach (var p in ctorExpr.Arguments) {
+                        AddExpression(p, gen, parameterCodes, closureScope, false);
+                    }
+                    
+                    switch (ctorExpr.EffectiveType.ImplementationType) {
+                        case KindOfType.Product:
+                        case KindOfType.BoundGenericProduct:
+                            ctorExprFn = productCtorLookup[ctorExpr.EffectiveType];
+                            break;
+                        case KindOfType.Sum:
+                        case KindOfType.TypeClass:
+                            ctorExprFn = variantCtorLookup[ctorExpr.EffectiveType][ctorExprParamTypes.First()];
+                            break;
+                        default:
+                            throw new NotImplementedException("Unexpected type in CtorCall");
+                    }
+
+                    gen.Emit(OpCodes.Newobj, ctorExprFn);
+                    return;
+
                 case ExpressionNodeType.Identifier:
                     throw new NotImplementedException("Bare identifier in compilation?");
 
@@ -960,7 +987,7 @@ namespace Tangent.CilGeneration
 
             foreach (var entry in typeLookup) {
                 if (entry.Value.Name == args.Name) {
-                    if(entry.Value is TypeBuilder) {
+                    if (entry.Value is TypeBuilder) {
                         // WARNING: This is required, otherwise we return an AssemblyBuilder, which in turn yields a TypeLoadException on some CreateTypes (BasicADT causes it).
                         var type = (entry.Value as TypeBuilder).CreateType();
                         return type.Assembly;

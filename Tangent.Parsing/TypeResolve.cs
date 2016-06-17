@@ -254,7 +254,6 @@ namespace Tangent.Parsing
                         var thisGeneric = (scope as TypeClass).ThisBindingInRequiredFunctions;
                         // first this, generic inference.
                         // Other thises, generic reference.
-                        // LASTWORKED: just using sum types for interfaces isn't going to work since this generic can't meaningfully get replaced.
                         if (!thisFound) {
                             genericFnParams = genericFnParams.Concat(new[] { thisGeneric });
                             phrase.Add(new PhrasePart(new ParameterDeclaration("this", GenericInferencePlaceholder.For(thisGeneric))));
