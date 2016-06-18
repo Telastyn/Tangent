@@ -53,6 +53,13 @@ namespace Tangent.Intermediate
             return For(newTakes, newReturns);
         }
 
+        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            var newTakes = Takes.Select(t => t.RebindInferences(mapping));
+            var newReturns = Returns.RebindInferences(mapping);
+            return For(newTakes, newReturns);
+        }
+
         protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
             if (alreadyProcessed.Contains(this)) {

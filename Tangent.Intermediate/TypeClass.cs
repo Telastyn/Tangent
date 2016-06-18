@@ -57,6 +57,11 @@ namespace Tangent.Intermediate
             throw new NotImplementedException();
         }
 
+        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            throw new NotImplementedException();
+        }
+
         public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
         {
             return this == other;

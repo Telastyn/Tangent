@@ -96,6 +96,11 @@ namespace Tangent.Intermediate
             return BoundGenericType.For(this.GenericTypeDeclatation, this.TypeArguments.Select(ta => ta.ResolveGenericReferences(mapping)));
         }
 
+        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return BoundGenericType.For(this.GenericTypeDeclatation, this.TypeArguments.Select(ta => ta.RebindInferences(mapping)));
+        }
+
         protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
             if (alreadyProcessed.Contains(this)) { yield break; }

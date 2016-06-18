@@ -37,6 +37,11 @@ namespace Tangent.Intermediate
             return BoundGenericProductType.For(this, bindings);
         }
 
+        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return ResolveGenericReferences(mapping);
+        }
+
         protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
             if (alreadyProcessed.Contains(this)) { return Enumerable.Empty<ParameterDeclaration>(); }

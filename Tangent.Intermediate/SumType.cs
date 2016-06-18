@@ -78,6 +78,11 @@ namespace Tangent.Intermediate
             return SumType.For(this.Types.Select(t => t.ResolveGenericReferences(mapping)));
         }
 
+        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return SumType.For(this.Types.Select(t => t.RebindInferences(mapping)));
+        }
+
         protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
             if (alreadyProcessed.Contains(this)) { return Enumerable.Empty<ParameterDeclaration>(); }

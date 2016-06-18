@@ -58,5 +58,10 @@ namespace Tangent.Intermediate
         {
             return BoundGenericProductType.For(this.GenericProductType, this.TypeArguments.Select(t => t.ResolveGenericReferences(mapping)));
         }
+
+        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return BoundGenericProductType.For(this.GenericProductType, this.TypeArguments.Select(t => t.RebindInferences(mapping)));
+        }
     }
 }

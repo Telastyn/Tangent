@@ -19,16 +19,16 @@ namespace Tangent.Intermediate {
         public readonly TangentType Target;
         public readonly IEnumerable<Expression> Arguments;
 
-        public CtorCallExpression(ProductType type) : base(null)
+        public CtorCallExpression(ProductType type, Func<ParameterDeclaration, ParameterDeclaration> paramMapping) : base(null)
         {
             Target = type.ResolveGenericReferences(generic => GenericArgumentReferenceType.For(generic));
-            Arguments = type.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(pp.Parameter, null));
+            Arguments = type.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(paramMapping(pp.Parameter), null));
         }
 
-        public CtorCallExpression(BoundGenericProductType type) : base(null)
+        public CtorCallExpression(BoundGenericProductType type, Func<ParameterDeclaration, ParameterDeclaration> paramMapping) : base(null)
         {
             Target = type;
-            Arguments = type.GenericProductType.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(pp.Parameter, null));
+            Arguments = type.GenericProductType.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(paramMapping(pp.Parameter), null));
         }
 
         public CtorCallExpression(SumType sum, ParameterDeclaration value) : base(null)

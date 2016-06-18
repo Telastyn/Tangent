@@ -62,6 +62,11 @@ namespace Tangent.Intermediate
             return this;
         }
 
+        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return mapping(this.GenericArgument);
+        }
+
         protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
         {
             if (tie == GenericTie.Inference) { yield return this.GenericArgument; }

@@ -77,6 +77,11 @@ namespace Tangent.Intermediate
             return this;
         }
 
+        public virtual TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
+        {
+            return this;
+        }
+
         public IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
         {
             return ContainedGenericReferences(tie, new HashSet<TangentType>());

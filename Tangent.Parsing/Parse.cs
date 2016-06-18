@@ -103,7 +103,7 @@ namespace Tangent.Parsing
             //    }
             //}
 
-            var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCallExpression(pt).GenerateWrappedFunction(), pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)))).ToList();
+            var ctorCalls = allProductTypes.Select(pt => GenerateConstructorFunctionFor(pt)).ToList();
             foreach (var sum in allSumTypes) {
                 foreach (var entry in sum.Types) {
                     var valueParam = new ParameterDeclaration("_", entry);
@@ -395,6 +395,37 @@ namespace Tangent.Parsing
             }
 
             return result;
+        }
+
+        private static ReductionDeclaration GenerateConstructorFunctionFor(ProductType pt)
+        {
+            var genericMapping = pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)).ToDictionary(gen => gen, gen => GenericInferencePlaceholder.For(new ParameterDeclaration(new[] { new PhrasePart("ctor") }.Concat(gen.Takes), gen.Returns)));
+
+            Func<PhrasePart, PhrasePart> fixer = null;
+            fixer = pp => {
+                if (pp.IsIdentifier) { return pp; }
+                return new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(inner => fixer(inner)), pp.Parameter.Returns.RebindInferences(gen => genericMapping[gen])));
+            };
+
+            var targetType = pt.RebindInferences(gen => GenericArgumentReferenceType.For(genericMapping[gen].GenericArgument));
+            Dictionary<ParameterDeclaration, ParameterDeclaration> paramMapping = new Dictionary<ParameterDeclaration, ParameterDeclaration>();
+            Func<PhrasePart, PhrasePart> paramMapper = pp => {
+                if (pp.IsIdentifier) {
+                    return pp;
+                }
+
+                var newb = new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(inner => fixer(inner)), pp.Parameter.Returns.RebindInferences(gen => genericMapping[gen])));
+                paramMapping.Add(pp.Parameter, newb.Parameter);
+                return newb;
+            };
+
+            if (targetType is ProductType) {
+                return new ReductionDeclaration(pt.DataConstructorParts.Select(pp => paramMapper(pp)), new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as ProductType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())));
+            } else if (targetType is BoundGenericProductType) {
+                return new ReductionDeclaration(pt.DataConstructorParts.Select(pp => paramMapper(pp)), new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as BoundGenericProductType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())), genericMapping.Values.Select(gip => gip.GenericArgument).ToList());
+            } else {
+                throw new NotImplementedException();
+            }
         }
     }
 }
