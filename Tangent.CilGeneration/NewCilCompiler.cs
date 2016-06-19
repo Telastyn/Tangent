@@ -711,6 +711,7 @@ namespace Tangent.CilGeneration
                         return;
                     }
 
+                    // TODO: move these to exprs.
                     var upcast = invoke.FunctionDefinition.Returns as InterfaceUpcast;
                     if (upcast != null) {
                         // for now, it is just a sumtype built by the compiler.
@@ -724,21 +725,6 @@ namespace Tangent.CilGeneration
                     var opcode = invoke.FunctionDefinition.Returns as DirectOpCode;
                     if (opcode != null) {
                         gen.Emit(opcode.OpCode);
-                        return;
-                    }
-
-                    // TODO: move field things to expressions?
-                    var fieldAccess = invoke.FunctionDefinition.Returns as FieldAccessorFunction;
-                    if (fieldAccess != null) {
-                        Compile(fieldAccess.OwningType);
-                        gen.Emit(OpCodes.Ldfld, fieldLookup[fieldAccess.TargetField]);
-                        return;
-                    }
-
-                    var fieldMutator = invoke.FunctionDefinition.Returns as FieldMutatorFunction;
-                    if (fieldMutator != null) {
-                        Compile(fieldMutator.OwningType);
-                        gen.Emit(OpCodes.Stfld, fieldLookup[fieldMutator.TargetField]);
                         return;
                     }
 
@@ -763,7 +749,7 @@ namespace Tangent.CilGeneration
                     foreach (var p in ctorExpr.Arguments) {
                         AddExpression(p, gen, parameterCodes, closureScope, false);
                     }
-                    
+
                     switch (ctorExpr.EffectiveType.ImplementationType) {
                         case KindOfType.Product:
                         case KindOfType.BoundGenericProduct:
@@ -778,6 +764,21 @@ namespace Tangent.CilGeneration
                     }
 
                     gen.Emit(OpCodes.Newobj, ctorExprFn);
+                    return;
+
+                case ExpressionNodeType.FieldAccessor:
+                    var fieldAccess = expr as FieldAccessorExpression;
+                    Compile(fieldAccess.OwningType);
+                    gen.Emit(OpCodes.Ldarg_0);
+                    gen.Emit(OpCodes.Ldfld, fieldLookup[fieldAccess.TargetField]);
+                    return;
+
+                case ExpressionNodeType.FieldMutator:
+                    var fieldMutator = expr as FieldMutatorExpression;
+                    Compile(fieldMutator.OwningType);
+                    gen.Emit(OpCodes.Ldarg_0);
+                    gen.Emit(OpCodes.Ldarg_1);
+                    gen.Emit(OpCodes.Stfld, fieldLookup[fieldMutator.TargetField]);
                     return;
 
                 case ExpressionNodeType.Identifier:

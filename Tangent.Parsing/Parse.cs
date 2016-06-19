@@ -117,9 +117,9 @@ namespace Tangent.Parsing
             var fieldFunctions = new List<ReductionDeclaration>();
             foreach (var productType in allProductTypes) {
                 foreach (var field in productType.Fields) {
-                    fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", productType))), new FieldAccessorFunction(productType, field)));
+                    fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", productType))), new Function(field.Declaration.Returns, new Block(new Expression[] { new FieldAccessorExpression(productType, field) }, Enumerable.Empty<ParameterDeclaration>()))));
                     fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", productType))).Concat(
-                        new[] { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", field.Declaration.Returns)) }), new FieldMutatorFunction(productType, field)));
+                        new[] { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", field.Declaration.Returns)) }), new Function(TangentType.Void, new Block(new Expression[] { new FieldMutatorExpression(productType, field) }, Enumerable.Empty<ParameterDeclaration>()))));
                 }
             }
 

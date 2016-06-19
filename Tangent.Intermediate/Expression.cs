@@ -30,7 +30,9 @@ namespace Tangent.Intermediate
         LocalAccess = 20,
         LocalAssignment = 21,
         InitializerPlaceholder = 22,
-        CtorCall = 23
+        CtorCall = 23,
+        FieldAccessor = 24,
+        FieldMutator = 25
     }
 
     public abstract class Expression
