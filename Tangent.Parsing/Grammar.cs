@@ -212,13 +212,13 @@ namespace Tangent.Parsing
                 (aliases, optionalClass) => ConstructSumTypeFromAliasChain(aliases.Select(alias => new PartialTypeReference(alias, new List<PartialParameterDeclaration>())), optionalClass));
 
         // function-phrase => type-expr ;
-        public static readonly Parser<PartialReductionDeclaration> InterfaceFunctionSignature =
+        public static readonly Parser<IEnumerable<PartialReductionDeclaration>> InterfaceFunctionSignature =
             Parser.Combine(
                 FunctionPhrase,
                 LiteralParser.FunctionArrow,
                 TypeExpr,
                 LiteralParser.SemiColon,
-                (phrase, op, type, sc) => new PartialReductionDeclaration(phrase, new PartialFunction(type, null, null)));
+                (phrase, op, type, sc) => (IEnumerable<PartialReductionDeclaration>)new[] { new PartialReductionDeclaration(phrase, new PartialFunction(type, null, null)) });
 
         // (id|type-param-decl)+ inline-interface-binding { function-decl* }
         public static readonly Parser<PartialInterfaceBinding> StandaloneInterfaceBinding =
@@ -230,14 +230,22 @@ namespace Tangent.Parsing
                 LiteralParser.CloseCurly,
                 (typeRef, ifs, o, fns, c) => ConstructStandaloneBinding(typeRef, ifs, fns));
 
+        public static readonly Parser<IEnumerable<PartialReductionDeclaration>> InterfaceFieldSignature =
+            Parser.Combine(
+                ID.Select(id => new PartialPhrasePart(id)).Or(thisParam, "Field name part").OneOrMore,
+                LiteralParser.Colon,
+                SimpleTypeReference,
+                LiteralParser.SemiColon,
+                (n, c, t, sc) => ConstructInterfaceField(n, t));
+
         // interface { interface-function-signature+ }
         public static readonly Parser<TangentType> InterfaceDecl =
             Parser.Combine(
                 Interface,
                 LiteralParser.OpenCurly,
-                InterfaceFunctionSignature.OneOrMore,
+                (InterfaceFunctionSignature.Or(InterfaceFieldSignature, "Interface member")).OneOrMore,
                 LiteralParser.CloseCurly,
-                (i, o, sigs, c) => (TangentType)ConstructInterface(sigs));
+                (i, o, sigs, c) => (TangentType)ConstructInterface(sigs.SelectMany(x=>x)));
 
         public static readonly Parser<TangentType> TypeImpl =
             Parser.Options("Type Implementation",
@@ -318,6 +326,12 @@ namespace Tangent.Parsing
                     yield return new PartialStatement(entry.Item2.ParameterDeclaration.Takes.Select(id => new IdentifierElement(id.Identifier.Identifier, id.Identifier.SourceInfo)).Concat(new[] { new IdentifierElement("=", null) }).Concat(entry.Item2.Initializer.FlatTokens));
                 }
             }
+        }
+
+        private static IEnumerable<PartialReductionDeclaration> ConstructInterfaceField(IEnumerable<PartialPhrasePart> name, IEnumerable<Expression> type)
+        {
+            yield return new PartialReductionDeclaration(name, new PartialFunction(type, null, null));
+            yield return new PartialReductionDeclaration(name.Concat(new[] { new PartialPhrasePart(new IdentifierExpression("=", null)), new PartialPhrasePart(new PartialParameterDeclaration(new IdentifierExpression("value", null), type.ToList())) }), new PartialFunction(new Expression[] { new IdentifierExpression("void", null) }, null, null));
         }
 
         private static void SetGenericParams(TangentType implementation, IEnumerable<PartialParameterDeclaration> generics)
