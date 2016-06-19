@@ -1,0 +1,20 @@
+﻿Pirate :> pirate (x: string) :< has name {
+  (this).name : string := x;
+}
+
+Doctor :> doctor (x: string) :< has name {
+  (this).name : string := x;
+}
+
+has name :> interface {
+  (this).name => string;
+}
+
+print name of (x: has name) => void {
+  print x.name;
+}
+
+entrypoint => void {
+  print name of doctor "?";
+  print name of pirate "Bob"; 
+}

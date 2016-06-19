@@ -98,6 +98,9 @@
     <None Include="InterfaceFields.tan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="InterfaceGetterOnly.tan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="intSandbox.tan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
