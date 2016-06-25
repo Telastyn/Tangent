@@ -71,6 +71,7 @@
     <Compile Include="Partial\IdentifierElement.cs" />
     <Compile Include="Partial\PartialBlock.cs" />
     <Compile Include="Partial\PartialClass.cs" />
+    <Compile Include="Partial\PartialDelegateDeclaration.cs" />
     <Compile Include="Partial\PartialFunction.cs" />
     <Compile Include="Partial\PartialInterface.cs" />
     <Compile Include="Partial\PartialInterfaceBinding.cs" />

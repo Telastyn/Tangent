@@ -75,7 +75,8 @@ namespace Tangent.Parsing
 
             // Move to Phase 2 - Resolve types in parameters and function return types.
             Dictionary<TangentType, TangentType> conversions;
-            var resolvedTypes = TypeResolve.AllTypePlaceholders(types, genericArgumentMapping, interfaceToImplementerBindings, partialStandaloneInterfaceBindings, out conversions);
+            IEnumerable<ReductionDeclaration> delegateInvokers;
+            var resolvedTypes = TypeResolve.AllTypePlaceholders(types, genericArgumentMapping, interfaceToImplementerBindings, partialStandaloneInterfaceBindings, out conversions, out delegateInvokers);
             if (!resolvedTypes.Success) {
                 return new ResultOrParseError<TangentProgram>(resolvedTypes.Error);
             }
@@ -123,7 +124,7 @@ namespace Tangent.Parsing
                 }
             }
 
-            resolvedFunctions = new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(fieldFunctions));
+            resolvedFunctions = new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(fieldFunctions).Concat(delegateInvokers));
 
             // And now Phase 3 - Statement parsing based on syntax.
             var lookup = new Dictionary<Function, Function>();

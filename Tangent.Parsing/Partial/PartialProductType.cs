@@ -12,8 +12,8 @@ namespace Tangent.Parsing.Partial
         public readonly List<PartialPhrasePart> DataConstructorParts;
         public readonly List<TangentType> InterfaceReferences;
 
-        internal PartialProductType(IEnumerable<PartialPhrasePart> dataConstructorParts, IEnumerable<PartialReductionDeclaration> functions, IEnumerable<VarDeclElement> fields, IEnumerable<PartialParameterDeclaration> genericArgs, IEnumerable<TangentType> interfaceReferences)
-            : base(functions, fields, genericArgs)
+        internal PartialProductType(IEnumerable<PartialPhrasePart> dataConstructorParts, IEnumerable<PartialReductionDeclaration> functions, IEnumerable<VarDeclElement> fields, IEnumerable<PartialDelegateDeclaration> delegates, IEnumerable<PartialParameterDeclaration> genericArgs, IEnumerable<TangentType> interfaceReferences)
+            : base(functions, fields, delegates, genericArgs)
         {
             this.DataConstructorParts = new List<PartialPhrasePart>(dataConstructorParts);
             this.InterfaceReferences = new List<TangentType>(interfaceReferences);

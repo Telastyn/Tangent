@@ -190,9 +190,16 @@ namespace Tangent.Parsing
                 Statement,
                 LiteralParser.SemiColon,
                 (name, c, typeref, ie, initializer, sc) => new VarDeclElement(new PartialParameterDeclaration(name, typeref.ToList()), initializer, LineColumnRange.CombineAll(name.Select(id => id.IsIdentifier ? id.Identifier.SourceInfo : null).Concat(typeref.Select(tr => tr.SourceInfo)).Concat(initializer.FlatTokens.Select(ft => ft.SourceInfo)))));
-                
 
-        public static readonly Parser<IEnumerable<Tuple<VarDeclElement, PartialReductionDeclaration>>> ClassBody = FieldDeclaration.Select(fd => new Tuple<VarDeclElement, PartialReductionDeclaration>(fd, null)).Or(FunctionDeclaration.Select(fd => new Tuple<VarDeclElement, PartialReductionDeclaration>(null, fd)), "Class member").ZeroOrMore;
+        // (id|thisParam)+ : function-decl
+        public static readonly Parser<PartialDelegateDeclaration> DelegateDeclaration =
+            Parser.Combine(
+                ID.Select(id => new PartialPhrasePart(id)).Or(thisParam, "Field name part").OneOrMore,
+                LiteralParser.Colon,
+                FunctionDeclaration,
+                (fieldPart, colon, functionPart) => new PartialDelegateDeclaration(fieldPart, functionPart.Takes, functionPart.Returns));
+
+        public static readonly Parser<IEnumerable<Tuple<VarDeclElement, PartialReductionDeclaration, PartialDelegateDeclaration>>> ClassBody = FieldDeclaration.Select(fd => new Tuple<VarDeclElement, PartialReductionDeclaration, PartialDelegateDeclaration>(fd, null, null)).Or(FunctionDeclaration.Select(fd => new Tuple<VarDeclElement, PartialReductionDeclaration, PartialDelegateDeclaration>(null, fd, null)), "Class member").Or(DelegateDeclaration.Select(dd => new Tuple<VarDeclElement, PartialReductionDeclaration, PartialDelegateDeclaration>(null, null, dd)), "Class member").ZeroOrMore;
 
         // (function-phrase - |) inline-interface-bindings? { class-body }
         public static readonly Parser<TangentType> ClassDecl =
@@ -245,7 +252,7 @@ namespace Tangent.Parsing
                 LiteralParser.OpenCurly,
                 (InterfaceFunctionSignature.Or(InterfaceFieldSignature, "Interface member")).OneOrMore,
                 LiteralParser.CloseCurly,
-                (i, o, sigs, c) => (TangentType)ConstructInterface(sigs.SelectMany(x=>x)));
+                (i, o, sigs, c) => (TangentType)ConstructInterface(sigs.SelectMany(x => x)));
 
         public static readonly Parser<TangentType> TypeImpl =
             Parser.Options("Type Implementation",
@@ -274,15 +281,22 @@ namespace Tangent.Parsing
             }
         }
 
-        private static TangentType ConstructProductType(IEnumerable<PartialPhrasePart> constructorBits, IEnumerable<TangentType> interfaceReferences, IEnumerable<Tuple<VarDeclElement,PartialReductionDeclaration>> body)
+        private static TangentType ConstructProductType(IEnumerable<PartialPhrasePart> constructorBits, IEnumerable<TangentType> interfaceReferences, IEnumerable<Tuple<VarDeclElement, PartialReductionDeclaration, PartialDelegateDeclaration>> body)
         {
             interfaceReferences = interfaceReferences ?? Enumerable.Empty<TangentType>();
             var fields = body.Where(e => e.Item1 != null).Select(e => e.Item1).ToList();
             var fns = body.Where(e => e.Item2 != null).Select(e => e.Item2).ToList();
-            var result = new PartialProductType(constructorBits, fns, fields, new List<PartialParameterDeclaration>(), interfaceReferences);
+            var delegates = body.Where(e => e.Item3 != null).Select(e => e.Item3).ToList();
+            var result = new PartialProductType(constructorBits, fns, fields, delegates, new List<PartialParameterDeclaration>(), interfaceReferences);
+
             var boundFunctions = result.Functions.Select(fn => new PartialReductionDeclaration(fn.Takes, new PartialFunction(fn.Returns.EffectiveType, fn.Returns.Implementation, result))).ToList();
             result.Functions.Clear();
             result.Functions.AddRange(boundFunctions);
+
+            var boundDelegates = result.Delegates.Select(d => new PartialDelegateDeclaration(d.FieldPart, d.FunctionPart, new PartialFunction(d.DefaultImplementation.EffectiveType, d.DefaultImplementation.Implementation, result))).ToList();
+            result.Delegates.Clear();
+            result.Delegates.AddRange(boundDelegates);
+
             return result;
         }
 

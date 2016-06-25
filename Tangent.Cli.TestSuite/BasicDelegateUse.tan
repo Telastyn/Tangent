@@ -1,0 +1,7 @@
+﻿foo :> new foo {
+  (this).fn : (this).fn (x: int) => void { print x }
+}
+
+entrypoint => void {
+  new foo.fn(42);
+}

@@ -8,6 +8,6 @@ namespace Tangent.Parsing.Partial
 {
     public class PartialInterface : PartialClass
     {
-        public PartialInterface(IEnumerable<PartialReductionDeclaration> functions, IEnumerable<PartialParameterDeclaration> genericArgs) : base(functions, Enumerable.Empty<VarDeclElement>(), genericArgs) { }
+        public PartialInterface(IEnumerable<PartialReductionDeclaration> functions, IEnumerable<PartialParameterDeclaration> genericArgs) : base(functions, Enumerable.Empty<VarDeclElement>(), Enumerable.Empty<PartialDelegateDeclaration>(), genericArgs) { }
     }
 }

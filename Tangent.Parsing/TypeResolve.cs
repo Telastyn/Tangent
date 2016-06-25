@@ -107,11 +107,12 @@ namespace Tangent.Parsing
             return results;
         }
 
-        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping, List<InterfaceBinding> interfaceToImplementerBindings, List<PartialInterfaceBinding> standaloneInterfaceBindings, out Dictionary<TangentType, TangentType> placeholderConversions)
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping, List<InterfaceBinding> interfaceToImplementerBindings, List<PartialInterfaceBinding> standaloneInterfaceBindings, out Dictionary<TangentType, TangentType> placeholderConversions, out IEnumerable<ReductionDeclaration> additionalRules)
         {
             AggregateParseError errors = new AggregateParseError(Enumerable.Empty<ParseError>());
             Dictionary<TangentType, TangentType> inNeedOfPopulation = new Dictionary<TangentType, TangentType>();
             List<Tuple<TangentType, TangentType>> bindings = new List<Tuple<TangentType, TangentType>>();
+            List<ReductionDeclaration> delegateInvokers = new List<ReductionDeclaration>();
             Func<TangentType, TangentType> selector = t => t;
             selector = t => {
                 if (t.ImplementationType == KindOfType.Sum) {
@@ -178,6 +179,8 @@ namespace Tangent.Parsing
                     var resolvedType = PartialProductType(ppt, (ProductType)entry.Value, newLookup, ppt.GenericArguments.Select(ppd => genericArgumentMapping[ppd]));
                     if (!resolvedType.Success) {
                         errors = errors.Concat(resolvedType.Error);
+                    } else {
+                        delegateInvokers.AddRange(resolvedType.Result.Item2);
                     }
                 } else if (entry.Key is PartialTypeReference) {
                     var reference = (PartialTypeReference)entry.Key;
@@ -200,6 +203,7 @@ namespace Tangent.Parsing
             }
 
             placeholderConversions = inNeedOfPopulation;
+            additionalRules = delegateInvokers;
 
             if (errors.Errors.Any()) {
                 return new ResultOrParseError<IEnumerable<TypeDeclaration>>(errors);
@@ -292,9 +296,11 @@ namespace Tangent.Parsing
             return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType.Result, fn.Implementation, scope), genericFnParams));
         }
 
-        internal static ResultOrParseError<ProductType> PartialProductType(PartialProductType partialType, ProductType target, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
+        internal static ResultOrParseError<Tuple<ProductType, IEnumerable<ReductionDeclaration>>> PartialProductType(PartialProductType partialType, ProductType target, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
         {
             var errors = new AggregateParseError(Enumerable.Empty<ParseError>());
+            var delegateBindings = new List<ReductionDeclaration>();
+            types = types.Concat(new[] { new TypeDeclaration("this", target) });
 
             foreach (var part in partialType.DataConstructorParts) {
                 var resolved = Resolve(part, types, genericArguments);
@@ -314,12 +320,43 @@ namespace Tangent.Parsing
                 }
             }
 
-            if (errors.Errors.Any()) {
-                return new ResultOrParseError<ProductType>(errors);
+            foreach (var delegateEntry in partialType.Delegates) {
+                var fn = PartialFunctionDeclaration(new PartialReductionDeclaration(delegateEntry.FunctionPart, delegateEntry.DefaultImplementation), types, new Dictionary<TangentType, TangentType>() { { partialType, target } });
+                if (!fn.Success) {
+                    errors = errors.Concat(fn.Error);
+                } else {
+                    var delegateType = DelegateType.For(fn.Result.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter.RequiredArgumentType), fn.Result.Returns.EffectiveType);
+                    var fieldName = ResolveFieldName(delegateEntry.FieldPart, target);
+                    if (!fieldName.Success) {
+                        errors = errors.Concat(fieldName.Error);
+                    } else {
+                        var delegateField = new Field(new ParameterDeclaration(fieldName.Result, delegateType), new InitializerPlaceholder(new PartialStatement(new PartialElement[] {
+                                        new LambdaElement(delegateEntry.FunctionPart.Where(ppp=>!ppp.IsIdentifier).Select(ppp=>new VarDeclElement( ppp.Parameter/*new PartialParameterDeclaration( ppp.Parameter.Takes, null)*/, null, null)).ToList(), new BlockElement( delegateEntry.DefaultImplementation.Implementation)) })));
+
+                        target.Fields.Add(delegateField);
+                        delegateBindings.Add(
+                            new ReductionDeclaration(
+                                fn.Result.Takes,
+                                new Function(
+                                    fn.Result.Returns.EffectiveType,
+                                    new Block(
+                                        new Expression[] {
+                                                        new DelegateInvocationExpression(
+                                                            new FieldAccessorExpression(target, delegateField),
+                                                            fn.Result.Takes.Where(pp=>!pp.IsIdentifier).Select(pp=>new ParameterAccessExpression(pp.Parameter, null)),
+                                                            null)},
+                                        Enumerable.Empty<ParameterDeclaration>()))));
+                    }
+                }
             }
 
-            return target;
+            if (errors.Errors.Any()) {
+                return new ResultOrParseError<Tuple<ProductType, IEnumerable<ReductionDeclaration>>>(errors);
+            }
+
+            return new Tuple<ProductType, IEnumerable<ReductionDeclaration>>(target, delegateBindings);
         }
+
 
         internal static ResultOrParseError<PhrasePart> Resolve(PartialPhrasePart partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
         {
@@ -362,7 +399,6 @@ namespace Tangent.Parsing
 
             return new ParameterDeclaration(takeResolutions, ctorGenericArguments == null ? type.Result : ConvertGenericReferencesToInferences(type.Result));
         }
-
 
         private static ResultOrParseError<GenericInferencePlaceholder> Resolve(PartialTypeInferenceExpression inference, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
         {
@@ -448,17 +484,9 @@ namespace Tangent.Parsing
 
         private static ResultOrParseError<Field> ResolveField(VarDeclElement field, IEnumerable<TypeDeclaration> types, ProductType target, IEnumerable<ParameterDeclaration> genericArguments)
         {
-            var parameters = field.ParameterDeclaration.Takes.Where(ppp => !ppp.IsIdentifier).ToList();
-            if (parameters.Count == 0) {
-                return new ResultOrParseError<Field>(new FieldWithoutThisError());
-            }
-
-            if (parameters.Count > 1) {
-                return new ResultOrParseError<Field>(new FieldWithTooManyThisError());
-            }
-
-            if (parameters.Count == field.ParameterDeclaration.Takes.Count) {
-                return new ResultOrParseError<Field>(new FieldWithoutIdentifiersError());
+            var fieldName = ResolveFieldName(field.ParameterDeclaration.Takes, target);
+            if (!fieldName.Success) {
+                return new ResultOrParseError<Field>(fieldName.Error);
             }
 
             var fieldType = ResolveType(field.ParameterDeclaration.Returns, types, genericArguments);
@@ -466,7 +494,25 @@ namespace Tangent.Parsing
                 return new ResultOrParseError<Field>(fieldType.Error);
             }
 
-            return new Field(new ParameterDeclaration(field.ParameterDeclaration.Takes.Select(ppp=>ppp.IsIdentifier? new PhrasePart(ppp.Identifier.Identifier) : new PhrasePart(new ParameterDeclaration("this", target))), fieldType.Result), new InitializerPlaceholder(field.Initializer));
+            return new Field(new ParameterDeclaration(fieldName.Result, fieldType.Result), new InitializerPlaceholder(field.Initializer));
+        }
+
+        private static ResultOrParseError<IEnumerable<PhrasePart>> ResolveFieldName(IEnumerable<PartialPhrasePart> name, ProductType target)
+        {
+            var parameters = name.Where(ppp => !ppp.IsIdentifier).ToList();
+            if (parameters.Count == 0) {
+                return new ResultOrParseError<IEnumerable<PhrasePart>>(new FieldWithoutThisError());
+            }
+
+            if (parameters.Count > 1) {
+                return new ResultOrParseError<IEnumerable<PhrasePart>>(new FieldWithTooManyThisError());
+            }
+
+            if (parameters.Count == name.Count()) {
+                return new ResultOrParseError<IEnumerable<PhrasePart>>(new FieldWithoutIdentifiersError());
+            }
+
+            return new ResultOrParseError<IEnumerable<PhrasePart>>(name.Select(ppp => ppp.IsIdentifier ? new PhrasePart(ppp.Identifier.Identifier) : new PhrasePart(new ParameterDeclaration("this", target))));
         }
 
         private static TangentType ConvertGenericReferencesToInferences(TangentType input)
@@ -491,7 +537,6 @@ namespace Tangent.Parsing
                     return ConvertGenericReferencesToInferences(kind.KindOf).Kind;
                 default:
                     throw new NotImplementedException();
-
             }
         }
 

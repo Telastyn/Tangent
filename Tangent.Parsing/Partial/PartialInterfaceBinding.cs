@@ -12,7 +12,7 @@ namespace Tangent.Parsing.Partial
         public readonly List<PartialPhrasePart> TypePhrase;
         public readonly List<TangentType> InterfaceReferences;
 
-        public PartialInterfaceBinding(IEnumerable<PartialPhrasePart> type, IEnumerable<TangentType> interfaceReferences, IEnumerable<PartialReductionDeclaration> functions = null) : base(functions ?? Enumerable.Empty<PartialReductionDeclaration>(), Enumerable.Empty<VarDeclElement>(), type.Where(ppp => !ppp.IsIdentifier).Select(ppp => ppp.Parameter))
+        public PartialInterfaceBinding(IEnumerable<PartialPhrasePart> type, IEnumerable<TangentType> interfaceReferences, IEnumerable<PartialReductionDeclaration> functions = null) : base(functions ?? Enumerable.Empty<PartialReductionDeclaration>(), Enumerable.Empty<VarDeclElement>(), Enumerable.Empty<PartialDelegateDeclaration>(), type.Where(ppp => !ppp.IsIdentifier).Select(ppp => ppp.Parameter))
         {
             TypePhrase = new List<PartialPhrasePart>(type ?? Enumerable.Empty<PartialPhrasePart>());
             InterfaceReferences = new List<TangentType>(interfaceReferences ?? Enumerable.Empty<TangentType>());
