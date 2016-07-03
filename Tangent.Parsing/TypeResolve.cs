@@ -325,13 +325,13 @@ namespace Tangent.Parsing
                 if (!fn.Success) {
                     errors = errors.Concat(fn.Error);
                 } else {
-                    var delegateType = DelegateType.For(fn.Result.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter.RequiredArgumentType), fn.Result.Returns.EffectiveType);
+                    var delegateType = DelegateType.For(fn.Result.Takes.Where(pp => !pp.IsIdentifier && !pp.Parameter.IsThisParam).Select(pp => pp.Parameter.RequiredArgumentType), fn.Result.Returns.EffectiveType);
                     var fieldName = ResolveFieldName(delegateEntry.FieldPart, target);
                     if (!fieldName.Success) {
                         errors = errors.Concat(fieldName.Error);
                     } else {
                         var delegateField = new Field(new ParameterDeclaration(fieldName.Result, delegateType), new InitializerPlaceholder(new PartialStatement(new PartialElement[] {
-                                        new LambdaElement(delegateEntry.FunctionPart.Where(ppp=>!ppp.IsIdentifier).Select(ppp=>new VarDeclElement( ppp.Parameter/*new PartialParameterDeclaration( ppp.Parameter.Takes, null)*/, null, null)).ToList(), new BlockElement( delegateEntry.DefaultImplementation.Implementation)) })));
+                                        new LambdaElement(delegateEntry.FunctionPart.Where(ppp=>!ppp.IsIdentifier && !ppp.Parameter.IsThisParam).Select(ppp=>new VarDeclElement( ppp.Parameter/*new PartialParameterDeclaration( ppp.Parameter.Takes, null)*/, null, null)).ToList(), new BlockElement( delegateEntry.DefaultImplementation.Implementation)) })));
 
                         target.Fields.Add(delegateField);
                         delegateBindings.Add(
@@ -343,7 +343,7 @@ namespace Tangent.Parsing
                                         new Expression[] {
                                                         new DelegateInvocationExpression(
                                                             new FieldAccessorExpression(target, delegateField),
-                                                            fn.Result.Takes.Where(pp=>!pp.IsIdentifier).Select(pp=>new ParameterAccessExpression(pp.Parameter, null)),
+                                                            fn.Result.Takes.Where(pp=>!pp.IsIdentifier && !pp.Parameter.IsThisParam).Select(pp=>new ParameterAccessExpression(pp.Parameter, null)),
                                                             null)},
                                         Enumerable.Empty<ParameterDeclaration>()))));
                     }

@@ -5,6 +5,6 @@
 entrypoint => void {
   :x:foo := new foo;
   x.fn 42;  // 42
-  x.fn = (f)(i) => {print i + 4};
+  x.fn = (i) => {print i + 4};
   x.fn 42;  // 46
 }
