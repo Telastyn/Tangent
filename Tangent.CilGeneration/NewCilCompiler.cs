@@ -339,6 +339,19 @@ namespace Tangent.CilGeneration
             return concreteFuncType;
         }
 
+        private Type GenericDelegateTypeFor(DelegateType tangentDelegateType)
+        {
+            if (tangentDelegateType.Returns == TangentType.Void) {
+                if (tangentDelegateType.Takes.Count == 0) {
+                    return typeof(Action);
+                } else {
+                    return typeof(Action).Assembly.GetTypes().First(t => t.Name.StartsWith("Action") && t.IsGenericTypeDefinition && t.GetGenericArguments().Count() == tangentDelegateType.Takes.Count);
+                }
+            } else {
+                return typeof(Func<int>).Assembly.GetTypes().First(t => t.Name.StartsWith("Func") && t.IsGenericTypeDefinition && t.GetGenericArguments().Count() == tangentDelegateType.Takes.Count + 1);
+            }
+        }
+
         private void BuildImplementation(ReductionDeclaration fn, MethodBuilder builder)
         {
             var specializations = program.Functions.Where(other => other.IsSpecializationOf(fn)).ToList();
@@ -797,7 +810,16 @@ namespace Tangent.CilGeneration
                         AddExpression(entry, gen, parameterCodes, closureScope, false);
                     }
 
-                    gen.EmitCall(OpCodes.Call, Compile(invocation.DelegateType).GetMethod("Invoke"), null);
+                    var instanceType = Compile(invocation.DelegateType);
+                    MethodInfo delegateInvoke = null;
+                    if (instanceType.GetType().Name.StartsWith("TypeBuilder")) {
+                        var genericType = GenericDelegateTypeFor(invocation.DelegateType);
+                        delegateInvoke = TypeBuilder.GetMethod(instanceType, genericType.GetMethod("Invoke"));
+                    } else {
+                        delegateInvoke = instanceType.GetMethod("Invoke");
+                    }
+
+                    gen.EmitCall(OpCodes.Call, delegateInvoke, null);
 
                     return;
 
@@ -870,7 +892,7 @@ namespace Tangent.CilGeneration
         private void BuildClosure(ILGenerator gen, LambdaExpression lambda, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes, TypeBuilder closureScope)
         {
             // Build the anonymous type.
-            var closure = closureScope.DefineNestedType("closure" + closureCounter++);
+            var closure = closureScope.DefineNestedType("closure" + closureCounter++, TypeAttributes.Sealed | TypeAttributes.NestedPublic);
             var closureCtor = closure.DefineDefaultConstructor(System.Reflection.MethodAttributes.Public);
 
             // Push type creation and parameter assignment onto the stack.
@@ -909,7 +931,17 @@ namespace Tangent.CilGeneration
             // Push action creation onto stack.
             gen.Emit(OpCodes.Ldloc, obj);
             gen.Emit(OpCodes.Ldftn, closureFn);
-            gen.Emit(OpCodes.Newobj, Compile(lambda.EffectiveType).GetConstructors().First());
+            var lambdaType = Compile(lambda.EffectiveType);
+            ConstructorInfo ctor = null;
+            
+            if (lambdaType.GetType().Name.StartsWith("TypeBuilder")) {
+                var genericFuncType = GenericDelegateTypeFor(lambda.EffectiveType as DelegateType);
+                ctor = TypeBuilder.GetConstructor(lambdaType, genericFuncType.GetConstructors().First());
+            } else {
+                ctor = lambdaType.GetConstructors().First();
+            }
+
+            gen.Emit(OpCodes.Newobj, ctor);
         }
 
         private string GetNameFor(TypeDeclaration rule)

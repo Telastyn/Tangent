@@ -258,7 +258,6 @@ namespace Tangent.Cli.TestSuite
             Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
         }
 
-
         [TestMethod]
         public void BasicDelegateUse()
         {
@@ -267,6 +266,17 @@ namespace Tangent.Cli.TestSuite
             var result = Test.DebugProgramFile("BasicDelegateUse.tan", out compileDuration, out programDuration);
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "42" }));
+            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
+        }
+
+        [TestMethod]
+        public void AssignmentDelegateUse()
+        {
+            TimeSpan compileDuration;
+            TimeSpan programDuration;
+            var result = Test.DebugProgramFile("AssignmentDelegateUse.tan", out compileDuration, out programDuration);
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "42", "46" }));
             Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
         }
 

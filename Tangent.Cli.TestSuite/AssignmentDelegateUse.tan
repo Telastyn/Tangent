@@ -3,5 +3,8 @@
 }
 
 entrypoint => void {
-  new foo.fn 42;
+  :x:foo := new foo;
+  x.fn 42;
+  x.fn = (f)(i) => {print i + 4};
+  x.fn 42;
 }
