@@ -84,6 +84,7 @@ namespace Tangent.CilGeneration
 
             debuggingSymbolLookup = program.InputLabels.ToDictionary(l => l, l => targetModule.DefineDocument(l, Guid.Empty, Guid.Empty, Guid.Empty));
             rootType = targetModule.DefineType("_");
+            AddGlobals(rootType, program.Fields);
 
             Compile(entrypoint);
 
@@ -228,6 +229,21 @@ namespace Tangent.CilGeneration
 
             gen.Emit(OpCodes.Ret);
             return classBuilder;
+        }
+
+        private void AddGlobals(TypeBuilder rootType, IEnumerable<Field> fields)
+        {
+            var staticCtor = rootType.DefineConstructor(MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, new Type[0]);
+            var gen = staticCtor.GetILGenerator();
+
+            foreach(var entry in fields) {
+                var field = rootType.DefineField(GetNameFor(entry.Declaration), Compile(entry.Declaration.Returns), FieldAttributes.Static | FieldAttributes.Public);
+                fieldLookup.Add(entry, field);
+                AddExpression(entry.Initializer, gen, new Dictionary<ParameterDeclaration, PropertyCodes>(), rootType, false);
+                gen.Emit(OpCodes.Stsfld, field);
+            }
+
+            gen.Emit(OpCodes.Ret);
         }
 
         private Type BuildVariant(TypeDeclaration decl)
@@ -781,17 +797,28 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.FieldAccessor:
                     var fieldAccess = expr as FieldAccessorExpression;
-                    Compile(fieldAccess.OwningType);
-                    gen.Emit(OpCodes.Ldarg_0);
-                    gen.Emit(OpCodes.Ldfld, fieldLookup[fieldAccess.TargetField]);
+                    if (fieldAccess.OwningType != null) {
+                        Compile(fieldAccess.OwningType);
+                        gen.Emit(OpCodes.Ldarg_0);
+                        gen.Emit(OpCodes.Ldfld, fieldLookup[fieldAccess.TargetField]);
+                    }else {
+                        gen.Emit(OpCodes.Ldsfld, fieldLookup[fieldAccess.TargetField]);
+                    }
+                    
                     return;
 
                 case ExpressionNodeType.FieldMutator:
                     var fieldMutator = expr as FieldMutatorExpression;
-                    Compile(fieldMutator.OwningType);
-                    gen.Emit(OpCodes.Ldarg_0);
-                    gen.Emit(OpCodes.Ldarg_1);
-                    gen.Emit(OpCodes.Stfld, fieldLookup[fieldMutator.TargetField]);
+                    if (fieldMutator.OwningType != null) {
+                        Compile(fieldMutator.OwningType);
+                        gen.Emit(OpCodes.Ldarg_0);
+                        gen.Emit(OpCodes.Ldarg_1);
+                        gen.Emit(OpCodes.Stfld, fieldLookup[fieldMutator.TargetField]);
+                    } else {
+                        gen.Emit(OpCodes.Ldarg_0);
+                        gen.Emit(OpCodes.Stsfld, fieldLookup[fieldMutator.TargetField]);
+                    }
+                    
                     return;
 
                 case ExpressionNodeType.Identifier:

@@ -180,7 +180,7 @@ namespace Tangent.Parsing
                 BlockDecl,
                 (phrase, op, type, block) => new PartialReductionDeclaration(phrase, new PartialFunction(type, block, null)));
 
-        // (id|thisParam)+ : type-ref := statement
+        // (id|thisParam)+ : type-ref := statement;
         public static readonly Parser<VarDeclElement> FieldDeclaration =
             Parser.Combine(
                 ID.Select(id => new PartialPhrasePart(id)).Or(thisParam, "Field name part").OneOrMore,

@@ -20,7 +20,7 @@ namespace Tangent.Parsing
         private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens)
         {
             if (!tokens.Any()) {
-                return new TangentProgram(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>(), Enumerable.Empty<string>());
+                return new TangentProgram(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>(), Enumerable.Empty<Field>(), Enumerable.Empty<string>());
             }
 
             List<string> inputSources = tokens.Select(t => t.SourceInfo.Label).Distinct().ToList();
@@ -28,12 +28,14 @@ namespace Tangent.Parsing
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
             List<PartialInterfaceBinding> partialStandaloneInterfaceBindings = new List<PartialInterfaceBinding>();
             List<InterfaceBinding> interfaceToImplementerBindings = new List<InterfaceBinding>();
+            List<VarDeclElement> parsedGlobalFields = new List<VarDeclElement>();
 
             while (tokens.Any()) {
                 int typeTake;
                 var type = Grammar.TypeDecl.Parse(tokens, out typeTake);
                 int fnTake;
                 int ifTake;
+                int fldTake;
                 if (type.Success) {
                     partialTypes.Add(type.Result);
                     partialFunctions.AddRange(ExtractPartialFunctions(type.Result.Returns));
@@ -50,7 +52,13 @@ namespace Tangent.Parsing
                             partialFunctions.AddRange(binding.Result.Functions);
                             tokens.RemoveRange(0, ifTake);
                         } else {
-                            return new ResultOrParseError<TangentProgram>(typeTake >= fnTake ? type.Error : fn.Error);
+                            var field = Grammar.FieldDeclaration.Parse(tokens, out fldTake);
+                            if (field.Success) {
+                                parsedGlobalFields.Add(field.Result);
+                                tokens.RemoveRange(0, fldTake);
+                            } else {
+                                return new ResultOrParseError<TangentProgram>(typeTake >= fnTake ? type.Error : fn.Error);
+                            }
                         }
                     }
                 }
@@ -72,6 +80,11 @@ namespace Tangent.Parsing
             }
 
             var types = typeResult.Result;
+
+            var globalFields = TypeResolve.AllGlobalFields(parsedGlobalFields, types);
+            if (!globalFields.Success) {
+                return new ResultOrParseError<Intermediate.TangentProgram>(globalFields.Error);
+            }
 
             // Move to Phase 2 - Resolve types in parameters and function return types.
             Dictionary<TangentType, TangentType> conversions;
@@ -116,11 +129,20 @@ namespace Tangent.Parsing
 
             var enumAccesses = resolvedTypes.Result.Where(tt => tt.Returns.ImplementationType == KindOfType.Enum).Select(tt => tt.Returns).Cast<EnumType>().SelectMany(tt => tt.Values.Select(v => new ReductionDeclaration(v, new Function(tt, new Block(new[] { new EnumValueAccessExpression(tt.SingleValueTypeFor(v), null) }, Enumerable.Empty<ParameterDeclaration>()))))).ToList();
             var fieldFunctions = new List<ReductionDeclaration>();
+            Action<Field, ProductType> fieldFunctionizer = (field, productType) => {
+                fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", productType))), new Function(field.Declaration.Returns, new Block(new Expression[] { new FieldAccessorExpression(productType, field) }, Enumerable.Empty<ParameterDeclaration>()))));
+                fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", productType))).Concat(
+                    new[] { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", field.Declaration.Returns)) }), new Function(TangentType.Void, new Block(new Expression[] { new FieldMutatorExpression(productType, field) }, Enumerable.Empty<ParameterDeclaration>()))));
+
+            };
+
+            foreach (var field in globalFields.Result) {
+                fieldFunctionizer(field, null);
+            }
+
             foreach (var productType in allProductTypes) {
                 foreach (var field in productType.Fields) {
-                    fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", productType))), new Function(field.Declaration.Returns, new Block(new Expression[] { new FieldAccessorExpression(productType, field) }, Enumerable.Empty<ParameterDeclaration>()))));
-                    fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", productType))).Concat(
-                        new[] { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", field.Declaration.Returns)) }), new Function(TangentType.Void, new Block(new Expression[] { new FieldMutatorExpression(productType, field) }, Enumerable.Empty<ParameterDeclaration>()))));
+                    fieldFunctionizer(field, productType);
                 }
             }
 
@@ -154,31 +176,45 @@ namespace Tangent.Parsing
                 }
             }
 
+            Func<Field, ProductType, Func<Expression, Expression>> fieldInitializerResolver = (field, productType) => (placeholder) => {
+                var castPlaceholder = placeholder as InitializerPlaceholder;
+                TransformationScope scope = null;
+
+                if (productType == null) {
+                    scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
+                            .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f => new FunctionInvocation(f)))
+                            .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }));
+                } else {
+                    // Initializers can't use locals (directly), and don't have parameters.
+                    scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
+                            .Concat(field.Declaration.Returns is DelegateType ? (IEnumerable<TransformationRule>)new[] { new TypeAccess(new TypeDeclaration("this", productType)) } : Enumerable.Empty<TransformationRule>())
+                            .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f => new FunctionInvocation(f)))
+                            .Concat(ConstructorParameterAccess.For(field.Declaration.Takes.First(pp => !pp.IsIdentifier).Parameter, productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)))
+                            .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }));
+                }
+
+                var expr = castPlaceholder.UnresolvedInitializer.FlatTokens.Select(pe => ElementToExpression(scope, types, pe, errors)).ToList();
+                var result = scope.InterpretTowards(field.Declaration.Returns, expr);
+
+                if (result.Count == 0) {
+                    errors.Add(new IncomprehensibleStatementError(expr));
+                    return placeholder;
+                } else if (result.Count > 1) {
+                    errors.Add(new AmbiguousStatementError(expr, result));
+                    return placeholder;
+                } else {
+                    return result.First();
+                }
+            };
+
+            foreach (var field in globalFields.Result) {
+                field.ResolveInitializerPlaceholders(fieldInitializerResolver(field, null));
+                // TODO: reorder fields based on initialization dependencies (or error).
+            }
+
             foreach (var productType in allProductTypes) {
                 foreach (var field in productType.Fields) {
-                    field.ResolveInitializerPlaceholders(placeholder => {
-                        var castPlaceholder = placeholder as InitializerPlaceholder;
-
-                        // Initializers can't use locals (directly), and don't have parameters.
-                        var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
-                                .Concat(field.Declaration.Returns is DelegateType ? (IEnumerable<TransformationRule>)new[] { new TypeAccess(new TypeDeclaration("this", productType)) } : Enumerable.Empty<TransformationRule>())
-                                .Concat(resolvedFunctions.Result.Concat(ctorCalls).Select(f => new FunctionInvocation(f)))
-                                .Concat(ConstructorParameterAccess.For(field.Declaration.Takes.First(pp => !pp.IsIdentifier).Parameter, productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)))
-                                .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }));
-
-                        var expr = castPlaceholder.UnresolvedInitializer.FlatTokens.Select(pe => ElementToExpression(scope, types, pe, errors)).ToList();
-                        var result = scope.InterpretTowards(field.Declaration.Returns, expr);
-
-                        if (result.Count == 0) {
-                            errors.Add(new IncomprehensibleStatementError(expr));
-                            return placeholder;
-                        } else if (result.Count > 1) {
-                            errors.Add(new AmbiguousStatementError(expr, result));
-                            return placeholder;
-                        } else {
-                            return result.First();
-                        }
-                    });
+                    field.ResolveInitializerPlaceholders(fieldInitializerResolver(field, productType));
                 }
 
                 // TODO: reorder fields based on initialization dependencies (or error).
@@ -206,7 +242,7 @@ namespace Tangent.Parsing
                 } else {
                     return fn;
                 }
-            }).ToList(), inputSources);
+            }).ToList(), globalFields.Result, inputSources);
         }
 
         private static IEnumerable<ParameterDeclaration> BuildLocals(IEnumerable<VarDeclElement> locals, IEnumerable<TypeDeclaration> types, List<ParseError> errors)

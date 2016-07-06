@@ -233,6 +233,26 @@ namespace Tangent.Parsing
             return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);
         }
 
+        public static ResultOrParseError<IEnumerable<Field>> AllGlobalFields(IEnumerable<VarDeclElement> partialFields, IEnumerable<TypeDeclaration> types)
+        {
+            List<ParseError> errors = new List<ParseError>();
+            List<Field> results = new List<Field>();
+            foreach (var entry in partialFields) {
+                var result = ResolveField(entry, types, null, Enumerable.Empty<ParameterDeclaration>());
+                if (result.Success) {
+                    results.Add(result.Result);
+                } else {
+                    errors.Add(result.Error);
+                }
+            }
+
+            if (errors.Any()) {
+                return new ResultOrParseError<IEnumerable<Field>>(new AggregateParseError(errors));
+            }
+
+            return results;
+        }
+
         internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types, Dictionary<TangentType, TangentType> conversions)
         {
             var errors = new AggregateParseError(Enumerable.Empty<ParseError>());
@@ -500,16 +520,22 @@ namespace Tangent.Parsing
         private static ResultOrParseError<IEnumerable<PhrasePart>> ResolveFieldName(IEnumerable<PartialPhrasePart> name, ProductType target)
         {
             var parameters = name.Where(ppp => !ppp.IsIdentifier).ToList();
-            if (parameters.Count == 0) {
-                return new ResultOrParseError<IEnumerable<PhrasePart>>(new FieldWithoutThisError());
-            }
+            if (target == null) {
+                if (parameters.Count != 0) {
+                    return new ResultOrParseError<IEnumerable<PhrasePart>>(new FieldWithTooManyThisError());
+                }
+            } else {
+                if (parameters.Count == 0) {
+                    return new ResultOrParseError<IEnumerable<PhrasePart>>(new FieldWithoutThisError());
+                }
 
-            if (parameters.Count > 1) {
-                return new ResultOrParseError<IEnumerable<PhrasePart>>(new FieldWithTooManyThisError());
-            }
+                if (parameters.Count > 1) {
+                    return new ResultOrParseError<IEnumerable<PhrasePart>>(new FieldWithTooManyThisError());
+                }
 
-            if (parameters.Count == name.Count()) {
-                return new ResultOrParseError<IEnumerable<PhrasePart>>(new FieldWithoutIdentifiersError());
+                if (parameters.Count == name.Count()) {
+                    return new ResultOrParseError<IEnumerable<PhrasePart>>(new FieldWithoutIdentifiersError());
+                }
             }
 
             return new ResultOrParseError<IEnumerable<PhrasePart>>(name.Select(ppp => ppp.IsIdentifier ? new PhrasePart(ppp.Identifier.Identifier) : new PhrasePart(new ParameterDeclaration("this", target))));

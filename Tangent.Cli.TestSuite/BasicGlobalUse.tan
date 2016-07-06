@@ -1,0 +1,7 @@
+﻿x : int := 42;
+
+entrypoint => void {
+  print x;  // 42
+  x = 4;
+  print x;  // 4
+}
