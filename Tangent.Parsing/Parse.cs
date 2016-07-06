@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Tangent.Intermediate;
+using Tangent.Intermediate.Interop;
 using Tangent.Parsing.Errors;
 using Tangent.Parsing.Partial;
 using Tangent.Parsing.TypeResolved;
@@ -83,7 +84,7 @@ namespace Tangent.Parsing
 
             var globalFields = TypeResolve.AllGlobalFields(parsedGlobalFields, types);
             if (!globalFields.Success) {
-                return new ResultOrParseError<Intermediate.TangentProgram>(globalFields.Error);
+                return new ResultOrParseError<TangentProgram>(globalFields.Error);
             }
 
             // Move to Phase 2 - Resolve types in parameters and function return types.

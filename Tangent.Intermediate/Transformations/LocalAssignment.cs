@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Tangent.Intermediate
 {
-    public class LocalAssignment :ExpressionDeclaration
+    public class LocalAssignment : ExpressionDeclaration
     {
         public readonly ParameterDeclaration Local;
 

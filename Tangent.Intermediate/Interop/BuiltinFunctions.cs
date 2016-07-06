@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Tangent.Intermediate;
 
-namespace Tangent.Intermediate
+namespace Tangent.Intermediate.Interop
 {
     public static class BuiltinFunctions
     {

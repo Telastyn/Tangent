@@ -24,7 +24,9 @@ namespace Tangent.Intermediate
             return cache.GetOrAdd(id, i => new SingleValueType(this, i, NumericEquivalenceOf(id)));
         }
 
-        private int NumericEquivalenceOf(Identifier id)
+
+        // TODO: currently not used, and maybe will be a serialization problem. Remember to support non-ints for interop.
+        protected virtual int NumericEquivalenceOf(Identifier id)
         {
             int ix = 1;
             foreach (var value in Values)

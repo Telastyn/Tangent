@@ -65,7 +65,7 @@ namespace Tangent.CilGeneration
             }
 
             // TODO: replace with something more exensible.
-            foreach (var builtinFn in BuiltinFunctions.All.Select(fn => new { Decl = fn, MI = BuiltinFunctions.DotNetFunctionForBuiltin(fn) }).Where(fn => fn.MI != null)) {
+            foreach (var builtinFn in Tangent.Intermediate.Interop.BuiltinFunctions.All.Select(fn => new { Decl = fn, MI = Tangent.Intermediate.Interop.BuiltinFunctions.DotNetFunctionForBuiltin(fn) }).Where(fn => fn.MI != null)) {
                 functionLookup.Add(builtinFn.Decl, builtinFn.MI);
             }
 
@@ -751,7 +751,7 @@ namespace Tangent.CilGeneration
                         return;
                     }
 
-                    var opcode = invoke.FunctionDefinition.Returns as DirectOpCode;
+                    var opcode = invoke.FunctionDefinition.Returns as Tangent.Intermediate.Interop.DirectOpCode;
                     if (opcode != null) {
                         gen.Emit(opcode.OpCode);
                         return;

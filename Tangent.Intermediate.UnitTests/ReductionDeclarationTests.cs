@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Tangent.Intermediate.Interop;
 
 namespace Tangent.Intermediate.UnitTests
 {
