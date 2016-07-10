@@ -281,6 +281,7 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        [Ignore]
         public void BasicGlobalUse()
         {
             TimeSpan compileDuration;

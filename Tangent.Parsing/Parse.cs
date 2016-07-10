@@ -53,13 +53,16 @@ namespace Tangent.Parsing
                             partialFunctions.AddRange(binding.Result.Functions);
                             tokens.RemoveRange(0, ifTake);
                         } else {
-                            var field = Grammar.FieldDeclaration.Parse(tokens, out fldTake);
-                            if (field.Success) {
-                                parsedGlobalFields.Add(field.Result);
-                                tokens.RemoveRange(0, fldTake);
-                            } else {
-                                return new ResultOrParseError<TangentProgram>(typeTake >= fnTake ? type.Error : fn.Error);
-                            }
+                            //
+                            // No global state.
+                            // 
+                            //var field = Grammar.FieldDeclaration.Parse(tokens, out fldTake);
+                            //if (field.Success) {
+                            //    parsedGlobalFields.Add(field.Result);
+                            //    tokens.RemoveRange(0, fldTake);
+                            //} else {
+                            //    return new ResultOrParseError<TangentProgram>(typeTake >= fnTake ? type.Error : fn.Error);
+                            //}
                         }
                     }
                 }
