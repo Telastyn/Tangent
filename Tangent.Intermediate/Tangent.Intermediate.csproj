@@ -52,6 +52,7 @@
     <Compile Include="CtorParameterAccessExpression.cs" />
     <Compile Include="DelegateInvocationExpression.cs" />
     <Compile Include="DelegateType.cs" />
+    <Compile Include="Interop\DirectCallExpression.cs" />
     <Compile Include="Interop\DirectOpCode.cs" />
     <Compile Include="EnumType.cs" />
     <Compile Include="EnumWideningExpression.cs" />
@@ -59,6 +60,10 @@
     <Compile Include="FieldAccessorExpression.cs" />
     <Compile Include="FieldMutatorExpression.cs" />
     <Compile Include="Interop\DotNetEnumType.cs" />
+    <Compile Include="Interop\DotNetType.cs" />
+    <Compile Include="Interop\ImportBundle.cs" />
+    <Compile Include="Interop\PartialImportBundle.cs" />
+    <Compile Include="Interop\TangentImport.cs" />
     <Compile Include="LocalAccessExpression.cs" />
     <Compile Include="LocalAssignmentExpression.cs" />
     <Compile Include="ThrowInvalidProgramExceptionExpression.cs" />
@@ -119,6 +124,10 @@
     <ProjectReference Include="..\Tangent.Common\Tangent.Common.csproj">
       <Project>{a446fc42-b937-44ff-9d21-8a1552dd86df}</Project>
       <Name>Tangent.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tangent.Tokenization\Tangent.Tokenization.csproj">
+      <Project>{ae943962-7eb9-47d5-8436-821035ac0b74}</Project>
+      <Name>Tangent.Tokenization</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

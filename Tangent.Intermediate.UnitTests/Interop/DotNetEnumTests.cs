@@ -27,14 +27,16 @@ namespace Tangent.Intermediate.Interop.UnitTests
         public void EnumValueReturnsCorrectly()
         {
             var test = DotNetEnumType.For(typeof(TestEnum));
-            // no boom? good.
+            var testa = test.SingleValueTypeFor("a");
+            Assert.IsTrue(2 == testa.NumericEquivalent);
         }
 
         [TestMethod]
         public void EnumShortValueReturnsCorrectly()
         {
             var test = DotNetEnumType.For(typeof(ShortTestEnum));
-            // no boom? good.
+            var testa = test.SingleValueTypeFor("a");
+            Assert.IsTrue(2 == testa.NumericEquivalent);
         }
 
         [TestMethod]

@@ -32,7 +32,8 @@ namespace Tangent.Intermediate
         InitializerPlaceholder = 22,
         CtorCall = 23,
         FieldAccessor = 24,
-        FieldMutator = 25
+        FieldMutator = 25,
+        DirectCall = 100
     }
 
     public abstract class Expression

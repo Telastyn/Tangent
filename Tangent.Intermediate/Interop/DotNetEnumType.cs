@@ -35,12 +35,27 @@ namespace Tangent.Intermediate.Interop
 
         public static DotNetEnumType For(Type dotNetType)
         {
-            return cache.GetOrAdd(dotNetType, t => new DotNetEnumType(t));
+            return cache.GetOrAdd(dotNetType, t => NewOrElse(t));
+        }
+
+        private static DotNetEnumType NewOrElse(Type dotNetType)
+        {
+            // Placeholder while some things are in progress.
+            try {
+                return new DotNetEnumType(dotNetType);
+            } catch (NotImplementedException) {
+                return null;
+            }
         }
 
         protected override int NumericEquivalenceOf(Identifier id)
         {
             return IntValues[Values.IndexOf(id)];
+        }
+
+        public override string ToString()
+        {
+            return ".NET " + DotNetType.FullName;
         }
     }
 }
