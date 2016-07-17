@@ -12,10 +12,14 @@ namespace Tangent.Intermediate.Interop
         public Dictionary<Type, TypeDeclaration> Types = new Dictionary<Type, TypeDeclaration>();
         public Dictionary<MethodInfo, ReductionDeclaration> CommonFunctions = new Dictionary<MethodInfo, ReductionDeclaration>();
         public Dictionary<Type, Dictionary<Type, InterfaceBinding>> InterfaceBindings = new Dictionary<Type, Dictionary<Type, InterfaceBinding>>();
+        public Dictionary<FieldInfo, ReductionDeclaration> FieldAccessors = new Dictionary<FieldInfo, ReductionDeclaration>();
+        public Dictionary<FieldInfo, ReductionDeclaration> FieldMutators = new Dictionary<FieldInfo, ReductionDeclaration>();
+        public Dictionary<ConstructorInfo, ReductionDeclaration> Constructors = new Dictionary<ConstructorInfo, ReductionDeclaration>();
+        public Dictionary<Type, ReductionDeclaration> StructInits = new Dictionary<Type, ReductionDeclaration>();
 
         public static implicit operator ImportBundle(PartialImportBundle partial)
         {
-            return new ImportBundle(partial.Types.Values, partial.CommonFunctions.Values, partial.InterfaceBindings.Values.SelectMany(x => x.Values));
+            return new ImportBundle(partial.Types.Values, partial.CommonFunctions.Values.Concat(partial.FieldAccessors.Values).Concat(partial.FieldMutators.Values).Concat(partial.Constructors.Values).Concat(partial.StructInits.Values), partial.InterfaceBindings.Values.SelectMany(x => x.Values));
         }
 
         public static PartialImportBundle Merge(PartialImportBundle a, PartialImportBundle b)
@@ -27,6 +31,22 @@ namespace Tangent.Intermediate.Interop
 
             foreach (var entry in a.CommonFunctions) {
                 result.CommonFunctions.Add(entry.Key, entry.Value);
+            }
+
+            foreach (var entry in a.FieldAccessors) {
+                result.FieldAccessors.Add(entry.Key, entry.Value);
+            }
+
+            foreach (var entry in a.FieldMutators) {
+                result.FieldMutators.Add(entry.Key, entry.Value);
+            }
+
+            foreach (var entry in a.Constructors) {
+                result.Constructors.Add(entry.Key, entry.Value);
+            }
+
+            foreach(var entry in a.StructInits) {
+                result.StructInits.Add(entry.Key, entry.Value);
             }
 
             foreach (var entry in a.InterfaceBindings) {
@@ -49,6 +69,38 @@ namespace Tangent.Intermediate.Interop
                     result.CommonFunctions[entry.Key] = entry.Value;
                 } else {
                     result.CommonFunctions.Add(entry.Key, entry.Value);
+                }
+            }
+
+            foreach (var entry in b.FieldAccessors) {
+                if (result.FieldAccessors.ContainsKey(entry.Key)) {
+                    result.FieldAccessors[entry.Key] = entry.Value;
+                } else {
+                    result.FieldAccessors.Add(entry.Key, entry.Value);
+                }
+            }
+
+            foreach (var entry in b.FieldMutators) {
+                if (result.FieldMutators.ContainsKey(entry.Key)) {
+                    result.FieldMutators[entry.Key] = entry.Value;
+                } else {
+                    result.FieldMutators.Add(entry.Key, entry.Value);
+                }
+            }
+
+            foreach (var entry in b.Constructors) {
+                if (result.Constructors.ContainsKey(entry.Key)) {
+                    result.Constructors[entry.Key] = entry.Value;
+                } else {
+                    result.Constructors.Add(entry.Key, entry.Value);
+                }
+            }
+
+            foreach(var entry in b.StructInits) {
+                if (result.StructInits.ContainsKey(entry.Key)) {
+                    result.StructInits[entry.Key] = entry.Value;
+                } else {
+                    result.StructInits.Add(entry.Key, entry.Value);
                 }
             }
 

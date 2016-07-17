@@ -46,18 +46,59 @@ namespace Tangent.Intermediate.Interop
             PartialImportBundle result = new PartialImportBundle();
 
             foreach (var t in assembly.GetTypes()) {
-                // TODO: limit to public?
-                var tangentType = DotNetType.For(t);
-                if (tangentType != null) {
-                    result.Types.Add(t, TypeDeclarationFor(t));
+                if (t.IsPublic) {
+                    var tangentType = DotNetType.For(t);
+                    if (tangentType != null) {
+                        result.Types.Add(t, TypeDeclarationFor(t));
 
-                    foreach (var fn in t.GetMethods()) {
-                        var tfn = ReductionDeclarationFor(fn);
-                        if (tfn != null) {
-                            result.CommonFunctions.Add(fn, tfn);
+                        foreach (var fn in t.GetMethods()) {
+                            if (fn.IsPublic) {
+                                var tfn = ReductionDeclarationFor(fn);
+                                if (tfn != null) {
+                                    result.CommonFunctions.Add(fn, tfn);
+                                }
+                            }
+                        }
+
+                        foreach (var property in t.GetProperties()) {
+                            var propFns = ReductionDeclarationsFor(property);
+                            if (propFns != null) {
+                                foreach (var fn in propFns) {
+                                    result.CommonFunctions.Add(fn.Takes.Any(pp => pp.IsIdentifier && pp.Identifier.Value == "=") ? property.GetSetMethod() : property.GetGetMethod(), fn);
+                                }
+                            }
+                        }
+
+                        foreach (var field in t.GetFields()) {
+                            if (field.IsPublic) {
+                                var fieldFns = ReductionDeclarationsFor(field);
+                                if (fieldFns != null) {
+                                    foreach (var fn in fieldFns) {
+                                        if (fn.Takes.Any(pp => pp.IsIdentifier && pp.Identifier.Value == "=")) {
+                                            result.FieldMutators.Add(field, fn);
+                                        } else {
+                                            result.FieldAccessors.Add(field, fn);
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+
+                        foreach(var ctor in t.GetConstructors()) {
+                            if (ctor.IsPublic) {
+                                var ctorFn = ReductionDeclarationFor(ctor);
+                                if(ctorFn != null) {
+                                    result.Constructors.Add(ctor, ctorFn);
+                                }
+                            }
+                        }
+
+
+                        if (t.IsValueType) {
+                            result.StructInits.Add(t, ReductionDeclarationForStructInit(t));
                         }
                     }
-                    // TODO: ctor, fn, prop, field, etc.
                 }
             }
 
@@ -114,7 +155,88 @@ namespace Tangent.Intermediate.Interop
             }
 
             return new ReductionDeclaration(phrase, new Function(returnTangentType, new Block(new Expression[] { new DirectCallExpression(fn, returnTangentType, phrase.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, Enumerable.Empty<ParameterDeclaration>())));
+        }
 
+        public static IEnumerable<ReductionDeclaration> ReductionDeclarationsFor(PropertyInfo property)
+        {
+            var propertyType = DotNetType.For(property.PropertyType);
+            if (propertyType == null) {
+                return null;
+            }
+
+            var owningType = DotNetType.For(property.DeclaringType);
+
+            List<ReductionDeclaration> result = new List<ReductionDeclaration>();
+
+            if (property.CanRead) {
+                var readFn = property.GetGetMethod();
+                if (readFn.IsPublic) {
+                    Phrase namePart = null;
+                    if (readFn.IsStatic) {
+                        namePart = new Phrase(Tokenize.ProgramFile(".NET " + property.DeclaringType.FullName + "." + property.Name, "").Select(token => token.Value).ToArray());
+                    } else {
+                        if(owningType == null) {
+                            return null;
+                        }
+
+                        namePart = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("this", owningType)), new PhrasePart("."), new PhrasePart(property.Name) });
+                    }
+
+                    result.Add(new ReductionDeclaration(namePart.Pattern, new Function(propertyType, new Block(new Expression[] { new DirectCallExpression(readFn, propertyType, namePart.Pattern.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, Enumerable.Empty<ParameterDeclaration>()))));
+                }
+            }
+
+            if (property.CanWrite) {
+                var writeFn = property.GetSetMethod();
+                if (writeFn.IsPublic) {
+                    Phrase namePart = null;
+                    if (writeFn.IsStatic) {
+                        namePart = new Phrase(Tokenize.ProgramFile(".NET " + property.DeclaringType.FullName + "." + property.Name, "").Select(token => token.Value).ToArray());
+                    } else {
+                        namePart = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("this", owningType)), new PhrasePart("."), new PhrasePart(property.Name) });
+                    }
+
+                    namePart = new Phrase(namePart.Pattern.Concat(new[] { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) }));
+
+                    result.Add(new ReductionDeclaration(namePart.Pattern, new Function(propertyType, new Block(new Expression[] { new DirectCallExpression(writeFn, propertyType, namePart.Pattern.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, Enumerable.Empty<ParameterDeclaration>()))));
+                }
+            }
+
+            return result;
+        }
+
+        public static IEnumerable<ReductionDeclaration> ReductionDeclarationsFor(FieldInfo field)
+        {
+            if (!field.IsPublic) { return null; }
+            var propertyType = DotNetType.For(field.FieldType);
+            if (propertyType == null) {
+                return null;
+            }
+
+            var owningType = DotNetType.For(field.DeclaringType);
+
+            List<ReductionDeclaration> result = new List<ReductionDeclaration>();
+
+            Phrase namePart = null;
+            if (field.IsStatic) {
+                namePart = new Phrase(Tokenize.ProgramFile(".NET " + field.DeclaringType.FullName + "." + field.Name, "").Select(token => token.Value).ToArray());
+            } else {
+                if(owningType == null) {
+                    return null;
+                }
+
+                namePart = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("this", owningType)), new PhrasePart("."), new PhrasePart(field.Name) });
+            }
+
+            result.Add(new ReductionDeclaration(namePart.Pattern, new Function(propertyType, new Block(new Expression[] { new DirectFieldAccessExpression(field, namePart.Pattern.Where(pp=>!pp.IsIdentifier).Select(pp=>new ParameterAccessExpression(pp.Parameter, null))) }, Enumerable.Empty<ParameterDeclaration>()))));
+
+            if (!(field.IsInitOnly || field.IsLiteral)) {
+                namePart = new Phrase(namePart.Pattern.Concat(new[] { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) }));
+
+                result.Add(new ReductionDeclaration(namePart.Pattern, new Function(propertyType, new Block(new Expression[] { new DirectFieldAssignmentExpression(field, namePart.Pattern.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(pp.Parameter, null))) }, Enumerable.Empty<ParameterDeclaration>()))));
+            }
+ 
+            return result;
         }
 
         public static ReductionDeclaration ReductionDeclarationForStatic(MethodInfo fn)
@@ -157,6 +279,54 @@ namespace Tangent.Intermediate.Interop
             }
 
             return new ReductionDeclaration(phrase, new Function(returnTangentType, new Block(new Expression[] { new DirectCallExpression(fn, returnTangentType, phrase.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, Enumerable.Empty<ParameterDeclaration>())));
+        }
+
+        public static ReductionDeclaration ReductionDeclarationFor(ConstructorInfo ctor)
+        {
+            if (!ctor.IsPublic) {
+                return null;
+            }
+
+            if (ctor.IsStatic) {
+                return null;
+            }
+
+            var owningType = DotNetType.For(ctor.DeclaringType);
+            if(owningType == null) {
+                return null;
+            }
+
+            var namePart = Tokenize.ProgramFile(".NET " + ctor.DeclaringType.FullName, "").Select(token => new PhrasePart(new Identifier(token.Value))).ToList();
+            var parameterPart = ctor.GetParameters().Select(pi => {
+                var pt = DotNetType.For(pi.ParameterType);
+                if (pt == null) {
+                    return null;
+                }
+
+                return new ParameterDeclaration(pi.Name, pt);
+            });
+
+            if (parameterPart.Any(pd => pd == null)) {
+                return null;
+            }
+
+            return new ReductionDeclaration(new[] { new PhrasePart("new") }.Concat(namePart).Concat(parameterPart.Select(pd => new PhrasePart(pd))), new Function(owningType, new Block(new Expression[] { new DirectConstructorCallExpression(ctor, parameterPart.Select(pd => new ParameterAccessExpression(pd, null))) }, Enumerable.Empty<ParameterDeclaration>())));
+        }
+
+        public static ReductionDeclaration ReductionDeclarationForStructInit(Type t)
+        {
+            if (!t.IsValueType) {
+                return null;
+            }
+
+            var tangentType = DotNetType.For(t);
+            if(tangentType == null) {
+                return null;
+            }
+
+            var namePart = Tokenize.ProgramFile("new .NET " + t.FullName, "").Select(token => new PhrasePart(new Identifier(token.Value))).ToList();
+
+            return new ReductionDeclaration(namePart, new Function(tangentType, new Block(new Expression[] { new DirectStructInitExpression(t) }, Enumerable.Empty<ParameterDeclaration>())));
         }
 
         public static ReductionDeclaration ReductionDeclarationForOperator(MethodInfo fn)

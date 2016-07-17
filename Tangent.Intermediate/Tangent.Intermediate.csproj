@@ -53,12 +53,16 @@
     <Compile Include="DelegateInvocationExpression.cs" />
     <Compile Include="DelegateType.cs" />
     <Compile Include="Interop\DirectCallExpression.cs" />
+    <Compile Include="Interop\DirectConstructorCallExpression.cs" />
+    <Compile Include="Interop\DirectFieldAccessExpression.cs" />
+    <Compile Include="Interop\DirectFieldAssignmentExpression.cs" />
     <Compile Include="Interop\DirectOpCode.cs" />
     <Compile Include="EnumType.cs" />
     <Compile Include="EnumWideningExpression.cs" />
     <Compile Include="Field.cs" />
     <Compile Include="FieldAccessorExpression.cs" />
     <Compile Include="FieldMutatorExpression.cs" />
+    <Compile Include="Interop\DirectStructInitExpression.cs" />
     <Compile Include="Interop\DotNetEnumType.cs" />
     <Compile Include="Interop\DotNetType.cs" />
     <Compile Include="Interop\ImportBundle.cs" />

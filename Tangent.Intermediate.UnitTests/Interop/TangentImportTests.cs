@@ -44,6 +44,16 @@ namespace Tangent.Intermediate.Interop.UnitTests
                 Console.WriteLine("  {0}", entry.Value);
             }
 
+            Console.WriteLine("");
+            Console.WriteLine("Imported Constructors ({0}):", result.Constructors.Count + result.StructInits.Count);
+            foreach (var entry in result.Constructors) {
+                Console.WriteLine("  {0}", entry.Value);
+            }
+
+            foreach(var entry in result.StructInits) {
+                Console.WriteLine("  {0}", entry.Value);
+            }
+
             Console.WriteLine();
             Console.WriteLine("Imported Functions ({0}):", result.CommonFunctions.Count);
             foreach(var entry in result.CommonFunctions) {
@@ -51,9 +61,50 @@ namespace Tangent.Intermediate.Interop.UnitTests
             }
 
             Console.WriteLine();
+            Console.WriteLine("Imported Field Accessors ({0}):", result.FieldAccessors.Count);
+            foreach (var entry in result.FieldAccessors) {
+                Console.WriteLine("  {0}", entry.Value);
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Imported Field Assignments ({0}):", result.FieldMutators.Count);
+            foreach (var entry in result.FieldMutators) {
+                Console.WriteLine("  {0}", entry.Value);
+            }
+
+            Console.WriteLine();
             Console.WriteLine("Imported Interface Bindings ({0}):", result.InterfaceBindings.Count);
             foreach(var entry in result.InterfaceBindings) {
                 Console.WriteLine("  {0}", entry.Value);
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Elapsed Time: {0}", timer.Elapsed);
+        }
+
+        [TestMethod]
+        public void BulkImport()
+        {
+            var timer = Stopwatch.StartNew();
+            var result = TangentImport.ImportAssemblies(new[] { typeof(int).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly });
+            timer.Stop();
+
+            Console.WriteLine("Import Complete.");
+            Console.WriteLine("Imported Types ({0}):", result.TypeDeclarations.Count());
+            foreach (var entry in result.TypeDeclarations) {
+                Console.WriteLine("  {0}", entry);
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Imported Functions ({0}):", result.Functions.Count());
+            foreach (var entry in result.Functions) {
+                Console.WriteLine("  {0}", entry);
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Imported Interface Bindings ({0}):", result.InterfaceBindings.Count());
+            foreach (var entry in result.InterfaceBindings) {
+                Console.WriteLine("  {0}", entry);
             }
 
             Console.WriteLine();
