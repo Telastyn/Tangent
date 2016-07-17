@@ -383,7 +383,9 @@ namespace Tangent.CilGeneration
             int localix = 0;
             foreach (var local in fn.Returns.Implementation.Locals) {
                 gen.DeclareLocal(Compile(local.Returns));
-                parameterCodes.Add(local, new PropertyCodes(g => g.Emit(OpCodes.Ldloc, localix), g => g.Emit(OpCodes.Stloc, localix)));
+                var closureIx = localix;
+                parameterCodes.Add(local, new PropertyCodes(g => g.Emit(OpCodes.Ldloc, closureIx), g => g.Emit(OpCodes.Stloc, closureIx)));
+                localix++;
             }
 
             AddDispatchCode(gen, fn, specializations, parameterCodes);

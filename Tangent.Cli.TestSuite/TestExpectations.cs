@@ -281,6 +281,17 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void SimpleNullables()
+        {
+            TimeSpan compileDuration;
+            TimeSpan programDuration;
+            var result = Test.DebugProgramFile("SimpleNullables.tan", out compileDuration, out programDuration);
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "42", "null" }));
+            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
+        }
+
+        [TestMethod]
         [Ignore]
         public void BasicGlobalUse()
         {

@@ -74,7 +74,8 @@ namespace Tangent.Parsing
                 new TypeDeclaration("double", TangentType.Double),
                 new TypeDeclaration("bool", TangentType.Bool),
                 new TypeDeclaration("string", TangentType.String),
-                new TypeDeclaration("any", TangentType.Any)
+                new TypeDeclaration("any", TangentType.Any),
+                new TypeDeclaration("null", TangentType.Null)
             };
 
             Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping;

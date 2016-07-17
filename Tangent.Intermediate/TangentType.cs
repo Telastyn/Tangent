@@ -100,6 +100,7 @@ namespace Tangent.Intermediate
         public static readonly TangentType Any = new TangentType(KindOfType.Builtin);
         public static readonly TangentType PotentiallyAnything = new TangentType(KindOfType.Builtin);
         public static readonly TangentType DontCare = new TangentType(KindOfType.Builtin);
+        public static readonly TangentType Null = new ProductType(new[] { new PhrasePart("null") }, Enumerable.Empty<Field>());
 
         public override string ToString()
         {
