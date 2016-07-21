@@ -13,12 +13,13 @@ namespace Tangent.Parsing
 {
     public static class Parse
     {
-        public static ResultOrParseError<TangentProgram> TangentProgram(IEnumerable<Token> tokens)
+        public static ResultOrParseError<TangentProgram> TangentProgram(IEnumerable<Token> tokens, ImportBundle imports = null)
         {
-            return TangentProgram(new List<Token>(tokens));
+            imports = imports ?? ImportBundle.Empty;
+            return TangentProgram(new List<Token>(tokens), imports);
         }
 
-        private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens)
+        private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens, ImportBundle imports)
         {
             if (!tokens.Any()) {
                 return new TangentProgram(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>(), Enumerable.Empty<Field>(), Enumerable.Empty<string>());
@@ -84,7 +85,7 @@ namespace Tangent.Parsing
                 return new ResultOrParseError<TangentProgram>(typeResult.Error);
             }
 
-            var types = typeResult.Result;
+            var types = typeResult.Result.Concat(imports.TypeDeclarations);
 
             var globalFields = TypeResolve.AllGlobalFields(parsedGlobalFields, types);
             if (!globalFields.Success) {
@@ -103,6 +104,7 @@ namespace Tangent.Parsing
             if (!resolvedFunctions.Success) {
                 return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error);
             }
+
 
             HashSet<ProductType> allProductTypes = new HashSet<ProductType>();
             foreach (var t in resolvedTypes.Result) {
@@ -151,7 +153,7 @@ namespace Tangent.Parsing
                 }
             }
 
-            resolvedFunctions = new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(fieldFunctions).Concat(delegateInvokers));
+            resolvedFunctions = new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(fieldFunctions).Concat(delegateInvokers).Concat(imports.Functions));
 
             // And now Phase 3 - Statement parsing based on syntax.
             var lookup = new Dictionary<Function, Function>();
@@ -416,9 +418,8 @@ namespace Tangent.Parsing
                 if (!parts.All(p => p.Count == 1)) {
                     foreach (var variant in parts.GetCombos()) {
                         var trf = entry.Returns as TypeResolvedFunction;
-                        if (trf == null) { throw new NotImplementedException(); }
                         var parameterGenerics = variant.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)).ToList();
-                        var returnGenericsTiedToInference = trf.EffectiveType.ContainedGenericReferences(GenericTie.Reference).Where(pd => entry.GenericParameters.Contains(pd));
+                        var returnGenericsTiedToInference = (trf != null ? trf.EffectiveType : entry.Returns.EffectiveType).ContainedGenericReferences(GenericTie.Reference).Where(pd => entry.GenericParameters.Contains(pd));
                         var badGenerics = returnGenericsTiedToInference.Where(pd => !parameterGenerics.Contains(pd)).ToList();
                         if (badGenerics.Count == 1) {
                             return new ResultOrParseError<IEnumerable<ReductionDeclaration>>(new GenericSumTypeFunctionWithReturnTypeRelyingOnInference(variant, badGenerics[0]));
@@ -427,8 +428,15 @@ namespace Tangent.Parsing
                         if (badGenerics.Count > 1) {
                             return new ResultOrParseError<IEnumerable<ReductionDeclaration>>(new AggregateParseError(badGenerics.Select(bg => new GenericSumTypeFunctionWithReturnTypeRelyingOnInference(variant, bg))));
                         }
+                        ReductionDeclaration newb;
+                        if (trf != null) {
+                            newb = new ReductionDeclaration(variant, new TypeResolvedFunction(trf.EffectiveType, trf.Implementation, trf.Scope), parameterGenerics);
+                        } else if (entry.Returns.GetType() == typeof(Function)) {
+                            newb = new ReductionDeclaration(variant, new Function(entry.Returns.EffectiveType, entry.Returns.Implementation), parameterGenerics);
+                        } else {
+                            throw new NotImplementedException();
+                        }
 
-                        var newb = new ReductionDeclaration(variant, new TypeResolvedFunction(trf.EffectiveType, trf.Implementation, trf.Scope), parameterGenerics);
                         // Check if some specialization already exists for this variant.
                         if (!result.Any(fn => fn.MatchesSignatureOf(newb))) {
                             result.Add(newb);

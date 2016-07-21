@@ -6,19 +6,19 @@ using System.Threading.Tasks;
 
 namespace Tangent.Intermediate.Interop
 {
-    public class DirectStructInitExpression:Expression
+    public class DirectBoxingExpression : Expression
     {
-        public readonly Type TargetStruct;
-        public DirectStructInitExpression(Type target) : base(null)
+        public readonly Expression Target;
+        public DirectBoxingExpression(Expression target) : base(null)
         {
-            TargetStruct = target;
+            Target = target;
         }
 
         public override TangentType EffectiveType
         {
             get
             {
-                return DotNetType.NonNullableFor(TargetStruct);
+                return DotNetType.NonNullableFor(typeof(object));
             }
         }
 
@@ -26,7 +26,7 @@ namespace Tangent.Intermediate.Interop
         {
             get
             {
-                return ExpressionNodeType.DirectStructInit;
+                return ExpressionNodeType.DirectBox;
             }
         }
     }

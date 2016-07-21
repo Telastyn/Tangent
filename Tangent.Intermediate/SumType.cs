@@ -24,6 +24,23 @@ namespace Tangent.Intermediate
             this.types = types;
         }
 
+        public bool IsNullableType
+        {
+            get
+            {
+                return types.Count == 2 && types.Contains(TangentType.Null);
+            }
+        }
+
+        public TangentType NullableTypeOf
+        {
+            get
+            {
+                if (!IsNullableType) { return null; }
+                return types.FirstOrDefault(t => t != TangentType.Null);
+            }
+        }
+
         private static readonly Dictionary<int, List<SumType>> creationCache = new Dictionary<int, List<SumType>>();
 
         public static SumType For(IEnumerable<TangentType> types)

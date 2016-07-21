@@ -12,6 +12,8 @@ namespace Tangent.Intermediate.Interop
         public readonly IEnumerable<ReductionDeclaration> Functions;
         public readonly IEnumerable<InterfaceBinding> InterfaceBindings;
 
+        public static readonly ImportBundle Empty = new ImportBundle(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>(), Enumerable.Empty<InterfaceBinding>());
+
         public ImportBundle(IEnumerable<TypeDeclaration> types, IEnumerable<ReductionDeclaration> functions, IEnumerable<InterfaceBinding> interfaceBindings)
         {
             TypeDeclarations = new List<TypeDeclaration>(types);

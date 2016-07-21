@@ -1,0 +1,6 @@
+﻿//(x: null).Length => int { 0 }
+
+entrypoint => void {
+  print "foo".Length;
+  print "foobar".Length;
+}

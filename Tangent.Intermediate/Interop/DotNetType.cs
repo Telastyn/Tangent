@@ -19,8 +19,22 @@ namespace Tangent.Intermediate.Interop
         private static readonly ConcurrentDictionary<Type, TangentType> cache = new ConcurrentDictionary<Type, TangentType>();
         public static TangentType For(Type t)
         {
+            var result = NonNullableFor(t);
+            if(result == null) {
+                return result;
+            }
+
+            if(!(t.IsValueType)) {
+                return SumType.For(new[] { result, TangentType.Null });
+            }
+
+            return result;
+        }
+
+        public static TangentType NonNullableFor(Type t)
+        {
             // TODO: handle bool as an enum type.
-            if(t == typeof(bool)) {
+            if (t == typeof(bool)) {
                 return TangentType.Bool;
             }
 
@@ -33,13 +47,8 @@ namespace Tangent.Intermediate.Interop
                 return null;
             }
 
-            // TODO: reference type -> sum type+null
-            if (!t.IsValueType) {
-                return null;
-            }
-
             // TODO: handle generics.
-            if(t.IsGenericTypeDefinition || t.IsGenericType) {
+            if (t.IsGenericTypeDefinition || t.IsGenericType) {
                 return null;
             }
 

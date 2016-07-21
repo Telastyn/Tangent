@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Tangent.Intermediate;
+using Tangent.Intermediate.Interop;
 using Tangent.Runtime;
 
 namespace Tangent.CilGeneration
@@ -911,6 +912,70 @@ namespace Tangent.CilGeneration
                     var localAssignment = (LocalAssignmentExpression)expr;
                     AddExpression(localAssignment.Value, gen, parameterCodes, closureScope, lastStatement);
                     parameterCodes[localAssignment.Local.Local].Mutator(gen);
+                    return;
+
+                case ExpressionNodeType.DirectBox:
+                    var directBox = (DirectBoxingExpression)expr;
+                    AddExpression(directBox.Target, gen, parameterCodes, closureScope, lastStatement);
+                    gen.Emit(OpCodes.Box);
+                    return;
+
+                case ExpressionNodeType.DirectCall:
+                    var directCall = (DirectCallExpression)expr;
+                    foreach(var arg in directCall.Arguments) {
+                        AddExpression(arg, gen, parameterCodes, closureScope, false);
+                    }
+
+                    if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
+                    if (directCall.GenericArguments.Any()) {
+                        var parameterizedFn = directCall.Target.MakeGenericMethod(directCall.Arguments.Select(a => Compile(a.EffectiveType)).ToArray());
+                        gen.EmitCall(OpCodes.Call, parameterizedFn, null);
+                    } else {
+                        gen.EmitCall(OpCodes.Call, directCall.Target, null);
+                    }
+
+                    return;
+
+                case ExpressionNodeType.DirectConstructorCall:
+                    var directCtor = (DirectConstructorCallExpression)expr;
+                    foreach(var arg in directCtor.Arguments) {
+                        AddExpression(arg, gen, parameterCodes, closureScope, false);
+                    }
+
+                    gen.Emit(OpCodes.Newobj, directCtor.Constructor);
+                    return;
+
+                case ExpressionNodeType.DirectFieldAccess:
+                    var directFieldAccess = (DirectFieldAccessExpression)expr;
+                    foreach (var arg in directFieldAccess.Arguments) {
+                        AddExpression(arg, gen, parameterCodes, closureScope, false);
+                    }
+
+                    if (directFieldAccess.Field.IsStatic) {
+                        gen.Emit(OpCodes.Ldsfld, directFieldAccess.Field);
+                    } else {
+                        gen.Emit(OpCodes.Ldfld, directFieldAccess.Field);
+                    }
+
+                    return;
+
+                case ExpressionNodeType.DirectFieldAssignment:
+                    var directFieldAssignment = (DirectFieldAssignmentExpression)expr;
+                    foreach (var arg in directFieldAssignment.Arguments) {
+                        AddExpression(arg, gen, parameterCodes, closureScope, false);
+                    }
+
+                    if (directFieldAssignment.Field.IsStatic) {
+                        gen.Emit(OpCodes.Stsfld, directFieldAssignment.Field);
+                    } else {
+                        gen.Emit(OpCodes.Stfld, directFieldAssignment.Field);
+                    }
+
+                    return;
+
+                case ExpressionNodeType.DirectStructInit:
+                    var structInit = (DirectStructInitExpression)expr;
+                    gen.Emit(OpCodes.Initobj, structInit.TargetStruct);
                     return;
 
                 default:

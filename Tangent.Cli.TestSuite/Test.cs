@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tangent.CilGeneration;
+using Tangent.Intermediate.Interop;
 using Tangent.Parsing;
 using Tangent.Tokenization;
 
@@ -14,7 +15,7 @@ namespace Tangent.Cli.TestSuite
     [ExcludeFromCodeCoverage]
     public static class Test
     {
-        public static string DebugProgramFile(IEnumerable<string> paths)
+        public static string DebugProgramFile(IEnumerable<string> paths, ImportBundle imports = null)
         {
             var targetExe = Path.GetFileNameWithoutExtension(paths.First()) + ".exe";
             var args = paths.ToList();
@@ -26,7 +27,7 @@ namespace Tangent.Cli.TestSuite
                 tokenization = tokenization.Concat(Tokenize.ProgramFile(File.ReadAllText(args[x]), args[x]));
             }
 
-            var intermediateProgram = Parse.TangentProgram(tokenization);
+            var intermediateProgram = Parse.TangentProgram(tokenization, imports);
             if (!intermediateProgram.Success) {
                 Assert.Fail(string.Format("Errors during compilation: {0}", intermediateProgram.Error));
             }
@@ -40,23 +41,23 @@ namespace Tangent.Cli.TestSuite
             return RunCompiledProgram(targetExe, out discard);
         }
 
-        public static string DebugProgramFile(string path)
+        public static string DebugProgramFile(string path, ImportBundle imports = null)
         {
-            return DebugProgramFile(new[] { path });
+            return DebugProgramFile(new[] { path }, imports);
         }
 
-        public static string DebugProgramFile(IEnumerable<string> path, out TimeSpan compileDuration, out TimeSpan programDuration)
+        public static string DebugProgramFile(IEnumerable<string> path, out TimeSpan compileDuration, out TimeSpan programDuration, ImportBundle imports = null)
         {
             compileDuration = TimeSpan.Zero;
             programDuration = TimeSpan.Zero;
-            return DebugProgramFile(path);
+            return DebugProgramFile(path, imports);
         }
 
-        public static string DebugProgramFile(string path, out TimeSpan compileDuration, out TimeSpan programDuration)
+        public static string DebugProgramFile(string path, out TimeSpan compileDuration, out TimeSpan programDuration, ImportBundle imports = null)
         {
             compileDuration = TimeSpan.Zero;
             programDuration = TimeSpan.Zero;
-            return DebugProgramFile(path);
+            return DebugProgramFile(path, imports);
         }
 
         public static string ProgramFile(string path)

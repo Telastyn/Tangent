@@ -22,7 +22,7 @@ namespace Tangent.Intermediate.Interop
         {
             get
             {
-                return DotNetType.For(Constructor.DeclaringType);
+                return DotNetType.NonNullableFor(Constructor.DeclaringType);
             }
         }
 

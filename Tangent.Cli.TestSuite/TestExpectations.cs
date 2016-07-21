@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Tangent.Intermediate.Interop;
 
 namespace Tangent.Cli.TestSuite
 {
@@ -290,6 +291,15 @@ namespace Tangent.Cli.TestSuite
             Assert.IsTrue(results.SequenceEqual(new[] { "42", "null" }));
             Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
         }
+
+        [TestMethod]
+        public void SimpleImportReferenceProperty()
+        {
+            var result = Test.DebugProgramFile("SimpleImportReferenceProperty.tan", TangentImport.ImportAssembly(typeof(string).Assembly));
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "3", "6" }));
+        }
+        
 
         [TestMethod]
         [Ignore]

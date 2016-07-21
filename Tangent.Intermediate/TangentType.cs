@@ -93,7 +93,7 @@ namespace Tangent.Intermediate
         }
 
         public static readonly TangentType Void = Interop.DotNetType.For(typeof(void));
-        public static readonly TangentType String = new TangentType(KindOfType.Builtin);
+        public static readonly TangentType String = Interop.DotNetType.NonNullableFor(typeof(string));
         public static readonly TangentType Int = Interop.DotNetType.For(typeof(int));
         public static readonly TangentType Double = Interop.DotNetType.For(typeof(double));
         public static readonly TangentType Bool = new TangentType(KindOfType.Builtin);

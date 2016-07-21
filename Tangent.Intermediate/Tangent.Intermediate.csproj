@@ -52,6 +52,7 @@
     <Compile Include="CtorParameterAccessExpression.cs" />
     <Compile Include="DelegateInvocationExpression.cs" />
     <Compile Include="DelegateType.cs" />
+    <Compile Include="Interop\DirectBoxingExpression.cs" />
     <Compile Include="Interop\DirectCallExpression.cs" />
     <Compile Include="Interop\DirectConstructorCallExpression.cs" />
     <Compile Include="Interop\DirectFieldAccessExpression.cs" />

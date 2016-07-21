@@ -16,10 +16,11 @@ namespace Tangent.Intermediate.Interop
         public Dictionary<FieldInfo, ReductionDeclaration> FieldMutators = new Dictionary<FieldInfo, ReductionDeclaration>();
         public Dictionary<ConstructorInfo, ReductionDeclaration> Constructors = new Dictionary<ConstructorInfo, ReductionDeclaration>();
         public Dictionary<Type, ReductionDeclaration> StructInits = new Dictionary<Type, ReductionDeclaration>();
+        public Dictionary<Type, List<ReductionDeclaration>> SubtypingConversions = new Dictionary<Type, List<ReductionDeclaration>>();
 
         public static implicit operator ImportBundle(PartialImportBundle partial)
         {
-            return new ImportBundle(partial.Types.Values, partial.CommonFunctions.Values.Concat(partial.FieldAccessors.Values).Concat(partial.FieldMutators.Values).Concat(partial.Constructors.Values).Concat(partial.StructInits.Values), partial.InterfaceBindings.Values.SelectMany(x => x.Values));
+            return new ImportBundle(partial.Types.Values, partial.CommonFunctions.Values.Concat(partial.FieldAccessors.Values).Concat(partial.FieldMutators.Values).Concat(partial.Constructors.Values).Concat(partial.StructInits.Values).Concat(partial.SubtypingConversions.Values.SelectMany(x=>x)), partial.InterfaceBindings.Values.SelectMany(x => x.Values));
         }
 
         public static PartialImportBundle Merge(PartialImportBundle a, PartialImportBundle b)
@@ -54,6 +55,11 @@ namespace Tangent.Intermediate.Interop
                 foreach (var sub in entry.Value) {
                     result.InterfaceBindings[entry.Key].Add(sub.Key, sub.Value);
                 }
+            }
+
+            foreach(var entry in a.SubtypingConversions) {
+                result.SubtypingConversions.Add(entry.Key, new List<ReductionDeclaration>());
+                result.SubtypingConversions[entry.Key].AddRange(a.SubtypingConversions[entry.Key]);
             }
 
             foreach (var entry in b.Types) {
@@ -116,6 +122,14 @@ namespace Tangent.Intermediate.Interop
                         result.InterfaceBindings[entry.Key].Add(sub.Key, sub.Value);
                     }
                 }
+            }
+
+            foreach(var entry in b.SubtypingConversions) {
+                if (!result.SubtypingConversions.ContainsKey(entry.Key)) {
+                    result.SubtypingConversions.Add(entry.Key, new List<ReductionDeclaration>());
+                }
+
+                result.SubtypingConversions[entry.Key].AddRange(b.SubtypingConversions[entry.Key]);
             }
 
             return result;
