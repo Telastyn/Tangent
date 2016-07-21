@@ -216,7 +216,7 @@ namespace Tangent.Intermediate.Interop
                 return null;
             }
 
-            var owningType = DotNetType.NonNullableFor(field.DeclaringType);
+            var owningType = DotNetType.For(field.DeclaringType);
 
             List<ReductionDeclaration> result = new List<ReductionDeclaration>();
 
