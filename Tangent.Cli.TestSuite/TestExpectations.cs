@@ -295,7 +295,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void SimpleImportReferenceProperty()
         {
-            var result = Test.DebugProgramFile("SimpleImportReferenceProperty.tan", TangentImport.ImportAssembly(typeof(string).Assembly));
+            var result = Test.DebugProgramFile("SimpleImportReferenceProperty.tan", new[] { typeof(string).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "3", "6" }));
         }
@@ -304,7 +304,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void NonBuiltinReferenceType()
         {
-            var result = Test.DebugProgramFile("NonBuiltInReferenceType.tan", TangentImport.ImportAssembly(typeof(string).Assembly));
+            var result = Test.ProgramFile("NonBuiltInReferenceType.tan", new[] { typeof(string).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { new object().ToString() }));
         }
