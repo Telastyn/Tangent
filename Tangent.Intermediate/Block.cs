@@ -15,5 +15,15 @@ namespace Tangent.Intermediate
             Statements = statements;
             Locals = locals;
         }
+
+        public Block ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            var newbs = Statements.Select(expr => expr.ReplaceParameterAccesses(mapping));
+            if (Statements.SequenceEqual(newbs)) {
+                return this;
+            }
+
+            return new Block(newbs, Locals);
+        }
     }
 }

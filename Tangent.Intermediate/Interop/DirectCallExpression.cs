@@ -45,5 +45,15 @@ namespace Tangent.Intermediate.Interop
                 return ExpressionNodeType.DirectCall;
             }
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            var newbs = Arguments.Select(expr => expr.ReplaceParameterAccesses(mapping));
+            if (newbs.SequenceEqual(Arguments)) {
+                return this;
+            }
+
+            return new DirectCallExpression(this.Target, this.EffectiveType, newbs, GenericArguments);
+        }
     }
 }

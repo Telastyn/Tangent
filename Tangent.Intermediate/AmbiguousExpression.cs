@@ -28,5 +28,15 @@ namespace Tangent.Intermediate
                 return null;
             }
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            var newbs = PossibleInterpretations.Select(expr => expr.ReplaceParameterAccesses(mapping));
+            if (newbs.SequenceEqual(PossibleInterpretations)) {
+                return this;
+            }
+
+            return new AmbiguousExpression(newbs);
+        }
     }
 }

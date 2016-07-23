@@ -432,7 +432,9 @@ namespace Tangent.Parsing
                         if (trf != null) {
                             newb = new ReductionDeclaration(variant, new TypeResolvedFunction(trf.EffectiveType, trf.Implementation, trf.Scope), parameterGenerics);
                         } else if (entry.Returns.GetType() == typeof(Function)) {
-                            newb = new ReductionDeclaration(variant, new Function(entry.Returns.EffectiveType, entry.Returns.Implementation), parameterGenerics);
+                            var parameterMapping = variant.Zip(entry.Takes, (a, b) => Tuple.Create(a, b)).Where(p => !p.Item1.IsIdentifier).ToDictionary(p => p.Item2.Parameter, p => (Expression)new ParameterAccessExpression(p.Item1.Parameter, null));
+
+                            newb = new ReductionDeclaration(variant, new Function(entry.Returns.EffectiveType, entry.Returns.Implementation.ReplaceParameterAccesses(parameterMapping)), parameterGenerics);
                         } else {
                             throw new NotImplementedException();
                         }

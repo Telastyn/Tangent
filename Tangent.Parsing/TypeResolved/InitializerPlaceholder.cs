@@ -32,5 +32,10 @@ namespace Tangent.Parsing
                 return ExpressionNodeType.InitializerPlaceholder;
             }
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            return this;
+        }
     }
 }

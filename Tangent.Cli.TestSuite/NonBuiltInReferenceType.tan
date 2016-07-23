@@ -1,0 +1,3 @@
+﻿entrypoint => void {
+  .NET System.Console.WriteLine new .NET System.Object;
+}

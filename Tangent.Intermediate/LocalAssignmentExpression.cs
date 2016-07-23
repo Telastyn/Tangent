@@ -32,5 +32,10 @@ namespace Tangent.Intermediate
                 return ExpressionNodeType.LocalAssignment;
             }
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            return this;
+        }
     }
 }

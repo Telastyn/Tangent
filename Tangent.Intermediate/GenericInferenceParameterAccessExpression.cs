@@ -30,5 +30,10 @@ namespace Tangent.Intermediate
         {
             Inference = inference;
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            return this;
+        }
     }
 }

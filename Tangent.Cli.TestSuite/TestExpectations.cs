@@ -299,7 +299,16 @@ namespace Tangent.Cli.TestSuite
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "3", "6" }));
         }
-        
+
+
+        [TestMethod]
+        public void NonBuiltinReferenceType()
+        {
+            var result = Test.DebugProgramFile("NonBuiltInReferenceType.tan", TangentImport.ImportAssembly(typeof(string).Assembly));
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { new object().ToString() }));
+        }
+
 
         [TestMethod]
         [Ignore]

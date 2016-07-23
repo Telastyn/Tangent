@@ -33,5 +33,15 @@ namespace Tangent.Parsing.Partial
             InferenceName = new List<Identifier>(name);
             InferenceExpression = new List<Expression>(typeExpr);
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            var newinf = InferenceExpression.Select(expr => expr.ReplaceParameterAccesses(mapping));
+            if (InferenceExpression.SequenceEqual(newinf)) {
+                return this;
+            }
+
+            return new PartialTypeInferenceExpression(InferenceName, newinf, SourceInfo);
+        }
     }
 }

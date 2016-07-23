@@ -33,5 +33,15 @@ namespace Tangent.Intermediate.Interop
                 return ExpressionNodeType.DirectFieldAssignment;
             }
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            var newbs = Arguments.Select(expr => expr.ReplaceParameterAccesses(mapping));
+            if (Arguments.SequenceEqual(newbs)) {
+                return this;
+            }
+
+            return new DirectFieldAssignmentExpression(Field, newbs);
+        }
     }
 }

@@ -131,6 +131,18 @@ namespace Tangent.CilGeneration
                     return InstantiateGeneric(target as BoundGenericProductType);
                 case KindOfType.Delegate:
                     return BuildDelegateType(target as DelegateType);
+                case KindOfType.Builtin:
+                    var dnt = target as DotNetType;
+                    if (dnt != null) {
+                        return dnt.MappedType;
+                    }
+
+                    var dnet = target as DotNetEnumType;
+                    if (dnet != null) {
+                        return dnet.DotNetType;
+                    }
+
+                    throw new NotImplementedException();
                 default:
                     throw new NotImplementedException();
             }
@@ -237,7 +249,7 @@ namespace Tangent.CilGeneration
             var staticCtor = rootType.DefineConstructor(MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, new Type[0]);
             var gen = staticCtor.GetILGenerator();
 
-            foreach(var entry in fields) {
+            foreach (var entry in fields) {
                 var field = rootType.DefineField(GetNameFor(entry.Declaration), Compile(entry.Declaration.Returns), FieldAttributes.Static | FieldAttributes.Public);
                 fieldLookup.Add(entry, field);
                 AddExpression(entry.Initializer, gen, new Dictionary<ParameterDeclaration, PropertyCodes>(), rootType, false);
@@ -804,10 +816,10 @@ namespace Tangent.CilGeneration
                         Compile(fieldAccess.OwningType);
                         gen.Emit(OpCodes.Ldarg_0);
                         gen.Emit(OpCodes.Ldfld, fieldLookup[fieldAccess.TargetField]);
-                    }else {
+                    } else {
                         gen.Emit(OpCodes.Ldsfld, fieldLookup[fieldAccess.TargetField]);
                     }
-                    
+
                     return;
 
                 case ExpressionNodeType.FieldMutator:
@@ -821,7 +833,7 @@ namespace Tangent.CilGeneration
                         gen.Emit(OpCodes.Ldarg_0);
                         gen.Emit(OpCodes.Stsfld, fieldLookup[fieldMutator.TargetField]);
                     }
-                    
+
                     return;
 
                 case ExpressionNodeType.Identifier:
@@ -922,7 +934,7 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.DirectCall:
                     var directCall = (DirectCallExpression)expr;
-                    foreach(var arg in directCall.Arguments) {
+                    foreach (var arg in directCall.Arguments) {
                         AddExpression(arg, gen, parameterCodes, closureScope, false);
                     }
 
@@ -938,7 +950,7 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.DirectConstructorCall:
                     var directCtor = (DirectConstructorCallExpression)expr;
-                    foreach(var arg in directCtor.Arguments) {
+                    foreach (var arg in directCtor.Arguments) {
                         AddExpression(arg, gen, parameterCodes, closureScope, false);
                     }
 
@@ -1027,7 +1039,7 @@ namespace Tangent.CilGeneration
             gen.Emit(OpCodes.Ldftn, closureFn);
             var lambdaType = Compile(lambda.EffectiveType);
             ConstructorInfo ctor = null;
-            
+
             if (lambdaType.GetType().Name.StartsWith("TypeBuilder")) {
                 var genericFuncType = GenericDelegateTypeFor(lambda.EffectiveType as DelegateType);
                 ctor = TypeBuilder.GetConstructor(lambdaType, genericFuncType.GetConstructors().First());

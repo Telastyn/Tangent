@@ -55,5 +55,7 @@ namespace Tangent.Intermediate
         internal virtual void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
         {
         }
+
+        public abstract Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping);
     }
 }

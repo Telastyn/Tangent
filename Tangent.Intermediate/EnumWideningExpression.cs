@@ -25,5 +25,10 @@ namespace Tangent.Intermediate
         {
             this.EnumAccess = expr;
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            return this;
+        }
     }
 }

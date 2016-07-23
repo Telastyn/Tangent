@@ -29,5 +29,14 @@ namespace Tangent.Intermediate
         {
             return string.Format("param '{0}'", string.Join(" ", Parameter.Takes));
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            if (!mapping.ContainsKey(Parameter)) {
+                return this;
+            }
+
+            return mapping[Parameter];
+        }
     }
 }

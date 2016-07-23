@@ -29,5 +29,15 @@ namespace Tangent.Intermediate.Interop
                 return ExpressionNodeType.DirectBox;
             }
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            var newb = Target.ReplaceParameterAccesses(mapping);
+            if (newb == Target) {
+                return this;
+            }
+
+            return new DirectBoxingExpression(newb);
+        }
     }
 }

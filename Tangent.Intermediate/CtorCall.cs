@@ -4,12 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Tangent.Intermediate {
-    public class CtorCall : Function {
+namespace Tangent.Intermediate
+{
+    public class CtorCall : Function
+    {
         public CtorCall(BoundGenericProductType type) : base(type, null) { }
         public CtorCall(ProductType type) : base(type, null) { }
         public CtorCall(SumType type) : base(type, null) { }
-        internal override void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset) {
+        internal override void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
+        {
             // nada.
         }
     }
@@ -37,6 +40,12 @@ namespace Tangent.Intermediate {
             Arguments = new Expression[] { new ParameterAccessExpression(value, null) };
         }
 
+        private CtorCallExpression(TangentType target, IEnumerable<Expression> args) : base(null)
+        {
+            Target = target;
+            Arguments = args;
+        }
+
         public Function GenerateWrappedFunction()
         {
             return new Function(Target, new Block(new Expression[] { this }, Enumerable.Empty<ParameterDeclaration>()));
@@ -56,6 +65,16 @@ namespace Tangent.Intermediate {
             {
                 return ExpressionNodeType.CtorCall;
             }
+        }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            var newbs = Arguments.Select(expr => expr.ReplaceParameterAccesses(mapping));
+            if (Arguments.SequenceEqual(newbs)) {
+                return this;
+            }
+
+            return new CtorCallExpression(Target, newbs);
         }
     }
 }

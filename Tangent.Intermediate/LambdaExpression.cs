@@ -36,5 +36,15 @@ namespace Tangent.Intermediate
         {
             return string.Format("{0} {{...}}", resolvedType);
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            var newb = Implementation.ReplaceParameterAccesses(mapping);
+            if (newb == Implementation) {
+                return this;
+            }
+
+            return new LambdaExpression(ResolvedParameters, ResolvedReturnType, newb, SourceInfo);
+        }
     }
 }

@@ -65,5 +65,15 @@ namespace Tangent.Intermediate
                 return this.FunctionDefinition.Returns.EffectiveType;
             }
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            var newbs = Arguments.Select(expr => expr.ReplaceParameterAccesses(mapping));
+            if (Arguments.SequenceEqual(newbs)) {
+                return this;
+            }
+
+            return new FunctionInvocationExpression(FunctionDefinition, newbs, GenericArguments, SourceInfo);
+        }
     }
 }

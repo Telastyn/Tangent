@@ -34,5 +34,19 @@ namespace Tangent.Intermediate
         {
             // noop.
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            if(mapping.ContainsKey(ThisParam) || mapping.ContainsKey(CtorParam)) {
+                throw new NotImplementedException("ReplaceParameterAccesses called with this/ctor param. This is unsupported.");
+            }
+
+            var newbs = Arguments.Select(expr => expr.ReplaceParameterAccesses(mapping));
+            if (Arguments.SequenceEqual(newbs)) {
+                return this;
+            }
+
+            return new CtorParameterAccessExpression(ThisParam, CtorParam, newbs, SourceInfo);
+        }
     }
 }

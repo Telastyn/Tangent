@@ -35,6 +35,11 @@ namespace Tangent.Intermediate
         {
             return Value.ToString();
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            return this;
+        }
     }
 
     public class ConstantExpression<T> : ConstantExpression

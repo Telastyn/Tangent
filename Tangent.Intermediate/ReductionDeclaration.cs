@@ -95,7 +95,11 @@ namespace Tangent.Intermediate
                     }
                 } else {
                     var rhsInferences = rhsEnum.Current.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : rhsEnum.Current.Parameter.RequiredArgumentType.ContainedGenericReferences(GenericTie.Inference);
-                    if (!rhsEnum.Current.IsIdentifier && rhsInferences.Any()) {
+                    if (rhsEnum.Current.IsIdentifier) {
+                        yield return null;
+                        yield break;
+
+                    } else if (!rhsEnum.Current.IsIdentifier && rhsInferences.Any()) {
                         var necessaryInferences = new Dictionary<ParameterDeclaration, TangentType>();
                         if (rhsEnum.Current.Parameter.RequiredArgumentType.CompatibilityMatches(thisEnum.Current.Parameter.RequiredArgumentType, necessaryInferences)) {
                             yield return new SpecializationEntry(rhsEnum.Current.Parameter, thisEnum.Current.Parameter, necessaryInferences);
@@ -127,7 +131,6 @@ namespace Tangent.Intermediate
                             yield return null;
                             yield break;
                         }
-
                     } else {
 
                         switch (thisEnum.Current.Parameter.RequiredArgumentType.ImplementationType) {

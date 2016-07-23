@@ -24,5 +24,10 @@ namespace Tangent.Intermediate
         {
             EnumValue = svt;
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            return this;
+        }
     }
 }

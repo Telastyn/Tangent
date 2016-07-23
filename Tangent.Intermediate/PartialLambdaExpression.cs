@@ -78,5 +78,10 @@ namespace Tangent.Intermediate
         {
             get { return TangentType.PotentiallyAnything; }
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            return this; // works? no idea.
+        }
     }
 }

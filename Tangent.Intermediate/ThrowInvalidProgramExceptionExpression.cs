@@ -28,5 +28,10 @@ namespace Tangent.Intermediate
                 return ExpressionNodeType.InvalidProgramException;
             }
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            return this;
+        }
     }
 }

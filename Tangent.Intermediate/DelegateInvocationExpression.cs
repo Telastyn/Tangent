@@ -44,5 +44,17 @@ namespace Tangent.Intermediate
                 return DelegateType.Returns;
             }
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            var newbs = Arguments.Select(expr => expr.ReplaceParameterAccesses(mapping));
+            var newAccess = DelegateAccess.ReplaceParameterAccesses(mapping); 
+
+            if(Arguments.SequenceEqual(newbs) && DelegateAccess == newAccess) {
+                return this;
+            }
+
+            return new DelegateInvocationExpression(newAccess, newbs, SourceInfo);
+        }
     }
 }

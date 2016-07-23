@@ -24,5 +24,10 @@ namespace Tangent.Intermediate
         {
             TypeConstant = type;
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            return this;
+        }
     }
 }

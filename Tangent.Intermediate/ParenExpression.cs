@@ -51,5 +51,17 @@ namespace Tangent.Intermediate
                     Enumerable.Empty<TangentType>(),
                     SourceInfo));
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            var newBlock = VoidStatements.ReplaceParameterAccesses(mapping);
+            var newLast = LastStatement.Select(expr => expr.ReplaceParameterAccesses(mapping));
+
+            if(VoidStatements == newBlock && newLast.SequenceEqual(LastStatement)) {
+                return this;
+            }
+
+            return new ParenExpression(newBlock, newLast.ToList(), SourceInfo);
+        }
     }
 }

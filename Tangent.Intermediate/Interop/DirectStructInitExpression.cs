@@ -29,5 +29,10 @@ namespace Tangent.Intermediate.Interop
                 return ExpressionNodeType.DirectStructInit;
             }
         }
+
+        public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
+        {
+            return this;
+        }
     }
 }
