@@ -35,6 +35,7 @@ Tangent.Cli.exe -f <CompilerInputFile>";
 
                 inputs = JsonConvert.DeserializeObject<CompilerInputs1>(File.ReadAllText(args[1]));
                 inputs.DestinationFile = Path.GetFileNameWithoutExtension(inputs.DestinationFile);
+                inputs = ProcessIncludes(inputs);
             } else {
                 if (args.Length == 1) {
                     inputs.DestinationFile = Path.Combine(Path.GetDirectoryName(args[0]), Path.GetFileNameWithoutExtension(args[0]));
@@ -61,6 +62,28 @@ Tangent.Cli.exe -f <CompilerInputFile>";
 
             NewCilCompiler.Compile(intermediateProgram.Result, inputs.DestinationFile);
             Debug.WriteLine("Compile Duration: " + timer.Elapsed);
+        }
+
+        private static CompilerInputs1 ProcessIncludes(CompilerInputs1 root)
+        {
+            var result = root;
+            HashSet<string> processedIncludes = new HashSet<string>();
+            HashSet<string> pendingIncludes = new HashSet<string>(root.Includes);
+            while (pendingIncludes.Any()) {
+                var workset = pendingIncludes.First();
+                processedIncludes.Add(workset);
+                pendingIncludes.Remove(workset);
+                var contents = JsonConvert.DeserializeObject<CompilerInputs1>(workset);
+                foreach(var include in contents.Includes) {
+                    if (!processedIncludes.Contains(include)) {
+                        pendingIncludes.Add(include);
+                    }
+                }
+
+                result = result.Combine(contents);
+            }
+
+            return result;
         }
     }
 }

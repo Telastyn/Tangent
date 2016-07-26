@@ -11,12 +11,24 @@ namespace Tangent.Cli
     public sealed class CompilerInputs1
     {
         [DataMember]
-        public List<string> SourceFiles = new List<string>();
+        public HashSet<string> SourceFiles = new HashSet<string>();
 
         [DataMember]
-        public List<string> DllImports = new List<string>();
+        public HashSet<string> DllImports = new HashSet<string>();
+
+        [DataMember]
+        public HashSet<string> Includes = new HashSet<string>();
 
         [DataMember]
         public string DestinationFile = "out.exe";
+
+        public CompilerInputs1 Combine(CompilerInputs1 other)
+        {
+            return new CompilerInputs1() {
+                DestinationFile = DestinationFile,
+                SourceFiles = new HashSet<string>(SourceFiles.Concat(other.SourceFiles)),
+                DllImports = new HashSet<string>(DllImports.Concat(other.DllImports))
+            };
+        }
     }
 }

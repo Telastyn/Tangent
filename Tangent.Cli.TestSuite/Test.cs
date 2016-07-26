@@ -86,9 +86,9 @@ namespace Tangent.Cli.TestSuite
             var targetConfig = Path.GetFileNameWithoutExtension(paths.First()) + ".tanbuild";
 
             var config = new CompilerInputs1() {
-                SourceFiles = paths.ToList(),
+                SourceFiles = new HashSet<string>(paths),
                 DestinationFile = targetExe,
-                DllImports = (imports ?? Enumerable.Empty<Assembly>()).Select(assembly => assembly.FullName).ToList()
+                DllImports = new HashSet<string>((imports ?? Enumerable.Empty<Assembly>()).Select(assembly => assembly.FullName))
             };
 
             File.WriteAllText(targetConfig, JsonConvert.SerializeObject(config, Formatting.Indented));
