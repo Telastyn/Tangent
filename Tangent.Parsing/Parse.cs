@@ -391,9 +391,10 @@ namespace Tangent.Parsing
 
         private static ResultOrParseError<IEnumerable<ReductionDeclaration>> FanOutFunctionsWithSumTypes(IEnumerable<ReductionDeclaration> resolvedFunctions)
         {
-            List<ReductionDeclaration> result = new List<ReductionDeclaration>(resolvedFunctions);
-            for (int ix = 0; ix < result.Count; ++ix) {
-                var entry = result[ix];
+            IFunctionSignatureSet fss = new TieredFunctionSignatureSet();
+            fss.AddRange(resolvedFunctions);
+            for (int ix = 0; ix < fss.Functions.Count; ++ix) {
+                var entry = fss.Functions[ix];
 
                 List<List<PhrasePart>> parts = entry.Takes.Select(pp => {
                     if (!pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.Sum) {
@@ -439,15 +440,12 @@ namespace Tangent.Parsing
                             throw new NotImplementedException();
                         }
 
-                        // Check if some specialization already exists for this variant.
-                        if (!result.Any(fn => fn.MatchesSignatureOf(newb))) {
-                            result.Add(newb);
-                        }
+                        fss.Add(newb);
                     }
                 }
             }
 
-            return result;
+            return fss.Functions;
         }
 
         private static ReductionDeclaration GenerateConstructorFunctionFor(ProductType pt)
