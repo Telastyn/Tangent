@@ -38,7 +38,7 @@ namespace Tangent.Intermediate.UnitTests
             };
 
             var parameter = DelegateType.For(new[] { TangentType.Int, TangentType.Int }, TangentType.Void);
-            var lambda = new PartialLambdaExpression(new[] { new ParameterDeclaration("x", null), new ParameterDeclaration("y", null) }, new TransformationScope(Enumerable.Empty<TransformationRule>()), resolver, null);
+            var lambda = new PartialLambdaExpression(new[] { new ParameterDeclaration("x", null), new ParameterDeclaration("y", null) }, new TransformationScope(Enumerable.Empty<TransformationRule>(), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>())), resolver, null);
 
             var result = lambda.TryToFitIn(parameter);
             Assert.IsNull(result);
@@ -63,7 +63,7 @@ namespace Tangent.Intermediate.UnitTests
             };
 
             var parameter = DelegateType.For(new[] { TangentType.Int, TangentType.Int }, TangentType.Void);
-            var lambda = new PartialLambdaExpression(new[] { new ParameterDeclaration("x", null), new ParameterDeclaration("y", null) }, new TransformationScope(Enumerable.Empty<TransformationRule>()), resolver, null);
+            var lambda = new PartialLambdaExpression(new[] { new ParameterDeclaration("x", null), new ParameterDeclaration("y", null) }, new TransformationScope(Enumerable.Empty<TransformationRule>(), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>())), resolver, null);
 
             var result = lambda.TryToFitIn(parameter);
             Assert.AreEqual(ambiguity, result);

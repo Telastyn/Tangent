@@ -26,7 +26,7 @@ namespace Tangent.Intermediate
                 return TransformationResult.Failure;
             }
 
-            return new TransformationResult(1, new DelegateInvocationExpression(input.First(), Enumerable.Empty<Expression>(), input.First().SourceInfo));
+            return new TransformationResult(1, Enumerable.Empty<ConversionPath>(), new DelegateInvocationExpression(input.First(), Enumerable.Empty<Expression>(), input.First().SourceInfo));
         }
 
         public TransformationType Type

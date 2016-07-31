@@ -10,7 +10,8 @@ namespace Tangent.Intermediate
     public class TransformationResult
     {
         public readonly int Takes;
-        public Expression ReplacesWith;
+        public readonly List<ConversionPath> ConversionInfo;
+        public readonly Expression ReplacesWith;
         public bool Success
         {
             get
@@ -19,12 +20,13 @@ namespace Tangent.Intermediate
             }
         }
 
-        public TransformationResult(int count, Expression replacesWith)
+        public TransformationResult(int count, IEnumerable<ConversionPath> conversionInfo, Expression replacesWith)
         {
             Takes = count;
             ReplacesWith = replacesWith;
+            ConversionInfo = new List<ConversionPath>(conversionInfo);
         }
 
-        public static readonly TransformationResult Failure = new TransformationResult(0, null);
+        public static readonly TransformationResult Failure = new TransformationResult(0, Enumerable.Empty<ConversionPath>(), null);
     }
 }

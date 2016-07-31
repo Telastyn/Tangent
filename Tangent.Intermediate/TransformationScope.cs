@@ -9,15 +9,18 @@ namespace Tangent.Intermediate
     public class TransformationScope
     {
         public readonly IEnumerable<IEnumerable<TransformationRule>> Rules;
+        public readonly ConversionGraph Conversions;
 
-        public TransformationScope(IEnumerable<TransformationRule> rules)
+        public TransformationScope(IEnumerable<TransformationRule> rules, ConversionGraph conversionGraph)
         {
             Rules = Prioritize(rules).ToList();
+            Conversions = conversionGraph;
         }
 
         private TransformationScope(TransformationScope parent, IEnumerable<ParameterDeclaration> nestedLocals)
         {
             Rules = new[] { nestedLocals.SelectMany(l => LocalAccess.RulesForLocal(l)).ToList() }.Concat(parent.Rules);
+            Conversions = parent.Conversions;
         }
 
         public List<Expression> InterpretStatement(List<Expression> input)
@@ -27,16 +30,6 @@ namespace Tangent.Intermediate
 
         public List<Expression> InterpretTowards(TangentType target, List<Expression> input)
         {
-            return InterpretTowards(target, input, Enumerable.Empty<List<Expression>>());
-        }
-
-        private List<Expression> InterpretTowards(TangentType target, List<Expression> input, IEnumerable<List<Expression>> history)
-        {
-            // TODO: optimize; History can be cleared on non-conversion, and this only needs checked on conversion.
-            if (history.Any(entry => entry.Count == input.Count && entry.Zip(input, (i, e) => new { inputEntry = i, historyEntry = e }).All(pair => pair.inputEntry.EffectiveType == pair.historyEntry.EffectiveType && pair.inputEntry.NodeType == pair.historyEntry.NodeType))) {
-                return new List<Expression>();
-            }
-
             if (input.Count == 1) {
                 if (target == input[0].EffectiveType) {
                     return input;
@@ -48,6 +41,17 @@ namespace Tangent.Intermediate
                     if (lambda != null) {
                         return new List<Expression>() { lambda };
                     }
+                } else if (input[0].NodeType != ExpressionNodeType.Identifier) {
+                    var conversionPath = Conversions.FindConversion(input[0].EffectiveType, target);
+                    if (conversionPath != null) {
+                        var expr = conversionPath.Convert(input[0], this);
+                        var ambiguousConversion = expr as AmbiguousExpression;
+                        if (ambiguousConversion != null) {
+                            return ambiguousConversion.PossibleInterpretations.ToList();
+                        }
+
+                        return new List<Expression>() { expr };
+                    }
                 }
             }
 
@@ -55,16 +59,25 @@ namespace Tangent.Intermediate
                 var buffer = input.GetRange(ix, input.Count - ix);
                 foreach (var tier in Rules) {
                     var reductions = tier.Select(r => r.TryReduce(buffer, this)).Where(r => r.Success).ToList();
+                    foreach (var preferences in OrderMatches(reductions)) {
 
-                    // TODO: toss cycles?
-                    var successes = reductions.SelectMany(r => InterpretTowards(target, input.Take(ix).Concat(new[] { r.ReplacesWith }).Concat(buffer.Skip(r.Takes)).ToList(), history.Concat(new[] { buffer }))).ToList();
-                    if (successes.Any()) {
-                        return successes;
+                        var successes = preferences.SelectMany(r => InterpretTowards(target, input.Take(ix).Concat(new[] { r.ReplacesWith }).Concat(buffer.Skip(r.Takes)).ToList())).ToList();
+                        if (successes.Any()) {
+                            return successes;
+                        }
                     }
                 }
             }
 
             return new List<Expression>();
+        }
+
+        private IEnumerable<IEnumerable<TransformationResult>> OrderMatches(List<TransformationResult> reductions)
+        {
+            if(reductions.Count == 1) { yield return reductions; yield break; }
+            while (reductions.Any()) {
+                yield return PopBestCandidates(reductions);
+            }
         }
 
         public TransformationScope CreateNestedScope(IEnumerable<ParameterDeclaration> locals)
@@ -118,6 +131,27 @@ namespace Tangent.Intermediate
             }
 
             rules.RemoveAll(r => best.Contains(r));
+            return best;
+        }
+        
+        private static List<TransformationResult> PopBestCandidates(List<TransformationResult> reductions)
+        {
+            var best = new List<TransformationResult>();
+            foreach(var entry in reductions) {
+                if (!best.Any()) {
+                    best.Add(entry);
+                }else {
+                    var cmp = ResultPriorityComparer.ComparePriority(best.First(), entry);
+                    if(cmp == 0) {
+                        best.Add(entry);
+                    }else if(cmp > 0) {
+                        best.Clear();
+                        best.Add(entry);
+                    }
+                }
+            }
+
+            reductions.RemoveAll(r => best.Contains(r));
             return best;
         }
     }

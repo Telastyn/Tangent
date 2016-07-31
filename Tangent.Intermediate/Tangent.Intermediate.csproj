@@ -46,6 +46,8 @@
     <Compile Include="Block.cs" />
     <Compile Include="BoundGenericProductType.cs" />
     <Compile Include="BoundGenericType.cs" />
+    <Compile Include="ConversionGraph.cs" />
+    <Compile Include="ConversionPath.cs" />
     <Compile Include="Interop\BuiltinFunctions.cs" />
     <Compile Include="ConstantExpression.cs" />
     <Compile Include="CtorCall.cs" />
@@ -72,6 +74,7 @@
     <Compile Include="Interop\TangentImport.cs" />
     <Compile Include="LocalAccessExpression.cs" />
     <Compile Include="LocalAssignmentExpression.cs" />
+    <Compile Include="ResultPriorityComparer.cs" />
     <Compile Include="ThrowInvalidProgramExceptionExpression.cs" />
     <Compile Include="Expression.cs" />
     <Compile Include="ExpressionDeclaration.cs" />

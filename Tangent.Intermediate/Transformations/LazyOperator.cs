@@ -17,7 +17,7 @@ namespace Tangent.Intermediate
                 if (buffer[0].NodeType == ExpressionNodeType.Identifier && ((IdentifierExpression)buffer[0]).Identifier.Value == "~>") {
                     if (buffer[1].NodeType == ExpressionNodeType.TypeAccess) {
                         var arg = (TypeAccessExpression)buffer[1];
-                        return new TransformationResult(2, new TypeAccessExpression(arg.TypeConstant.Value.Lazy.TypeConstant, null));
+                        return new TransformationResult(2, Enumerable.Empty<ConversionPath>(), new TypeAccessExpression(arg.TypeConstant.Value.Lazy.TypeConstant, null));
                     }
                 }
             }

@@ -57,7 +57,7 @@ namespace Tangent.Parsing
 
         public static ResultOrParseError<TypeDeclaration> TryPartialTypeDeclaration(PartialTypeDeclaration partial, IEnumerable<TypeDeclaration> types, bool hardError)
         {
-            var scope = new TransformationScope(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => new TypeAccess(td))));
+            var scope = new TransformationScope(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => new TypeAccess(td))), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>()));
             List<PhrasePart> takes = new List<PhrasePart>();
             foreach (var t in partial.Takes) {
                 if (t.IsIdentifier) {
@@ -433,7 +433,7 @@ namespace Tangent.Parsing
 
         internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<Expression> identifiers, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
         {
-            var scope = new TransformationScope(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => (TransformationRule)new TypeAccess(td))).Concat(genericArguments.Select(ga => new GenericParameterAccess(ga))));
+            var scope = new TransformationScope(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => (TransformationRule)new TypeAccess(td))).Concat(genericArguments.Select(ga => new GenericParameterAccess(ga))), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>()));
             var result = scope.InterpretTowards(TangentType.Any.Kind, identifiers.ToList());
             if (result.Count == 1) {
                 var resolvedType = result[0].EffectiveType;

@@ -62,6 +62,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="ConversionGraphTests.cs" />
     <Compile Include="Interop\DotNetEnumTests.cs" />
     <Compile Include="Interop\TangentImportTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

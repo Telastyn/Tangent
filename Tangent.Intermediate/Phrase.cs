@@ -26,6 +26,7 @@ namespace Tangent.Intermediate
         {
             var inferenceCollector = new Dictionary<ParameterDeclaration, TangentType>();
             var parameterCollector = new List<Expression>();
+            var conversionCollector = new List<ConversionPath>();
             var sourceInfoCollector = new List<LineColumnRange>();
             var inputEnum = input.GetEnumerator();
             foreach (var element in Pattern) {
@@ -50,10 +51,12 @@ namespace Tangent.Intermediate
                         }
 
                         parameterCollector.Add(lambda);
+                        conversionCollector.Add(null);
                         sourceInfoCollector.Add(lambda.SourceInfo);
                     } else if (inType == TangentType.PotentiallyAnything) {
                         throw new NotImplementedException("Add support for paren expressions.");
                         parameterCollector.Add(inputEnum.Current);
+                        conversionCollector.Add(null);
                         sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
                     } else if (element.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Delegate &&
                          !((DelegateType)element.Parameter.RequiredArgumentType).Takes.Any() &&
@@ -61,17 +64,26 @@ namespace Tangent.Intermediate
 
                         // We have something like ~>int == int
                         parameterCollector.Add(new LambdaExpression(Enumerable.Empty<ParameterDeclaration>(), inType, new Block(new[] { inputEnum.Current }, Enumerable.Empty<ParameterDeclaration>()), inputEnum.Current.SourceInfo));
+                        conversionCollector.Add(null);
                         sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
                     } else if (!element.Parameter.RequiredArgumentType.CompatibilityMatches(inType, inferenceCollector)) {
-                        return PhraseMatchResult.Failure;
+                        var implicitConversion = scope.Conversions.FindConversion(inputEnum.Current.EffectiveType, element.Parameter.RequiredArgumentType);
+                        if (implicitConversion == null) {
+                            return PhraseMatchResult.Failure;
+                        } else {
+                            parameterCollector.Add(implicitConversion.Convert(inputEnum.Current, scope));
+                            conversionCollector.Add(implicitConversion);
+                            sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
+                        }
                     } else {
                         parameterCollector.Add(inputEnum.Current);
+                        conversionCollector.Add(null);
                         sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
                     }
                 }
             }
 
-            return new PhraseMatchResult(Pattern.Count(), LineColumnRange.CombineAll(sourceInfoCollector), parameterCollector, inferenceCollector);
+            return new PhraseMatchResult(Pattern.Count(), LineColumnRange.CombineAll(sourceInfoCollector), parameterCollector, inferenceCollector, conversionCollector);
         }
     }
 }

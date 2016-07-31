@@ -27,7 +27,7 @@ namespace Tangent.Intermediate
                 return TransformationResult.Failure;
             }
 
-            return new TransformationResult(match.TokenMatchLength, Reduce(match));
+            return new TransformationResult(match.TokenMatchLength, match.ConversionInfo, Reduce(match));
         }
 
         public abstract Expression Reduce(PhraseMatchResult input);

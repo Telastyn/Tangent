@@ -15,6 +15,8 @@ namespace Tangent.Intermediate {
 
             // gross.
             Interface.Implementations.Add(Implementation);
+
+            // TODO: what if impl is another interface? 
         }
     }
 }

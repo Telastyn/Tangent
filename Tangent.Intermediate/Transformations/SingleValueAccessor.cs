@@ -23,7 +23,7 @@ namespace Tangent.Intermediate
                                 var value = ((IdentifierExpression)buffer[2]).Identifier.Value;
                                 foreach (var entry in enum0.Values) {
                                     if (entry.Value == value) {
-                                        return new TransformationResult(3, new TypeAccessExpression(enum0.SingleValueTypeFor(entry).TypeConstant, null));
+                                        return new TransformationResult(3, Enumerable.Empty<ConversionPath>(), new TypeAccessExpression(enum0.SingleValueTypeFor(entry).TypeConstant, null));
                                     }
                                 }
                             }
