@@ -38,7 +38,8 @@ namespace Tangent.Intermediate
         DirectFieldAssignment = 102,
         DirectConstructorCall = 103,
         DirectStructInit = 104,
-        DirectBox = 105
+        DirectBox = 105,
+        DirectCast = 106
     }
 
     public abstract class Expression

@@ -159,7 +159,6 @@ namespace Tangent.Parsing
             var lookup = new Dictionary<Function, Function>();
             var errors = new List<ParseError>();
             resolvedFunctions = new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(BuiltinFunctions.All).Concat(enumAccesses));
-            resolvedFunctions = FanOutFunctionsWithSumTypes(resolvedFunctions.Result);
             if (!resolvedFunctions.Success) { return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error); }
 
             foreach (var fn in resolvedFunctions.Result) {
@@ -386,66 +385,6 @@ namespace Tangent.Parsing
                 default:
                     return Enumerable.Empty<PartialReductionDeclaration>();
             }
-        }
-
-
-        private static ResultOrParseError<IEnumerable<ReductionDeclaration>> FanOutFunctionsWithSumTypes(IEnumerable<ReductionDeclaration> resolvedFunctions)
-        {
-            IFunctionSignatureSet fss = new TieredFunctionSignatureSet();
-            fss.AddRange(resolvedFunctions);
-            for (int ix = 0; ix < fss.Functions.Count; ++ix) {
-                var entry = fss.Functions[ix];
-
-                List<List<PhrasePart>> parts = entry.Takes.Select(pp => {
-                    if (!pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.Sum) {
-                        return ((SumType)pp.Parameter.Returns).Types.Select(tt => new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, tt))).ToList();
-                    } else if (!pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.BoundGeneric) {
-                        var conc = pp.Parameter.Returns;
-                        while (conc.ImplementationType == KindOfType.BoundGeneric) {
-                            conc = ((BoundGenericType)conc).ConcreteType;
-                        }
-
-                        if (conc.ImplementationType == KindOfType.Sum) {
-                            return ((SumType)conc).Types.Select(tt => new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, tt))).ToList();
-                        }
-
-                        return new List<PhrasePart>() { pp };
-
-                    } else {
-                        return new List<PhrasePart>() { pp };
-                    }
-                }).ToList();
-
-                if (!parts.All(p => p.Count == 1)) {
-                    foreach (var variant in parts.GetCombos()) {
-                        var trf = entry.Returns as TypeResolvedFunction;
-                        var parameterGenerics = variant.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)).ToList();
-                        var returnGenericsTiedToInference = (trf != null ? trf.EffectiveType : entry.Returns.EffectiveType).ContainedGenericReferences(GenericTie.Reference).Where(pd => entry.GenericParameters.Contains(pd));
-                        var badGenerics = returnGenericsTiedToInference.Where(pd => !parameterGenerics.Contains(pd)).ToList();
-                        if (badGenerics.Count == 1) {
-                            return new ResultOrParseError<IEnumerable<ReductionDeclaration>>(new GenericSumTypeFunctionWithReturnTypeRelyingOnInference(variant, badGenerics[0]));
-                        }
-
-                        if (badGenerics.Count > 1) {
-                            return new ResultOrParseError<IEnumerable<ReductionDeclaration>>(new AggregateParseError(badGenerics.Select(bg => new GenericSumTypeFunctionWithReturnTypeRelyingOnInference(variant, bg))));
-                        }
-                        ReductionDeclaration newb;
-                        if (trf != null) {
-                            newb = new ReductionDeclaration(variant, new TypeResolvedFunction(trf.EffectiveType, trf.Implementation, trf.Scope), parameterGenerics);
-                        } else if (entry.Returns.GetType() == typeof(Function)) {
-                            var parameterMapping = variant.Zip(entry.Takes, (a, b) => Tuple.Create(a, b)).Where(p => !p.Item1.IsIdentifier).ToDictionary(p => p.Item2.Parameter, p => (Expression)new ParameterAccessExpression(p.Item1.Parameter, null));
-
-                            newb = new ReductionDeclaration(variant, new Function(entry.Returns.EffectiveType, entry.Returns.Implementation.ReplaceParameterAccesses(parameterMapping)), parameterGenerics);
-                        } else {
-                            throw new NotImplementedException();
-                        }
-
-                        fss.Add(newb);
-                    }
-                }
-            }
-
-            return fss.Functions;
         }
 
         private static ReductionDeclaration GenerateConstructorFunctionFor(ProductType pt)

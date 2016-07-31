@@ -932,6 +932,12 @@ namespace Tangent.CilGeneration
                     gen.Emit(OpCodes.Box);
                     return;
 
+                case ExpressionNodeType.DirectCast:
+                    var directCast = (DirectCastExpression)expr;
+                    AddExpression(directCast.Argument, gen, parameterCodes, closureScope, lastStatement);
+                    gen.Emit(OpCodes.Castclass, Compile(directCast.TargetType));
+                    return;
+
                 case ExpressionNodeType.DirectCall:
                     var directCall = (DirectCallExpression)expr;
                     foreach (var arg in directCall.Arguments) {

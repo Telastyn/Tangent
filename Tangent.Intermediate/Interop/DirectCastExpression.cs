@@ -6,19 +6,22 @@ using System.Threading.Tasks;
 
 namespace Tangent.Intermediate.Interop
 {
-    public class DirectStructInitExpression : Expression
+    public class DirectCastExpression : Expression
     {
-        public readonly Type TargetStruct;
-        public DirectStructInitExpression(Type target) : base(null)
+        public readonly Expression Argument;
+        public readonly TangentType TargetType;
+
+        public DirectCastExpression(Expression arg, TangentType target) : base(null)
         {
-            TargetStruct = target;
+            Argument = arg;
+            TargetType = target;
         }
 
         public override TangentType EffectiveType
         {
             get
             {
-                return DotNetType.For(TargetStruct);
+                return TargetType;
             }
         }
 
@@ -26,13 +29,16 @@ namespace Tangent.Intermediate.Interop
         {
             get
             {
-                return ExpressionNodeType.DirectStructInit;
+                return ExpressionNodeType.DirectCast;
             }
         }
 
         public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
         {
-            return this;
+            var newb = Argument.ReplaceParameterAccesses(mapping);
+            if (newb == Argument) { return this; }
+
+            return new DirectCastExpression(newb, TargetType);
         }
     }
 }

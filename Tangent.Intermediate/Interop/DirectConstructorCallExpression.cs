@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Tangent.Intermediate.Interop
 {
-    public class DirectConstructorCallExpression: Expression
+    public class DirectConstructorCallExpression : Expression
     {
         public readonly ConstructorInfo Constructor;
         public readonly IEnumerable<Expression> Arguments;
@@ -22,7 +22,7 @@ namespace Tangent.Intermediate.Interop
         {
             get
             {
-                return DotNetType.NonNullableFor(Constructor.DeclaringType);
+                return DotNetType.For(Constructor.DeclaringType);
             }
         }
 

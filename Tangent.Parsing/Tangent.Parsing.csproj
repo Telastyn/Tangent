@@ -58,7 +58,6 @@
     <Compile Include="Errors\ThisAsGeneric.cs" />
     <Compile Include="Grammar.cs" />
     <Compile Include="IdentifierParser.cs" />
-    <Compile Include="IFunctionSignatureSet.cs" />
     <Compile Include="IntConstantParser.cs" />
     <Compile Include="NotFollowedByParser.cs" />
     <Compile Include="OptionalParser.cs" />
@@ -92,7 +91,6 @@
     <Compile Include="Errors\ResultOrParseError.cs" />
     <Compile Include="RepeatingParser.cs" />
     <Compile Include="ShortcuttingOrParser.cs" />
-    <Compile Include="TieredFunctionSignatureSet.cs" />
     <Compile Include="StringConstantParser.cs" />
     <Compile Include="StringLiteralParser.cs" />
     <Compile Include="TypeResolve.cs" />

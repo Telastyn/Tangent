@@ -18,7 +18,7 @@ namespace Tangent.Intermediate.Interop
         {
             get
             {
-                return DotNetType.NonNullableFor(typeof(object));
+                return DotNetType.For(typeof(object));
             }
         }
 

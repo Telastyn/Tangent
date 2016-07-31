@@ -48,7 +48,7 @@ namespace Tangent.Intermediate.Interop
 
             foreach (var t in assembly.GetTypes()) {
                 if (t.IsPublic) {
-                    var tangentType = DotNetType.NonNullableFor(t);
+                    var tangentType = DotNetType.For(t);
                     if (tangentType != null) {
                         result.Types.Add(t, TypeDeclarationFor(t));
 
@@ -110,7 +110,7 @@ namespace Tangent.Intermediate.Interop
 
         public static TypeDeclaration TypeDeclarationFor(Type t)
         {
-            var tt = DotNetType.NonNullableFor(t);
+            var tt = DotNetType.For(t);
             if (t.ContainsGenericParameters) {
                 throw new NotImplementedException("Sorry, generic dot net types not yet supported.");
             }
@@ -136,7 +136,7 @@ namespace Tangent.Intermediate.Interop
                 return null;
             }
 
-            var owningTangentType = DotNetType.NonNullableFor(fn.DeclaringType);
+            var owningTangentType = DotNetType.For(fn.DeclaringType);
             if (owningTangentType == null) { return null; }
 
             var returnTangentType = DotNetType.For(fn.ReturnType);
@@ -167,7 +167,7 @@ namespace Tangent.Intermediate.Interop
                 return null;
             }
 
-            var owningType = DotNetType.NonNullableFor(property.DeclaringType);
+            var owningType = DotNetType.For(property.DeclaringType);
 
             List<ReductionDeclaration> result = new List<ReductionDeclaration>();
 
@@ -322,7 +322,7 @@ namespace Tangent.Intermediate.Interop
                 return null;
             }
 
-            var owningType = DotNetType.NonNullableFor(ctor.DeclaringType);
+            var owningType = DotNetType.For(ctor.DeclaringType);
             if (owningType == null) {
                 return null;
             }
@@ -350,7 +350,7 @@ namespace Tangent.Intermediate.Interop
                 return null;
             }
 
-            var tangentType = DotNetType.NonNullableFor(t);
+            var tangentType = DotNetType.For(t);
             if (tangentType == null) {
                 return null;
             }
@@ -362,7 +362,6 @@ namespace Tangent.Intermediate.Interop
 
         public static IEnumerable<ReductionDeclaration> SubTypingConversionsFor(Type t)
         {
-            var tangentConcreteType = DotNetType.NonNullableFor(t);
             var tangentType = DotNetType.For(t);
 
             // Base 
@@ -382,6 +381,9 @@ namespace Tangent.Intermediate.Interop
             // null -> I?
             // T -> I?
 
+            if (!t.IsValueType) {
+                yield return new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.Null)), new Function(tangentType, new Block(new Expression[] { new DirectCastExpression(new CtorCallExpression((ProductType)TangentType.Null, pd => pd), tangentType) }, Enumerable.Empty<ParameterDeclaration>())));
+            }
 
             // TODO:
             yield break;

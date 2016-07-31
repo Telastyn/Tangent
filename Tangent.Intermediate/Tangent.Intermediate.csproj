@@ -54,6 +54,7 @@
     <Compile Include="DelegateType.cs" />
     <Compile Include="Interop\DirectBoxingExpression.cs" />
     <Compile Include="Interop\DirectCallExpression.cs" />
+    <Compile Include="Interop\DirectCastExpression.cs" />
     <Compile Include="Interop\DirectConstructorCallExpression.cs" />
     <Compile Include="Interop\DirectFieldAccessExpression.cs" />
     <Compile Include="Interop\DirectFieldAssignmentExpression.cs" />
