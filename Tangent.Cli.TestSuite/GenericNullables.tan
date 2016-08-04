@@ -1,0 +1,15 @@
+﻿(T)? :> T | null;
+
+print (x: null) => void {
+  print "null";
+}
+
+print (x: (T)?) => void { }
+
+entrypoint => void {
+  :x:int? := 42;
+  :y:int? := null;
+
+  print x;
+  print y;
+}

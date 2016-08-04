@@ -126,9 +126,14 @@ namespace Tangent.Parsing
 
             var ctorCalls = allProductTypes.Select(pt => GenerateConstructorFunctionFor(pt)).ToList();
             foreach (var sum in allSumTypes) {
-                foreach (var entry in sum.Types) {
-                    var valueParam = new ParameterDeclaration("_", entry);
-                    ctorCalls.Add(new ReductionDeclaration(new PhrasePart(valueParam), new CtorCallExpression(sum, valueParam).GenerateWrappedFunction()));
+                var sumGenerics = sum.ContainedGenericReferences(GenericTie.Reference).ToList();
+                if (!sumGenerics.Any()) {
+                    foreach (var entry in sum.Types) {
+                        var valueParam = new ParameterDeclaration("_", entry);
+                        ctorCalls.Add(new ReductionDeclaration(new PhrasePart(valueParam), new CtorCallExpression(sum, valueParam).GenerateWrappedFunction()));
+                    }
+                } else {
+                    throw new NotImplementedException("LASTWORKED: change conversion to be generic rather than having a generic ref that doesn't bind to the function.");
                 }
             }
 
@@ -162,7 +167,7 @@ namespace Tangent.Parsing
             if (!resolvedFunctions.Success) { return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error); }
             resolvedFunctions = new ResultOrParseError<IEnumerable<ReductionDeclaration>>(resolvedFunctions.Result.Concat(ctorCalls));
 
-            var invocationRules = resolvedFunctions.Result.Where(fn => !fn.IsConversion).Select(fn=>new FunctionInvocation(fn)).ToList();
+            var invocationRules = resolvedFunctions.Result.Where(fn => !fn.IsConversion).Select(fn => new FunctionInvocation(fn)).ToList();
             var conversionGraph = new ConversionGraph(resolvedFunctions.Result.Where(fn => fn.IsConversion));
 
             foreach (var fn in resolvedFunctions.Result) {
@@ -229,6 +234,8 @@ namespace Tangent.Parsing
 
                 // TODO: reorder fields based on initialization dependencies (or error).
             }
+
+            errors.AddRange(MakeSureInterfacesAreMet(resolvedTypes.Result, resolvedFunctions.Result));
 
             if (errors.Any()) {
                 return new ResultOrParseError<TangentProgram>(new AggregateParseError(errors));
@@ -420,6 +427,12 @@ namespace Tangent.Parsing
             } else {
                 throw new NotImplementedException();
             }
+        }
+
+        private static IEnumerable<ParseError> MakeSureInterfacesAreMet(IEnumerable<TypeDeclaration> typeDeclarations, IEnumerable<ReductionDeclaration> reductionDeclarations)
+        {
+            // TODO: going to need to create a specialized structure to allow this lookup to happen in some reasonable bound.
+            yield break;
         }
     }
 }
