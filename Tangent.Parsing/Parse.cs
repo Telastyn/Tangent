@@ -75,8 +75,7 @@ namespace Tangent.Parsing
                 new TypeDeclaration("double", TangentType.Double),
                 new TypeDeclaration("bool", TangentType.Bool),
                 new TypeDeclaration("string", TangentType.String),
-                new TypeDeclaration("any", TangentType.Any),
-                new TypeDeclaration("null", TangentType.Null)
+                new TypeDeclaration("any", TangentType.Any)
             };
 
             Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping;
@@ -110,32 +109,11 @@ namespace Tangent.Parsing
             foreach (var t in resolvedTypes.Result) {
                 if (t.Returns.ImplementationType == KindOfType.Product) {
                     allProductTypes.Add((ProductType)t.Returns);
-                } else if (t.Returns.ImplementationType == KindOfType.Sum) {
-                    allProductTypes.UnionWith(((SumType)t.Returns).Types.Where(tt => tt.ImplementationType == KindOfType.Product).Cast<ProductType>());
-                }
+                } 
             }
 
-            HashSet<SumType> allSumTypes = new HashSet<SumType>(resolvedTypes.Result.Where(t => t.Returns.ImplementationType == KindOfType.Sum).Select(t => t.Returns).Cast<SumType>());
-
-            //var ctorCalls = allProductTypes.Select(pt => new ReductionDeclaration(pt.DataConstructorParts, new CtorCall(pt), pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)))).ToList();
-            //foreach (var sum in allSumTypes) {
-            //    foreach (var entry in sum.Types) {
-            //        ctorCalls.Add(new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", entry)), new CtorCall(sum)));
-            //    }
-            //}
 
             var ctorCalls = allProductTypes.Select(pt => GenerateConstructorFunctionFor(pt)).ToList();
-            foreach (var sum in allSumTypes) {
-                var sumGenerics = sum.ContainedGenericReferences(GenericTie.Reference).ToList();
-                if (!sumGenerics.Any()) {
-                    foreach (var entry in sum.Types) {
-                        var valueParam = new ParameterDeclaration("_", entry);
-                        ctorCalls.Add(new ReductionDeclaration(new PhrasePart(valueParam), new CtorCallExpression(sum, valueParam).GenerateWrappedFunction()));
-                    }
-                } else {
-                    throw new NotImplementedException("LASTWORKED: change conversion to be generic rather than having a generic ref that doesn't bind to the function.");
-                }
-            }
 
             ctorCalls = ctorCalls.Concat(interfaceToImplementerBindings.Select(itoi => new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", itoi.Implementation)), new InterfaceUpcast(itoi.Interface)))).ToList();
 
@@ -371,18 +349,6 @@ namespace Tangent.Parsing
         {
             searched = searched ?? new HashSet<TangentType>();
             switch (tt.ImplementationType) {
-                case KindOfType.Sum:
-                    if (searched.Contains(tt)) {
-                        return Enumerable.Empty<PartialReductionDeclaration>();
-                    }
-
-                    searched.Add(tt);
-                    List<PartialReductionDeclaration> result = new List<PartialReductionDeclaration>();
-                    foreach (var part in ((SumType)tt).Types) {
-                        result.AddRange(ExtractPartialFunctions(part, searched));
-                    }
-
-                    return result;
                 case KindOfType.Placeholder:
                     if (tt is PartialProductType) {
                         return ((PartialProductType)tt).Functions;

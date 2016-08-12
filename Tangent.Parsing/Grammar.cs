@@ -204,7 +204,7 @@ namespace Tangent.Parsing
         // (function-phrase - |) inline-interface-bindings? { class-body }
         public static readonly Parser<TangentType> ClassDecl =
             Parser.Combine(
-                FunctionPhraseSansPipe,
+                FunctionPhrase,
                 InlineInterfaceBinding.ZeroOrMore,
                 LiteralParser.OpenCurly,
                 ClassBody,
@@ -212,11 +212,11 @@ namespace Tangent.Parsing
                 (ctor, ifs, o, body, c) => ConstructProductType(ctor, ifs, body));
 
         // type-alias (| type-alias)* (;|class-decl)
-        public static readonly Parser<TangentType> TypeAliasChain =
+        public static readonly Parser<TangentType> TypeAlias =
             Parser.Combine(
-                Parser.Delimited(Pipe, Parser.NotFollowedBy(Parser.Difference(ID, Pipe).OneOrMore, LiteralParser.OpenCurly.Or(LiteralParser.InterfaceBindingOperator, "class start"), "Type Alias"), requiresOne: true, optionalTrailingDelimiter: false),
-                LiteralParser.SemiColon.Select(sc => (TangentType)null).Or(Parser.Combine(Pipe, ClassDecl, (p, cd) => cd), "Semicolon or Class Declaration"),
-                (aliases, optionalClass) => ConstructSumTypeFromAliasChain(aliases.Select(alias => new PartialTypeReference(alias, new List<PartialParameterDeclaration>())), optionalClass));
+                ID.OneOrMore,
+                LiteralParser.SemiColon,
+                (alias, sc) => (TangentType)new PartialTypeReference(alias, new List<PartialParameterDeclaration>()));
 
         // function-phrase => type-expr ;
         public static readonly Parser<IEnumerable<PartialReductionDeclaration>> InterfaceFunctionSignature =
@@ -258,7 +258,7 @@ namespace Tangent.Parsing
             Parser.Options("Type Implementation",
                 EnumImpl,
                 InterfaceDecl,
-                TypeAliasChain,
+                TypeAlias,
                 ClassDecl);
 
         // (id|type-param)+ :> guts
@@ -267,19 +267,6 @@ namespace Tangent.Parsing
             LiteralParser.TypeArrow,
             TypeImpl,
             (phrase, arrow, impl) => ConstructTypeDeclaration(phrase, impl));
-
-        private static TangentType ConstructSumTypeFromAliasChain(IEnumerable<TangentType> aliases, TangentType optionalClass)
-        {
-            if (optionalClass != null) {
-                return SumType.For(aliases.Concat(new[] { optionalClass }));
-            } else {
-                if (aliases.Count() == 1) {
-                    return aliases.First();
-                }
-
-                return SumType.For(aliases);
-            }
-        }
 
         private static TangentType ConstructProductType(IEnumerable<PartialPhrasePart> constructorBits, IEnumerable<TangentType> interfaceReferences, IEnumerable<Tuple<VarDeclElement, PartialReductionDeclaration, PartialDelegateDeclaration>> body)
         {
@@ -359,15 +346,6 @@ namespace Tangent.Parsing
             var reference = implementation as PartialTypeReference;
             if (reference != null) {
                 (reference.GenericArgumentPlaceholders as List<PartialParameterDeclaration>).AddRange(generics);
-                return;
-            }
-
-            var sum = implementation as SumType;
-            if (sum != null) {
-                foreach (var t in sum.Types) {
-                    SetGenericParams(t, generics);
-                }
-
                 return;
             }
 

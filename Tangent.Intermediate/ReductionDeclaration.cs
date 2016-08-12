@@ -107,19 +107,6 @@ namespace Tangent.Intermediate
                             yield return null;
                             yield break;
                         }
-                    } else if (!rhsEnum.Current.IsIdentifier && rhsEnum.Current.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Sum) {
-                        if (rhsEnum.Current.Parameter.RequiredArgumentType == thisEnum.Current.Parameter.RequiredArgumentType) {
-                            break;
-                        }
-
-                        if (!((SumType)rhsEnum.Current.Parameter.RequiredArgumentType).Types.Contains(thisEnum.Current.Parameter.RequiredArgumentType)) {
-                            yield return null;
-                            yield break;
-                        } else {
-                            yield return new SpecializationEntry(rhsEnum.Current.Parameter, thisEnum.Current.Parameter);
-                        }
-
-                        break;
                     } else if (!rhsEnum.Current.IsIdentifier && rhsEnum.Current.Parameter.RequiredArgumentType.ImplementationType == KindOfType.TypeClass) {
                         if (rhsEnum.Current.Parameter.RequiredArgumentType == thisEnum.Current.Parameter.RequiredArgumentType) {
                             break;

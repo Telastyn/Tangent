@@ -121,7 +121,6 @@ namespace Tangent.CilGeneration
                     }
 
                     return BuildClass(typeDecl);
-                case KindOfType.Sum:
                 case KindOfType.TypeClass:
                     typeDecl = program.TypeDeclarations.First(td => td.Returns == target);
                     return BuildVariant(typeDecl);
@@ -264,9 +263,6 @@ namespace Tangent.CilGeneration
             var typeName = GetNameFor(decl);
             var variantParts = new List<TangentType>();
             switch (decl.Returns.ImplementationType) {
-                case KindOfType.Sum:
-                    variantParts.AddRange(((SumType)decl.Returns).Types);
-                    break;
                 case KindOfType.TypeClass:
                     variantParts.AddRange(((TypeClass)decl.Returns).Implementations);
                     break;
@@ -743,7 +739,6 @@ namespace Tangent.CilGeneration
                             case KindOfType.BoundGenericProduct:
                                 ctorFn = productCtorLookup[invoke.EffectiveType];
                                 break;
-                            case KindOfType.Sum:
                             case KindOfType.TypeClass:
                                 ctorFn = variantCtorLookup[invoke.EffectiveType][ctorParamTypes.First()];
                                 break;
@@ -799,7 +794,6 @@ namespace Tangent.CilGeneration
                         case KindOfType.BoundGenericProduct:
                             ctorExprFn = productCtorLookup[ctorExpr.EffectiveType];
                             break;
-                        case KindOfType.Sum:
                         case KindOfType.TypeClass:
                             ctorExprFn = variantCtorLookup[ctorExpr.EffectiveType][ctorExprParamTypes.First()];
                             break;

@@ -105,7 +105,6 @@
     <Compile Include="SingleValueType.cs" />
     <Compile Include="SpecializationDefinition.cs" />
     <Compile Include="SpecializationEntry.cs" />
-    <Compile Include="SumType.cs" />
     <Compile Include="KindType.cs" />
     <Compile Include="TangentProgram.cs" />
     <Compile Include="TangentType.cs" />

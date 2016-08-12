@@ -59,27 +59,7 @@ namespace Tangent.Intermediate.UnitTests
 
             Assert.IsTrue(fn2.IsSpecializationOf(fn1));
         }
-
-        [TestMethod]
-        public void SumTypeSpecialization()
-        {
-            var testType = SumType.For(new[] { TangentType.Int, TangentType.String });
-            var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", testType), new Function(TangentType.Void, null));
-            var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", TangentType.Int), new Function(TangentType.Void, null));
-
-            Assert.IsTrue(fn2.IsSpecializationOf(fn1));
-        }
-
-        [TestMethod]
-        public void SumTypeSpecializationIsDirectional()
-        {
-            var testType = SumType.For(new[] { TangentType.Int, TangentType.String });
-            var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", testType), new Function(TangentType.Void, null));
-            var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", TangentType.Int), new Function(TangentType.Void, null));
-
-            Assert.IsFalse(fn1.IsSpecializationOf(fn2));
-        }
-
+        
         [TestMethod]
         public void GenericSpecialization()
         {

@@ -65,14 +65,14 @@ namespace Tangent.Intermediate.UnitTests
         [TestMethod]
         public void FavorShortRoutes()
         {
-            var ntos = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.Null)), new Function(TangentType.String, null));
+            var ntos = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.Double)), new Function(TangentType.String, null));
             var stoi = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.String)), new Function(TangentType.Int, null));
             var itob = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.Int)), new Function(TangentType.Bool, null));
             var stob = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.String)), new Function(TangentType.Bool, null));
             var graph = new ConversionGraph(new[] { stoi, itob, stob, ntos });
 
-            var conversion = graph.FindConversion(TangentType.Null, TangentType.Bool);
-            var result = conversion.Convert(new ConstantExpression<string>(TangentType.Null, "foo", null), null);
+            var conversion = graph.FindConversion(TangentType.Double, TangentType.Bool);
+            var result = conversion.Convert(new ConstantExpression<string>(TangentType.Double, "foo", null), null);
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.NodeType == ExpressionNodeType.FunctionInvocation);
@@ -86,15 +86,15 @@ namespace Tangent.Intermediate.UnitTests
         [TestMethod]
         public void AmbiguousRoutesSaySo()
         {
-            var ntos = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.Null)), new Function(TangentType.String, null));
-            var ntoi = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.Null)), new Function(TangentType.Int, null));
+            var ntos = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.Double)), new Function(TangentType.String, null));
+            var ntoi = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.Double)), new Function(TangentType.Int, null));
             var itob = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.Int)), new Function(TangentType.Bool, null));
             var stob = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.String)), new Function(TangentType.Bool, null));
 
             var graph = new ConversionGraph(new[] { ntoi, itob, stob, ntos });
 
-            var conversion = graph.FindConversion(TangentType.Null, TangentType.Bool);
-            var result = conversion.Convert(new ConstantExpression<string>(TangentType.Null, "foo", null), null);
+            var conversion = graph.FindConversion(TangentType.Double, TangentType.Bool);
+            var result = conversion.Convert(new ConstantExpression<string>(TangentType.Double, "foo", null), null);
 
             Assert.AreEqual(ExpressionNodeType.Ambiguity, result.NodeType);
         }

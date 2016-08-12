@@ -37,6 +37,8 @@ namespace Tangent.Intermediate.Interop
             "op_UnaryNegation",
         };
 
+        private static readonly Type GenericConstantExpressionType = typeof(ConstantExpression<>);
+
         public static ImportBundle ImportAssemblies(IEnumerable<Assembly> assemblies)
         {
             return assemblies.Aggregate(new PartialImportBundle(), (r, a) => PartialImportBundle.Merge(r, ImportAssembly(a)));
@@ -382,7 +384,8 @@ namespace Tangent.Intermediate.Interop
             // T -> I?
 
             if (!t.IsValueType) {
-                yield return new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", TangentType.Null)), new Function(tangentType, new Block(new Expression[] { new DirectCastExpression(new CtorCallExpression((ProductType)TangentType.Null, pd => pd), tangentType) }, Enumerable.Empty<ParameterDeclaration>())));
+                var concreteConstantExpression = Activator.CreateInstance(GenericConstantExpressionType.MakeGenericType(new[] { t }), tangentType, null, null) as ConstantExpression;
+                yield return new ReductionDeclaration("null", new Function(tangentType, new Block(new Expression[] { concreteConstantExpression }, Enumerable.Empty<ParameterDeclaration>())));
             }
 
             // TODO:

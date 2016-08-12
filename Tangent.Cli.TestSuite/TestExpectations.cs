@@ -76,16 +76,6 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
-        public void BasicAlgebraicDataTypes()
-        {
-            TimeSpan compileDuration;
-            TimeSpan programDuration;
-            var result = Test.DebugProgramFile("adt.tan", out compileDuration, out programDuration);
-            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
-            Assert.IsTrue(results.SequenceEqual(new[] { "1", "2", "3" }));
-        }
-
-        [TestMethod]
         public void BasicPartialSpecialization()
         {
             TimeSpan compileDuration;
@@ -282,24 +272,12 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
-        public void SimpleNullables()
-        {
-            TimeSpan compileDuration;
-            TimeSpan programDuration;
-            var result = Test.DebugProgramFile("SimpleNullables.tan", out compileDuration, out programDuration);
-            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
-            Assert.IsTrue(results.SequenceEqual(new[] { "42", "null" }));
-            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
-        }
-
-        [TestMethod]
         public void SimpleImportReferenceProperty()
         {
             var result = Test.DebugProgramFile("SimpleImportReferenceProperty.tan", new[] { typeof(string).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "3", "6" }));
         }
-
 
         [TestMethod]
         public void NonBuiltinReferenceType()
@@ -308,18 +286,6 @@ namespace Tangent.Cli.TestSuite
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { new object().ToString() }));
         }
-
-        [TestMethod]
-        public void GenericNullables()
-        {
-            TimeSpan compileDuration;
-            TimeSpan programDuration;
-            var result = Test.DebugProgramFile("GenericNullables.tan", out compileDuration, out programDuration);
-            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
-            Assert.IsTrue(results.SequenceEqual(new[] { "42", "null" }));
-            Assert.IsTrue(compileDuration < TimeSpan.FromSeconds(1), "Compile time exceeds limit.");
-        }
-
 
         [TestMethod]
         [Ignore]

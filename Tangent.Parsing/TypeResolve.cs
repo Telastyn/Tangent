@@ -115,15 +115,7 @@ namespace Tangent.Parsing
             List<ReductionDeclaration> delegateInvokers = new List<ReductionDeclaration>();
             Func<TangentType, TangentType> selector = t => t;
             selector = t => {
-                if (t.ImplementationType == KindOfType.Sum) {
-                    var newSum = SumType.For(((SumType)t).Types.Select(selector));
-                    if (!inNeedOfPopulation.ContainsKey(t)) {
-                        inNeedOfPopulation.Add(t, newSum);
-                    } else {
-                        inNeedOfPopulation[t] = newSum;
-                    }
-                    return newSum;
-                } else if (t is PartialProductType) {
+                if (t is PartialProductType) {
                     var newb = new ProductType(Enumerable.Empty<PhrasePart>(), Enumerable.Empty<Field>());
                     bindings.AddRange((t as PartialProductType).InterfaceReferences.Select(iface => new Tuple<TangentType, TangentType>(iface, newb)));
                     inNeedOfPopulation.Add((PartialProductType)t, newb);
@@ -191,8 +183,6 @@ namespace Tangent.Parsing
                     } else {
                         errors = errors.Concat(resolvedType.Error);
                     }
-                } else if (entry.Key is SumType) {
-                    // Nothing, just need it in placeholder lists so that sum types with placeholders get fixed.
                 } else if (entry.Key is PartialInterface) {
                     // Nothing, just need it in placeholder lists so that anything that found it earlier gets fixed.
                 } else if (entry.Key is PartialInterfaceBinding) {
@@ -446,32 +436,6 @@ namespace Tangent.Parsing
                         return ResolvePlaceholderReference(reference, types, genericArguments);
                     }
 
-                    var sum = resolvedType as SumType;
-                    if (sum != null) {
-                        bool replace = false;
-                        List<TangentType> newbs = new List<TangentType>();
-                        foreach (var t in sum.Types) {
-                            var innerReference = t as PartialTypeReference;
-                            if (innerReference != null) {
-                                replace = true;
-                                var innerResult = ResolvePlaceholderReference(innerReference, types, genericArguments);
-                                if (innerResult.Success) {
-                                    newbs.Add(innerResult.Result);
-                                } else {
-                                    return innerResult;
-                                }
-                            } else {
-                                newbs.Add(t);
-                            }
-                        }
-
-                        if (replace) {
-                            return SumType.For(newbs);
-                        } else {
-                            return sum;
-                        }
-                    }
-
                     return resolvedType;
                 } else if (resolvedType.ImplementationType == KindOfType.GenericReference || resolvedType.ImplementationType == KindOfType.InferencePoint) {
                     // some type reference. Just go with it?
@@ -553,7 +517,6 @@ namespace Tangent.Parsing
                 case KindOfType.InferencePoint:
                 case KindOfType.Placeholder:
                 case KindOfType.Product:
-                case KindOfType.Sum:
                     return input;
                 case KindOfType.GenericReference:
                     var genref = input as GenericArgumentReferenceType;

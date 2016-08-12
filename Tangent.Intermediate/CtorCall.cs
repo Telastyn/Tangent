@@ -10,7 +10,6 @@ namespace Tangent.Intermediate
     {
         public CtorCall(BoundGenericProductType type) : base(type, null) { }
         public CtorCall(ProductType type) : base(type, null) { }
-        public CtorCall(SumType type) : base(type, null) { }
         internal override void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
         {
             // nada.
@@ -32,12 +31,6 @@ namespace Tangent.Intermediate
         {
             Target = type;
             Arguments = type.GenericProductType.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(paramMapping(pp.Parameter), null));
-        }
-
-        public CtorCallExpression(SumType sum, ParameterDeclaration value) : base(null)
-        {
-            Target = sum;
-            Arguments = new Expression[] { new ParameterAccessExpression(value, null) };
         }
 
         private CtorCallExpression(TangentType target, IEnumerable<Expression> args) : base(null)
