@@ -1,0 +1,12 @@
+{
+  "SourceFiles": [
+    "GuessingGame.tan",
+    "looping-lib.tan", 
+    "conditional-lib.tan"
+  ],
+  "DllImports": [
+    "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+  ],
+  "Includes": [],
+  "DestinationFile": "GuessingGame.exe"
+}

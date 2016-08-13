@@ -54,8 +54,21 @@ namespace Tangent.Intermediate
                         conversionCollector.Add(null);
                         sourceInfoCollector.Add(lambda.SourceInfo);
                     } else if (inType == TangentType.PotentiallyAnything) {
-                        throw new NotImplementedException("Add support for paren expressions.");
-                        parameterCollector.Add(inputEnum.Current);
+                        var pe = inputEnum.Current as ParenExpression;
+                        var resolution = pe.TryResolve(scope, element.Parameter.RequiredArgumentType);
+                        if (!resolution.Any()) {
+                            return PhraseMatchResult.Failure;
+                        }
+
+                        Expression resolvedParenExpression = null;
+
+                        if (resolution.Count() > 1) {
+                            resolvedParenExpression = new AmbiguousExpression(resolution);
+                        }else {
+                            resolvedParenExpression = resolution.First();
+                        }
+
+                        parameterCollector.Add(resolvedParenExpression);
                         conversionCollector.Add(null);
                         sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
                     } else if (element.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Delegate &&

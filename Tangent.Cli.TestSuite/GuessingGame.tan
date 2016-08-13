@@ -1,0 +1,37 @@
+﻿a random number => int {
+  new .NET System.Random.Next;
+}
+
+a random number less than (exclusive maximum : int) => int {
+  new .NET System.Random.Next exclusive maximum;
+}
+
+a random number between (inclusive minimum : int) and (exclusive maximum : int) => int {
+  new .NET System.Random.Next inclusive minimum exclusive maximum;
+}
+
+get a number from console => int {
+  .NET System.Console.Write "Enter a number between 0 and 100: ";
+  :input : string := .NET System.Console.ReadLine;
+  int.Parse input;
+}
+
+provide user feedback based on (guess : int) and (target : int) => void {
+  if guess = target 
+    .NET System.Console.WriteLine "Correct!"
+  else
+    if guess < target
+	  .NET System.Console.Write "Sorry, your guess was too low. "
+	else 
+	  .NET System.Console.Write "Sorry, your guess was too high. "
+}
+
+entrypoint => void {
+  :target : int := a random number less than 100;
+  :guess : int := -1;
+
+  while guess != target {
+    guess = get a number from console;
+	provide user feedback based on guess and target;
+  }
+}

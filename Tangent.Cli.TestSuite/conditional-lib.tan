@@ -1,7 +1,4 @@
-﻿boolean :> enum {
-    true,
-	false
-}
+﻿boolean :> bool;
 
 if (condition: boolean) (positive: ~>void) => void {
 }

@@ -48,6 +48,7 @@
     <Compile Include="BoundGenericType.cs" />
     <Compile Include="ConversionGraph.cs" />
     <Compile Include="ConversionPath.cs" />
+    <Compile Include="Interop\BoolEnumAdapterType.cs" />
     <Compile Include="Interop\BuiltinFunctions.cs" />
     <Compile Include="ConstantExpression.cs" />
     <Compile Include="CtorCall.cs" />

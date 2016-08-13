@@ -435,10 +435,18 @@ namespace Tangent.CilGeneration
 
                             // If the specialization is not met, go to next specialization.
                             parameterCodes[specializationParam.GeneralFunctionParameter].Accessor(gen);
-                            gen.Emit(OpCodes.Ldc_I4, single.NumericEquivalent);
-                            gen.Emit(OpCodes.Ceq);
-                            gen.Emit(OpCodes.Brfalse, next);
-                            // Otherwise, proceed to next param.
+                            if (single.ValueType is BoolEnumAdapterType) {
+                                if (single.Value.Value == "true") {
+                                    gen.Emit(OpCodes.Brfalse, next);
+                                } else {
+                                    gen.Emit(OpCodes.Brtrue, next);
+                                }
+                            } else {
+                                gen.Emit(OpCodes.Ldc_I4, single.NumericEquivalent);
+                                gen.Emit(OpCodes.Ceq);
+                                gen.Emit(OpCodes.Brfalse, next);
+                                // Otherwise, proceed to next param.
+                            }
                             break;
 
                         case DispatchType.SumType:

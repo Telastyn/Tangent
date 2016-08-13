@@ -1,0 +1,3 @@
+﻿while (condition: ~>bool) (body: ~>void) => void {
+    if condition { body; while condition body; };
+}

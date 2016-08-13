@@ -288,6 +288,15 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void IfTrueUsingBoolImport()
+        {
+            var result = Test.DebugProgramFile("IfTrue-using-bool-import.tan", new[] { typeof(bool).Assembly });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "w00t." }));
+        }
+        
+
+        [TestMethod]
         [Ignore]
         public void BasicGlobalUse()
         {

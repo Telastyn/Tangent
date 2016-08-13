@@ -1,0 +1,18 @@
+﻿if (condition: bool) (positive: ~>void) => void {
+}
+
+if (condition: bool) (positive: ~>void) else (negative: ~>void) => void {
+    negative;
+}
+
+if (condition: bool.true) (positive: ~>void) => void {
+    positive;
+}
+
+if (condition: bool.true) (positive: ~>void) else (negative: ~>void) => void {
+    positive;
+}
+
+entrypoint => void {
+    if true print "w00t." else print "zzz.";
+}

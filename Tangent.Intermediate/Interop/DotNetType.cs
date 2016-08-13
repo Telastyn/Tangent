@@ -21,7 +21,9 @@ namespace Tangent.Intermediate.Interop
         {
             // TODO: handle bool as an enum type.
             if (t == typeof(bool)) {
-                return TangentType.Bool;
+                // Doing things this way to avoid initialization loops.
+                BoolEnumAdapterType.Common = BoolEnumAdapterType.Common ?? new BoolEnumAdapterType();
+                return BoolEnumAdapterType.Common;
             }
 
             if (t.IsEnum) {

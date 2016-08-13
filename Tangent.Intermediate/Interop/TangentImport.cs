@@ -52,7 +52,9 @@ namespace Tangent.Intermediate.Interop
                 if (t.IsPublic) {
                     var tangentType = DotNetType.For(t);
                     if (tangentType != null) {
-                        result.Types.Add(t, TypeDeclarationFor(t));
+                        if (t != typeof(int) && t != typeof(string) && t != typeof(bool) && t != typeof(double) && t != typeof(void)) {
+                            result.Types.Add(t, TypeDeclarationFor(t));
+                        }
 
                         foreach (var fn in t.GetMethods()) {
                             if (fn.IsPublic) {
