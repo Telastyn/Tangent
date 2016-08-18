@@ -69,5 +69,18 @@ namespace Tangent.Intermediate
                 return new AmbiguousExpression(ambiguities);
             }, a.IsGeneric);
         }
+
+        public static ConversionPath Lazify(ConversionPath a)
+        {
+            return new ConversionPath(a.Cost + 1, (expr, scope) => {
+                var partialConversion = a.Convert(expr, scope);
+                return new LambdaExpression(Enumerable.Empty<ParameterDeclaration>(), partialConversion.EffectiveType, new Block(new[] { partialConversion }, Enumerable.Empty<ParameterDeclaration>()), partialConversion.SourceInfo);
+            }, false);
+        }
+
+        public static ConversionPath Lazify(TangentType t)
+        {
+            return new ConversionPath(1, (expr, scope) => new LambdaExpression(Enumerable.Empty<ParameterDeclaration>(), t, new Block(new[] { expr }, Enumerable.Empty<ParameterDeclaration>()), expr.SourceInfo), false);
+        }
     }
 }

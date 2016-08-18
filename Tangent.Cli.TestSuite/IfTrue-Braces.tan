@@ -1,0 +1,23 @@
+﻿boolean :> enum {
+    true,
+	false
+}
+
+if (condition: boolean) (positive: ~>void) => void {
+}
+
+if (condition: boolean) (positive: ~>void) else (negative: ~>void) => void {
+    negative;
+}
+
+if (condition: boolean.true) (positive: ~>void) => void {
+    positive;
+}
+
+if (condition: boolean.true) (positive: ~>void) else (negative: ~>void) => void {
+    positive;
+}
+
+entrypoint => void {
+    if true {print "w00t." }else{ print "zzz."}
+}

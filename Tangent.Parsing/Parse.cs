@@ -109,7 +109,7 @@ namespace Tangent.Parsing
             foreach (var t in resolvedTypes.Result) {
                 if (t.Returns.ImplementationType == KindOfType.Product) {
                     allProductTypes.Add((ProductType)t.Returns);
-                } 
+                }
             }
 
 
@@ -117,7 +117,7 @@ namespace Tangent.Parsing
 
             ctorCalls = ctorCalls.Concat(interfaceToImplementerBindings.Select(itoi => new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", itoi.Implementation)), new InterfaceUpcast(itoi.Interface)))).ToList();
 
-            var enumAccesses = resolvedTypes.Result.Where(tt => tt.Returns.ImplementationType == KindOfType.Enum).Select(tt => tt.Returns).Cast<EnumType>().SelectMany(tt => tt.Values.Select(v => new ReductionDeclaration(v, new Function(tt, new Block(new[] { new EnumValueAccessExpression(tt.SingleValueTypeFor(v), null) }, Enumerable.Empty<ParameterDeclaration>()))))).ToList();
+            var enumAccesses = resolvedTypes.Result.Where(tt => tt.Returns.ImplementationType == KindOfType.Enum).Select(tt => tt.Returns).Cast<EnumType>().Distinct().SelectMany(tt => tt.Values.Select(v => new ReductionDeclaration(v, new Function(tt, new Block(new[] { new EnumValueAccessExpression(tt.SingleValueTypeFor(v), null) }, Enumerable.Empty<ParameterDeclaration>()))))).ToList();
             var fieldFunctions = new List<ReductionDeclaration>();
             Action<Field, ProductType> fieldFunctionizer = (field, productType) => {
                 fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", productType))), new Function(field.Declaration.Returns, new Block(new Expression[] { new FieldAccessorExpression(productType, field) }, Enumerable.Empty<ParameterDeclaration>()))));
@@ -297,7 +297,7 @@ namespace Tangent.Parsing
                     }
                     var last = stmts.Last();
                     stmts.RemoveAt(stmts.Count - 1);
-                    var notLast = BuildBlock(scope, types, null, stmts, locals, errors);
+                    var notLast = stmts.Any() ? BuildBlock(scope, types, null, stmts, locals, errors) : new Block(Enumerable.Empty<Expression>(), Enumerable.Empty<ParameterDeclaration>());
                     var lastExpr = last.FlatTokens.Select(e => ElementToExpression(scope, types, e, errors)).ToList();
                     var info = lastExpr.Aggregate((LineColumnRange)null, (a, expr) => expr.SourceInfo.Combine(a));
                     info = notLast.Statements.Any() ? notLast.Statements.Aggregate(info, (a, stmt) => a.Combine(stmt.SourceInfo)) : info;

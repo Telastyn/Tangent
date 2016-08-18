@@ -55,6 +55,13 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void IfTrueBraceCase()
+        {
+            var result = Test.DebugProgramFile("IfTrue-Braces.tan");
+            Assert.AreEqual("w00t.", result.Trim());
+        }
+
+        [TestMethod]
         public void IfFalseCase()
         {
             var result = Test.ProgramFile("IfFalse.tan");

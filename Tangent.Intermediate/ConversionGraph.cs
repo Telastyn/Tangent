@@ -30,17 +30,46 @@ namespace Tangent.Intermediate
 
         public ConversionPath FindConversion(TangentType from, TangentType to)
         {
+            if (to.ImplementationType == KindOfType.SingleValue) {
+                return null;
+            }
+
             if (!Paths.ContainsKey(from) || !Paths[from].ContainsKey(to)) {
                 PathFind(from, to);
             }
 
             if (!Paths.ContainsKey(from) || !Paths[from].ContainsKey(to)) {
-                return null;
+                ConversionPath conversion = null;
+                if (to.ImplementationType == KindOfType.Delegate) {
+                    var delegateType = (DelegateType)to;
+                    if (!delegateType.Takes.Any()) {
+                        // Some lazy type.
+                        if (delegateType.Returns == from) {
+                            conversion = ConversionPath.Lazify(from);
+                        } else {
+                            PathFind(from, delegateType.Returns);
+                            if (Paths.ContainsKey(from) && Paths[from].ContainsKey(delegateType.Returns)) {
+                                var almostLazyPath = Paths[from][delegateType.Returns];
+                                if (almostLazyPath != null) {
+                                    conversion = ConversionPath.Lazify(almostLazyPath);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!Paths.ContainsKey(from)) {
+                    Paths.Add(from, new Dictionary<TangentType, ConversionPath>());
+                }
+
+                if (!Paths[from].ContainsKey(to)) {
+                    Paths[from].Add(to, conversion);
+                } else {
+                    Paths[from][to] = conversion;
+                }
             }
 
-            var path = Paths[from][to];
-            if (path == null) { return null; }
-            return path;
+            return Paths[from][to];
         }
 
         private void PathFind(TangentType from, TangentType to)
@@ -77,17 +106,17 @@ namespace Tangent.Intermediate
             }
 
             HashSet<TangentType> searchedTypes = new HashSet<TangentType>() { from };
-            while (candidates.Any()) {
+            while (candidates.Select(kvp => kvp.Value != null).Any()) {
                 if (candidates.ContainsKey(to)) {
                     return;
                 }
 
-                Dictionary<TangentType, ConversionPath> workset = new Dictionary<TangentType, ConversionPath>(candidates);
+                Dictionary<TangentType, ConversionPath> workset = new Dictionary<TangentType, ConversionPath>(candidates.Where(kvp => kvp.Value != null).ToDictionary(kvp => kvp.Key, kvp => kvp.Value));
                 searchedTypes.UnionWith(candidates.Keys);
                 candidates = new Dictionary<TangentType, ConversionPath>();
                 foreach (var entry in workset) {
                     if (Paths.ContainsKey(entry.Key)) {
-                        foreach (var conversion in Paths[entry.Key]) {
+                        foreach (var conversion in Paths[entry.Key].Where(kvp => kvp.Value != null)) {
                             if (!searchedTypes.Contains(conversion.Key)) {
                                 var newConversion = new ConversionPath(entry.Value, conversion.Value);
                                 AddBestPath(Paths[from], conversion.Key, newConversion);
