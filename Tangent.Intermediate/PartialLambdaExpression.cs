@@ -52,7 +52,7 @@ namespace Tangent.Intermediate
             }
 
             var returnType = inferenceCollector[((GenericInferencePlaceholder)fullInferenceType.Returns).GenericArgument];
-            var newScope = new TransformationScope(ContainingScope.Rules.SelectMany(x => x).Concat(realParams.Select(p => new ParameterAccess(p))), ContainingScope.Conversions);
+            var newScope = ContainingScope.CreateNestedParameterScope(realParams);
             var implementation = resolver(newScope, returnType);
             if (implementation == null) {
                 return null;

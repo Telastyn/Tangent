@@ -155,12 +155,12 @@ namespace Tangent.Parsing
                         lookup.Add(partialFunction, new InterfaceFunction(partialFunction.Scope as TypeClass, partialFunction.EffectiveType));
                     } else {
                         var locals = BuildLocals(partialFunction.Implementation.Locals, resolvedTypes.Result, errors).ToList();
-                        var scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
+                        var scope = new TransformationScopeNew(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
                             .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
                             .Concat((partialFunction.Scope as ProductType) != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, (partialFunction.Scope as ProductType).DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
                             .Concat(invocationRules)
                             .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }), conversionGraph)
-                            .CreateNestedScope(locals);
+                            .CreateNestedLocalScope(locals);
 
                         Function newb = BuildBlock(scope, types, partialFunction.EffectiveType, partialFunction.Implementation, locals, errors);
 
@@ -174,12 +174,12 @@ namespace Tangent.Parsing
                 TransformationScope scope = null;
 
                 if (productType == null) {
-                    scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
+                    scope = new TransformationScopeNew(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
                             .Concat(invocationRules)
                             .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }), conversionGraph);
                 } else {
                     // Initializers can't use locals (directly), and don't have parameters.
-                    scope = new TransformationScope(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
+                    scope = new TransformationScopeNew(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
                             .Concat(field.Declaration.Returns is DelegateType ? (IEnumerable<TransformationRule>)new[] { new TypeAccess(new TypeDeclaration("this", productType)) } : Enumerable.Empty<TransformationRule>())
                             .Concat(invocationRules)
                             .Concat(ConstructorParameterAccess.For(field.Declaration.Takes.First(pp => !pp.IsIdentifier).Parameter, productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)))
@@ -293,7 +293,7 @@ namespace Tangent.Parsing
                     var stmts = ((BlockElement)element).Block.Statements.ToList();
                     var locals = BuildLocals(((BlockElement)element).Block.Locals, types, errors);
                     if (locals.Any()) {
-                        scope = scope.CreateNestedScope(locals);
+                        scope = scope.CreateNestedLocalScope(locals);
                     }
                     var last = stmts.Last();
                     stmts.RemoveAt(stmts.Count - 1);
@@ -306,7 +306,7 @@ namespace Tangent.Parsing
                     return ((ConstantElement)element).TypelessExpression;
                 case ElementType.Lambda:
                     var concrete = (LambdaElement)element;
-                    return new PartialLambdaExpression(concrete.Takes.Select(vde => VarDeclToParameterDeclaration(scope, vde, errors)).ToList(), scope, (newScope, returnType) => {
+                    return new PartialLambdaExpression(concrete.Takes.Select(vde => VarDeclToParameterDeclaration(scope, vde, types, errors)).ToList(), scope, (newScope, returnType) => {
                         var lambdaErrors = new List<ParseError>();
                         if (concrete.Body.Block.Locals.Any()) {
                             throw new NotImplementedException("TODO: make locals in lambdas work.");
@@ -328,14 +328,14 @@ namespace Tangent.Parsing
             }
         }
 
-        private static ParameterDeclaration VarDeclToParameterDeclaration(TransformationScope scope, VarDeclElement vde, List<ParseError> error)
+        private static ParameterDeclaration VarDeclToParameterDeclaration(TransformationScope scope, VarDeclElement vde, IEnumerable<TypeDeclaration> types, List<ParseError> error)
         {
             if (!vde.ParameterDeclaration.Takes.All(ppp => ppp.IsIdentifier)) {
                 throw new NotImplementedException("Parameterized variable declarations not currently supported.");
             }
 
             var result = vde.ParameterDeclaration.Returns == null ? new ParameterDeclaration(vde.ParameterDeclaration.Takes.Select(ppp => new PhrasePart(ppp.Identifier.Identifier)), null) :
-                TypeResolve.Resolve(vde.ParameterDeclaration, scope.Rules.SelectMany(x => x).Where(r => r.Type == TransformationType.Type).Cast<TypeAccess>().Select(t => t.Declaration));
+                TypeResolve.Resolve(vde.ParameterDeclaration, types);
             if (result.Success) {
                 return result.Result;
             } else {

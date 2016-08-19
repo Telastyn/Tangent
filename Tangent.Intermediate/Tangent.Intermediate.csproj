@@ -46,6 +46,7 @@
     <Compile Include="Block.cs" />
     <Compile Include="BoundGenericProductType.cs" />
     <Compile Include="BoundGenericType.cs" />
+    <Compile Include="CompositeTransformationLookupTree.cs" />
     <Compile Include="ConversionGraph.cs" />
     <Compile Include="ConversionPath.cs" />
     <Compile Include="Interop\BoolEnumAdapterType.cs" />
@@ -73,6 +74,7 @@
     <Compile Include="Interop\ImportBundle.cs" />
     <Compile Include="Interop\PartialImportBundle.cs" />
     <Compile Include="Interop\TangentImport.cs" />
+    <Compile Include="ITransformationLookupTree.cs" />
     <Compile Include="LocalAccessExpression.cs" />
     <Compile Include="LocalAssignmentExpression.cs" />
     <Compile Include="ResultPriorityComparer.cs" />
@@ -109,7 +111,10 @@
     <Compile Include="KindType.cs" />
     <Compile Include="TangentProgram.cs" />
     <Compile Include="TangentType.cs" />
+    <Compile Include="TransformationLookupTree.cs" />
     <Compile Include="TransformationResult.cs" />
+    <Compile Include="TransformationScopeNew.cs" />
+    <Compile Include="TransformationScopeOld.cs" />
     <Compile Include="TransformationScope.cs" />
     <Compile Include="Transformations\ConstructorParameterAccess.cs" />
     <Compile Include="Transformations\Delazy.cs" />

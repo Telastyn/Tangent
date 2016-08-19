@@ -26,19 +26,12 @@ namespace Tangent.Intermediate.UnitTests
             Func<TransformationScope, TangentType, Expression> resolver = (scope, returnType) =>
             {
                 Assert.AreEqual(TangentType.Void, returnType);
-                var flatRules = scope.Rules.SelectMany(x => x);
-                Assert.AreEqual(2, flatRules.Count());
-                Assert.IsTrue(flatRules.All(r => r is ParameterAccess));
-                var parameters = flatRules.Cast<ParameterAccess>().ToList();
-                Assert.IsTrue(parameters.Any(r => r.DeclaredPhrase.Pattern.Count() == 1 && r.DeclaredPhrase.Pattern.First().IsIdentifier && r.DeclaredPhrase.Pattern.First().Identifier.Value == "x"));
-                Assert.IsTrue(parameters.Any(r => r.DeclaredPhrase.Pattern.Count() == 1 && r.DeclaredPhrase.Pattern.First().IsIdentifier && r.DeclaredPhrase.Pattern.First().Identifier.Value == "y"));
-                Assert.IsTrue(parameters.All(r => r.Reduce(new PhraseMatchResult(1, null, null, null)).EffectiveType == TangentType.Int));
-
+                
                 return null;
             };
 
             var parameter = DelegateType.For(new[] { TangentType.Int, TangentType.Int }, TangentType.Void);
-            var lambda = new PartialLambdaExpression(new[] { new ParameterDeclaration("x", null), new ParameterDeclaration("y", null) }, new TransformationScope(Enumerable.Empty<TransformationRule>(), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>())), resolver, null);
+            var lambda = new PartialLambdaExpression(new[] { new ParameterDeclaration("x", null), new ParameterDeclaration("y", null) }, new TransformationScopeOld(Enumerable.Empty<TransformationRule>(), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>())), resolver, null);
 
             var result = lambda.TryToFitIn(parameter);
             Assert.IsNull(result);
@@ -51,19 +44,12 @@ namespace Tangent.Intermediate.UnitTests
             Func<TransformationScope, TangentType, Expression> resolver = (scope, returnType) =>
             {
                 Assert.AreEqual(TangentType.Void, returnType);
-                var flatRules = scope.Rules.SelectMany(x => x);
-                Assert.AreEqual(2, flatRules.Count());
-                Assert.IsTrue(flatRules.All(r => r is ParameterAccess));
-                var parameters = flatRules.Cast<ParameterAccess>().ToList();
-                Assert.IsTrue(parameters.Any(r => r.DeclaredPhrase.Pattern.Count() == 1 && r.DeclaredPhrase.Pattern.First().IsIdentifier && r.DeclaredPhrase.Pattern.First().Identifier.Value == "x"));
-                Assert.IsTrue(parameters.Any(r => r.DeclaredPhrase.Pattern.Count() == 1 && r.DeclaredPhrase.Pattern.First().IsIdentifier && r.DeclaredPhrase.Pattern.First().Identifier.Value == "y"));
-                Assert.IsTrue(parameters.All(r => r.Reduce(new PhraseMatchResult(1, null, null, null)).EffectiveType == TangentType.Int));
-
+                
                 return ambiguity;
             };
 
             var parameter = DelegateType.For(new[] { TangentType.Int, TangentType.Int }, TangentType.Void);
-            var lambda = new PartialLambdaExpression(new[] { new ParameterDeclaration("x", null), new ParameterDeclaration("y", null) }, new TransformationScope(Enumerable.Empty<TransformationRule>(), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>())), resolver, null);
+            var lambda = new PartialLambdaExpression(new[] { new ParameterDeclaration("x", null), new ParameterDeclaration("y", null) }, new TransformationScopeOld(Enumerable.Empty<TransformationRule>(), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>())), resolver, null);
 
             var result = lambda.TryToFitIn(parameter);
             Assert.AreEqual(ambiguity, result);

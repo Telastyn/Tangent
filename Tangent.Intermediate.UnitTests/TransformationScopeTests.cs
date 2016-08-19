@@ -14,7 +14,7 @@ namespace Tangent.Intermediate.UnitTests
         [TestMethod]
         public void EmptyPrioritizationIsGraceful()
         {
-            var result = TransformationScope.Prioritize(Enumerable.Empty<TransformationRule>());
+            var result = TransformationScopeOld.Prioritize(Enumerable.Empty<TransformationRule>());
 
             Assert.IsFalse(result.Any());
         }
@@ -33,7 +33,7 @@ namespace Tangent.Intermediate.UnitTests
             var rng = new Random();
             rules = rules.OrderBy(x => rng.Next()).ToList();
 
-            var result = TransformationScope.Prioritize(rules);
+            var result = TransformationScopeOld.Prioritize(rules);
 
             Assert.AreEqual(rules.Count, result.Count());
             Assert.IsTrue(result.All(x => x.Count() == 1));
@@ -56,7 +56,7 @@ namespace Tangent.Intermediate.UnitTests
 
             var ordered = rules.Reverse();
 
-            var result = TransformationScope.Prioritize(rules);
+            var result = TransformationScopeOld.Prioritize(rules);
             Assert.AreEqual(4, result.Count());
             Assert.IsTrue(result.All(r => r.Count() == 1));
             var flatResult = result.Select(x => x.First());
@@ -70,7 +70,7 @@ namespace Tangent.Intermediate.UnitTests
             var xy = new ParameterAccess(new ParameterDeclaration(new Identifier[] { "x", "y" }, TangentType.Int));
             var rules = new TransformationRule[]{x,xy};
 
-            var result = TransformationScope.Prioritize(rules);
+            var result = TransformationScopeOld.Prioritize(rules);
 
             Assert.AreEqual(2, result.Count());
             Assert.IsTrue(result.All(r => r.Count() == 1));

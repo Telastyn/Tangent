@@ -12,7 +12,7 @@ namespace Tangent.Intermediate
         public TransformationResult TryReduce(List<Expression> buffer, TransformationScope scope)
         {
             // (enum).<identifier that is a legal enum value> => SingleValueType
-
+            // TODO: turn these into a series of ExpressionDeclaration rules.
             if (buffer.Count > 2) {
                 if (buffer[1].NodeType == ExpressionNodeType.Identifier && ((IdentifierExpression)buffer[1]).Identifier.Value == ".") {
                     if (buffer[2].NodeType == ExpressionNodeType.Identifier) {
