@@ -11,14 +11,23 @@ namespace Tangent.Intermediate
         private readonly List<List<TransformationRule>> NonExpressionRules = new List<List<TransformationRule>>();
         private readonly List<List<TransformationRule>> ExpressionRules = new List<List<TransformationRule>>();
         private readonly Dictionary<Identifier, TransformationLookupTree> IdentifierBranches = new Dictionary<Identifier, TransformationLookupTree>();
-        private readonly Dictionary<TangentType, TransformationLookupTree> ParameterBranches = new Dictionary<TangentType, TransformationLookupTree>();
+        private readonly Dictionary<TangentType, TransformationLookupTree> SingleValueBranches = new Dictionary<TangentType, TransformationLookupTree>();
+        private readonly Dictionary<TangentType, TransformationLookupTree> ParameterMatchBranches = new Dictionary<TangentType, TransformationLookupTree>();
+        private readonly Dictionary<TangentType, List<TransformationRule>> ParameterRules = new Dictionary<TangentType, List<TransformationRule>>();
+        private readonly List<TransformationLookupTree> PrioritizedGenericBranches = new List<TransformationLookupTree>();
         private readonly Dictionary<TangentType, TransformationLookupTree> DelegateParameterBranches = new Dictionary<TangentType, TransformationLookupTree>();
+        private readonly Dictionary<TangentType, List<TransformationLookupTree>> ConversionCache = new Dictionary<TangentType, List<TransformationLookupTree>>();
         private TransformationLookupTree AnyKindBranches = null;
+        private readonly List<TransformationLookupTree> PrioritizedPotentiallyAnythingBranches = new List<TransformationLookupTree>();
+        private readonly int PhraseIndex;
+        private readonly ConversionGraph Conversions;
 
-        public TransformationLookupTree(IEnumerable<TransformationRule> rules) : this(rules, 0) { }
+        public TransformationLookupTree(IEnumerable<TransformationRule> rules, ConversionGraph conversions) : this(rules, conversions, 0) { }
 
-        private TransformationLookupTree(IEnumerable<TransformationRule> rules, int depth)
+        private TransformationLookupTree(IEnumerable<TransformationRule> rules, ConversionGraph conversions, int depth)
         {
+            Conversions = conversions;
+            PhraseIndex = depth;
             if (rules.Any()) {
                 BuildTree(rules, depth);
             }
@@ -47,7 +56,7 @@ namespace Tangent.Intermediate
                                 foreach (var entry in AnyKindBranches.Lookup(phrase.Skip(1))) {
                                     yield return entry;
                                 }
-                            } 
+                            }
                         }
 
                         if (element.NodeType == ExpressionNodeType.PartialLambda) {
@@ -57,12 +66,27 @@ namespace Tangent.Intermediate
                                 }
                             }
                         } else if (targetType == TangentType.PotentiallyAnything) {
-                            foreach (var entry in ParameterBranches.Concat(DelegateParameterBranches)) {
+                            foreach (var entry in PrioritizedPotentiallyAnythingBranches) {
+                                foreach (var ruleset in entry.Lookup(phrase.Skip(1))) {
+                                    yield return ruleset;
+                                }
+                            }
+
+                            foreach(var entry in DelegateParameterBranches.Where(kvp => !((DelegateType)kvp.Key).Takes.Any())) {
                                 foreach (var ruleset in entry.Value.Lookup(phrase.Skip(1))) {
                                     yield return ruleset;
                                 }
                             }
+
                         } else {
+                            if (targetType.ImplementationType == KindOfType.SingleValue) {
+                                if (SingleValueBranches.ContainsKey(targetType)) {
+                                    foreach (var ruleset in SingleValueBranches[targetType].Lookup(phrase.Skip(1))) {
+                                        yield return ruleset;
+                                    }
+                                }
+                            }
+
                             if (DelegateParameterBranches.ContainsKey(targetType.Lazy)) {
                                 // Find things that match  ~>target
                                 foreach (var entry in DelegateParameterBranches[targetType.Lazy].Lookup(phrase.Skip(1))) {
@@ -70,10 +94,27 @@ namespace Tangent.Intermediate
                                 }
                             }
 
-                            // matches, compatibilities, and conversions. For now, just check them all.
-                            throw new NotImplementedException("This needs fixed. Parameter Branches need prioritized like PhrasePriorityComparer.");
-                            foreach (var entry in ParameterBranches) {
-                                foreach (var ruleset in entry.Value.Lookup(phrase.Skip(1))) {
+                            // a firm match
+                            if (ParameterMatchBranches.ContainsKey(targetType)) {
+                                foreach (var ruleset in ParameterMatchBranches[targetType].Lookup(phrase.Skip(1))) {
+                                    yield return ruleset;
+                                }
+                            }
+
+                            // convertable match
+                            if (!ConversionCache.ContainsKey(targetType)) {
+                                PopulateConversionCacheFor(targetType);
+                            }
+
+                            foreach (var entry in ConversionCache[targetType]) {
+                                foreach (var ruleset in entry.Lookup(phrase.Skip(1))) {
+                                    yield return ruleset;
+                                }
+                            }
+
+                            // generics
+                            foreach (var entry in PrioritizedGenericBranches) {
+                                foreach (var ruleset in entry.Lookup(phrase.Skip(1))) {
                                     yield return ruleset;
                                 }
                             }
@@ -97,8 +138,9 @@ namespace Tangent.Intermediate
             List<TransformationRule> exprs = new List<TransformationRule>();
             List<TransformationRule> anyKindRules = new List<TransformationRule>();
             Dictionary<Identifier, List<TransformationRule>> identifierRules = new Dictionary<Identifier, List<TransformationRule>>();
-            Dictionary<TangentType, List<TransformationRule>> parameterRules = new Dictionary<TangentType, List<TransformationRule>>();
             Dictionary<TangentType, List<TransformationRule>> delegateRules = new Dictionary<TangentType, List<TransformationRule>>();
+            Dictionary<TangentType, List<TransformationRule>> singleValueRules = new Dictionary<TangentType, List<TransformationRule>>();
+            List<ExpressionDeclaration> genericExprs = new List<ExpressionDeclaration>();
 
             foreach (var rule in rules) {
                 var expr = rule as ExpressionDeclaration;
@@ -123,12 +165,20 @@ namespace Tangent.Intermediate
                             }
 
                             delegateRules[pp.Parameter.RequiredArgumentType].Add(rule);
-                        } else {
-                            if (!parameterRules.ContainsKey(pp.Parameter.RequiredArgumentType)) {
-                                parameterRules.Add(pp.Parameter.RequiredArgumentType, new List<TransformationRule>());
+                        } else if (pp.Parameter.RequiredArgumentType.ImplementationType == KindOfType.SingleValue) {
+                            if (!singleValueRules.ContainsKey(pp.Parameter.RequiredArgumentType)) {
+                                singleValueRules.Add(pp.Parameter.RequiredArgumentType, new List<TransformationRule>());
                             }
 
-                            parameterRules[pp.Parameter.RequiredArgumentType].Add(rule);
+                            singleValueRules[pp.Parameter.RequiredArgumentType].Add(rule);
+                        } else if (pp.Parameter.RequiredArgumentType.ContainedGenericReferences(GenericTie.Inference).Any()) {
+                            genericExprs.Add(expr);
+                        } else {
+                            if (!ParameterRules.ContainsKey(pp.Parameter.RequiredArgumentType)) {
+                                ParameterRules.Add(pp.Parameter.RequiredArgumentType, new List<TransformationRule>());
+                            }
+
+                            ParameterRules[pp.Parameter.RequiredArgumentType].Add(rule);
                         }
                     }
                 }
@@ -147,20 +197,57 @@ namespace Tangent.Intermediate
             }
 
             if (anyKindRules.Any()) {
-                AnyKindBranches = new TransformationLookupTree(anyKindRules, index + 1);
+                AnyKindBranches = new TransformationLookupTree(anyKindRules, Conversions, index + 1);
             }
 
             foreach (var entry in identifierRules) {
-                IdentifierBranches.Add(entry.Key, new TransformationLookupTree(entry.Value, index + 1));
+                IdentifierBranches.Add(entry.Key, new TransformationLookupTree(entry.Value, Conversions, index + 1));
             }
 
             foreach (var entry in delegateRules) {
-                DelegateParameterBranches.Add(entry.Key, new TransformationLookupTree(entry.Value, index + 1));
+                DelegateParameterBranches.Add(entry.Key, new TransformationLookupTree(entry.Value, Conversions, index + 1));
             }
 
-            foreach (var entry in parameterRules) {
-                ParameterBranches.Add(entry.Key, new TransformationLookupTree(entry.Value, index + 1));
+            foreach (var entry in ParameterRules) {
+                ParameterMatchBranches.Add(entry.Key, new TransformationLookupTree(entry.Value, Conversions, index + 1));
             }
+
+            foreach (var entry in singleValueRules) {
+                SingleValueBranches.Add(entry.Key, new TransformationLookupTree(entry.Value, Conversions, index + 1));
+            }
+
+            foreach (var entry in TransformationScopeOld.Prioritize(genericExprs)) {
+                PrioritizedGenericBranches.Add(new TransformationLookupTree(entry, Conversions, index + 1));
+            }
+
+            foreach (var entry in TransformationScopeOld.Prioritize(ParameterRules.SelectMany(kvp => kvp.Value))) {
+                PrioritizedPotentiallyAnythingBranches.Add(new TransformationLookupTree(entry, Conversions, index + 1));
+            }
+        }
+
+        private void PopulateConversionCacheFor(TangentType target)
+        {
+            HashSet<TransformationRule> accumulatedRules = new HashSet<TransformationRule>();
+
+            foreach (var branch in ParameterRules) {
+                if (target != branch.Key) {
+                    if (branch.Key.CompatibilityMatches(target, new Dictionary<ParameterDeclaration, TangentType>())) {
+                        accumulatedRules.UnionWith(branch.Value);
+                    }else {
+                        var conversion = Conversions.FindConversion(target, branch.Key);
+                        if (conversion != null) {
+                            accumulatedRules.UnionWith(branch.Value);
+                        }
+                    }
+                }
+            }
+
+            List<TransformationLookupTree> coersions = new List<TransformationLookupTree>();
+            foreach(var entry in TransformationScopeOld.Prioritize(accumulatedRules)) {
+                coersions.Add(new TransformationLookupTree(entry, Conversions, PhraseIndex + 1));
+            }
+
+            ConversionCache.Add(target, coersions);
         }
     }
 }

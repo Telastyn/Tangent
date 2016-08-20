@@ -25,6 +25,7 @@ namespace Tangent.Intermediate
 
         public List<Expression> InterpretTowards(TangentType target, List<Expression> input)
         {
+            //System.IO.File.AppendAllText("h:\\guessing.txt", string.Join("|", input.Select(x => x.ToString())) + "\n");
             if (input.Count == 1) {
                 if (target == input[0].EffectiveType) {
                     return input;
@@ -69,7 +70,7 @@ namespace Tangent.Intermediate
 
         private IEnumerable<IEnumerable<TransformationResult>> OrderMatches(List<TransformationResult> reductions)
         {
-            if(reductions.Count == 1) { yield return reductions; yield break; }
+            if (reductions.Count == 1) { yield return reductions; yield break; }
             while (reductions.Any()) {
                 yield return PopBestCandidates(reductions);
             }
@@ -139,18 +140,18 @@ namespace Tangent.Intermediate
             rules.RemoveAll(r => best.Contains(r));
             return best;
         }
-        
+
         private static List<TransformationResult> PopBestCandidates(List<TransformationResult> reductions)
         {
             var best = new List<TransformationResult>();
-            foreach(var entry in reductions) {
+            foreach (var entry in reductions) {
                 if (!best.Any()) {
                     best.Add(entry);
-                }else {
+                } else {
                     var cmp = ResultPriorityComparer.ComparePriority(best.First(), entry);
-                    if(cmp == 0) {
+                    if (cmp == 0) {
                         best.Add(entry);
-                    }else if(cmp > 0) {
+                    } else if (cmp > 0) {
                         best.Clear();
                         best.Add(entry);
                     }

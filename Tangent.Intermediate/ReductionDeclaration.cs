@@ -70,7 +70,10 @@ namespace Tangent.Intermediate
         {
             var result = SpecializationsFor(rhs).ToList();
             if (result.Any(r => r == null)) { return null; }
-            if (!result.Any()) { throw new ApplicationException("Some error has happened in specialization logic. Fix and test."); }
+            if (!result.Any()) {
+                throw new ApplicationException("Some error has happened in specialization logic. Fix and test.");
+            }
+
             return new SpecializationDefinition(result);
         }
 

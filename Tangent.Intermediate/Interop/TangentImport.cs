@@ -299,7 +299,13 @@ namespace Tangent.Intermediate.Interop
                 return new ReductionDeclaration(phrase, new Function(returnTangentType, new Block(new Expression[] { new DirectCallExpression(fn, returnTangentType, phrase.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, Enumerable.Empty<ParameterDeclaration>())));
             } else {
 
-                var namePart = Tokenize.ProgramFile(".NET " + fn.DeclaringType.FullName + "." + fn.Name, "").Select(token => new Identifier(token.Value)).ToList();
+                List<Identifier> namePart;
+                if (fn.DeclaringType == typeof(int)) {
+                    // RMS: hack for Int32 support since Tangent identifiers can't have numbers.
+                    namePart = Tokenize.ProgramFile("int." + fn.Name, "").Select(token => new Identifier(token.Value)).ToList();
+                } else {
+                    namePart = Tokenize.ProgramFile(".NET " + fn.DeclaringType.FullName + "." + fn.Name, "").Select(token => new Identifier(token.Value)).ToList();
+                }
                 List<PhrasePart> phrase = new List<PhrasePart>(namePart.Select(id => new PhrasePart(id)));
 
                 foreach (var parameter in parameters) {

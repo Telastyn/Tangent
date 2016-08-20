@@ -1,0 +1,12 @@
+﻿entrypoint => void {
+  : x : int := 0;
+  : y : int := 0;
+
+  if x = y
+    print "equals"
+  else
+    if x < y
+	  print "less"
+	else
+	  print "greater"
+}

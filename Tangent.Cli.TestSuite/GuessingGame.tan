@@ -12,7 +12,7 @@ a random number between (inclusive minimum : int) and (exclusive maximum : int) 
 
 get a number from console => int {
   .NET System.Console.Write "Enter a number between 0 and 100: ";
-  :input : string := .NET System.Console.ReadLine;
+  : input : string := .NET System.Console.ReadLine;
   int.Parse input;
 }
 
@@ -27,10 +27,10 @@ provide user feedback based on (guess : int) and (target : int) => void {
 }
 
 entrypoint => void {
-  :target : int := a random number less than 100;
-  :guess : int := -1;
+  : target : int := a random number less than 100;
+  : guess : int := 101;
 
-  while guess != target {
+  while not guess = target {
     guess = get a number from console;
 	provide user feedback based on guess and target;
   }

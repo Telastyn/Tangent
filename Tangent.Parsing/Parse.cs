@@ -225,6 +225,16 @@ namespace Tangent.Parsing
                 fn.ReplaceTypeResolvedFunctions(lookup, workset);
             }
 
+            foreach (var field in globalFields.Result) {
+                field.ReplaceTypeResolvedFunctions(lookup, workset);
+            }
+
+            foreach (var productType in allProductTypes) {
+                foreach (var field in productType.Fields) {
+                    field.ReplaceTypeResolvedFunctions(lookup, workset);
+                }
+            }
+
             return new TangentProgram(resolvedTypes.Result, resolvedFunctions.Result.Select(fn => {
                 if (fn.Returns is TypeResolvedFunction) {
                     var trf = fn.Returns as TypeResolvedFunction;

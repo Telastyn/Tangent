@@ -302,6 +302,13 @@ namespace Tangent.Cli.TestSuite
             Assert.IsTrue(results.SequenceEqual(new[] { "w00t." }));
         }
         
+        [TestMethod]
+        public void NestedIfElse()
+        {
+            var result = Test.DebugProgramFile(new[] { "NestedIfElse.tan", "conditional-lib.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "equals" }));
+        }
 
         [TestMethod]
         [Ignore]

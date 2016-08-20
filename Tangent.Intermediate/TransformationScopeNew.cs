@@ -14,7 +14,7 @@ namespace Tangent.Intermediate
         public TransformationScopeNew(IEnumerable<TransformationRule> rules, ConversionGraph conversions)
         {
             Conversions = conversions;
-            LookupTree = new TransformationLookupTree(rules);
+            LookupTree = new TransformationLookupTree(rules, conversions);
         }
 
         private TransformationScopeNew(ITransformationLookupTree tree, ConversionGraph conversions)
@@ -25,6 +25,7 @@ namespace Tangent.Intermediate
 
         public List<Expression> InterpretTowards(TangentType target, List<Expression> input)
         {
+            //System.IO.File.AppendAllText("h:\\guessing.txt", string.Join("|", input.Select(x => x.ToString())) + "\n");
             if (input.Count == 1) {
                 if (target == input[0].EffectiveType) {
                     return input;
@@ -76,7 +77,7 @@ namespace Tangent.Intermediate
 
             return new TransformationScopeNew(
                 new CompositeTransformationLookupTree(
-                    new TransformationLookupTree(locals.SelectMany(l => LocalAccess.RulesForLocal(l))),
+                    new TransformationLookupTree(locals.SelectMany(l => LocalAccess.RulesForLocal(l)), Conversions),
                     LookupTree
                 ), Conversions);
         }
@@ -89,7 +90,7 @@ namespace Tangent.Intermediate
 
             return new TransformationScopeNew(
                 new CompositeTransformationLookupTree(
-                    new TransformationLookupTree(parameters.Select(p => new ParameterAccess(p))),
+                    new TransformationLookupTree(parameters.Select(p => new ParameterAccess(p)), Conversions),
                     LookupTree
                 ), Conversions);
         }

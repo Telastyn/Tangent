@@ -24,5 +24,16 @@ namespace Tangent.Intermediate
                 Initializer = resolver(Initializer);
             }
         }
+
+        internal virtual void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
+        {
+            if (workset.Contains(Initializer)) {
+                return;
+            }
+
+            workset.Add(Initializer);
+
+            Initializer.ReplaceTypeResolvedFunctions(replacements, workset);
+        }
     }
 }

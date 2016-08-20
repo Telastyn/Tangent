@@ -37,5 +37,11 @@ namespace Tangent.Intermediate
         {
             return this;
         }
+
+        internal override void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
+        {
+            Local.ReplaceTypeResolvedFunctions(replacements, workset);
+            Value.ReplaceTypeResolvedFunctions(replacements, workset);
+        }
     }
 }

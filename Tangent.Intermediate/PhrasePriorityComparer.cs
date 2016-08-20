@@ -23,30 +23,42 @@ namespace Tangent.Intermediate
             var yenum = y.Pattern.GetEnumerator();
 
             while (xenum.MoveNext() && yenum.MoveNext()) {
-                if (xenum.Current.IsIdentifier) {
-                    if (yenum.Current.IsIdentifier) {
-                        if (xenum.Current.Identifier.Value != yenum.Current.Identifier.Value) {
-                            return 0;
-                        } // else, continue.
-                    } else {
-                        return -1;
-                    }
-                } else {
-                    if (yenum.Current.IsIdentifier) {
-                        return 1;
-                    } else {
-                        var xp = xenum.Current.Parameter;
-                        var yp = yenum.Current.Parameter;
-                        var enumResult = CompareEnum(xp,yp);
-                        if (enumResult != null) { return enumResult.Value; }
-
-                        var genericResult = CompareGeneric(xp, yp);
-                        if (genericResult != null) { return genericResult.Value; }
-                    }
+                var ppp = ComparePhrasePartPriority(xenum.Current, yenum.Current);
+                if (ppp != null) {
+                    return ppp.Value;
                 }
             }
 
             return 0;
+        }
+
+        public static int? ComparePhrasePartPriority(PhrasePart x, PhrasePart y)
+        {
+            if (x.IsIdentifier) {
+                if (y.IsIdentifier) {
+                    if (x.Identifier.Value != y.Identifier.Value) {
+                        return 0;
+                    } else {
+                        return null;
+                    }
+                } else {
+                    return -1;
+                }
+            } else {
+                if (y.IsIdentifier) {
+                    return 1;
+                } else {
+                    var xp = x.Parameter;
+                    var yp = y.Parameter;
+                    var enumResult = CompareEnum(xp, yp);
+                    if (enumResult != null) { return enumResult.Value; }
+
+                    var genericResult = CompareGeneric(xp, yp);
+                    if (genericResult != null) { return genericResult.Value; }
+
+                    return null;
+                }
+            }
         }
 
         private static int? CompareEnum(ParameterDeclaration x, ParameterDeclaration y)
