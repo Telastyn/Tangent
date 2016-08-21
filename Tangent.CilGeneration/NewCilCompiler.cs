@@ -1021,7 +1021,9 @@ namespace Tangent.CilGeneration
                 parameter.Value.Accessor(gen);
                 gen.Emit(OpCodes.Stfld, fld);
 
-                closureReferences.Add(parameter.Key, new PropertyCodes(g => { g.Emit(OpCodes.Ldarg_0); g.Emit(OpCodes.Ldfld, fld); }, null));
+                closureReferences.Add(parameter.Key, new PropertyCodes(
+                    g => { g.Emit(OpCodes.Ldarg_0); g.Emit(OpCodes.Ldfld, fld); },
+                    g => { g.Emit(OpCodes.Ldarg_0); g.Emit(OpCodes.Ldarg_1); g.Emit(OpCodes.Stfld, fld); } ));
             }
 
             // Build actual function in anonymous type.

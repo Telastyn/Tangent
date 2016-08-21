@@ -43,7 +43,20 @@ namespace Tangent.Intermediate
         public IEnumerable<Expression> TryResolve(TransformationScope scope, TangentType towardsType)
         {
             var scopedCache = resolutionCache.GetOrAdd(scope, s => new ConcurrentDictionary<TangentType, IEnumerable<Expression>>());
-            return scopedCache.GetOrAdd(towardsType, t => 
+            
+            // If we're looking to fit into a lazy type, assume the parens are the lazy part.
+            if (towardsType.ImplementationType == KindOfType.Delegate && !((DelegateType)towardsType).Takes.Any()) {
+                return scopedCache.GetOrAdd(towardsType, t =>
+                    // Remember, void statements are invariant to the return type. They are already compiled.
+                    scope.InterpretTowards(((DelegateType)towardsType).Returns, LastStatement).Select(interpretation =>
+                    new LambdaExpression(
+                        Enumerable.Empty<ParameterDeclaration>(),
+                        ((DelegateType)towardsType).Returns,
+                        new Block(VoidStatements.Statements.Concat(new[] { interpretation }), Enumerable.Empty<ParameterDeclaration>()),
+                        SourceInfo)));
+            }
+
+            return scopedCache.GetOrAdd(towardsType, t =>
                 // Remember, void statements are invariant to the return type. They are already compiled.
                 scope.InterpretTowards(towardsType, LastStatement).Select(interpretation =>
                     new FunctionInvocationExpression(
@@ -63,7 +76,7 @@ namespace Tangent.Intermediate
             var newBlock = VoidStatements.ReplaceParameterAccesses(mapping);
             var newLast = LastStatement.Select(expr => expr.ReplaceParameterAccesses(mapping));
 
-            if(VoidStatements == newBlock && newLast.SequenceEqual(LastStatement)) {
+            if (VoidStatements == newBlock && newLast.SequenceEqual(LastStatement)) {
                 return this;
             }
 

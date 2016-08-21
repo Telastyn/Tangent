@@ -28,7 +28,7 @@ namespace Tangent.Cli.TestSuite
         public void IntSandbox()
         {
             var result = Test.ProgramFile("intSandbox.tan");
-            var results = result.Split(new[]{'\n'}, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "3", "True", "False" }));
         }
 
@@ -160,7 +160,8 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
-        public void ToStringFunctionInterface() {
+        public void ToStringFunctionInterface()
+        {
             TimeSpan compileDuration;
             TimeSpan programDuration;
             var result = Test.DebugProgramFile("ToStringFunctionInterface.tan", out compileDuration, out programDuration);
@@ -169,7 +170,8 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
-        public void ToStringFunctionInterfacePassing() {
+        public void ToStringFunctionInterfacePassing()
+        {
             TimeSpan compileDuration;
             TimeSpan programDuration;
             var result = Test.DebugProgramFile("ToStringFunctionInterfacePassing.tan", out compileDuration, out programDuration);
@@ -301,13 +303,21 @@ namespace Tangent.Cli.TestSuite
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "w00t." }));
         }
-        
+
         [TestMethod]
         public void NestedIfElse()
         {
             var result = Test.DebugProgramFile(new[] { "NestedIfElse.tan", "conditional-lib.tan" });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "equals" }));
+        }
+
+        [TestMethod]
+        public void LocalClosures()
+        {
+            var result = Test.DebugProgramFile(new[] { "LocalClosures.tan", "conditional-lib.tan", "looping-lib.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "1", "2", "3" }));
         }
 
         [TestMethod]
@@ -324,7 +334,8 @@ namespace Tangent.Cli.TestSuite
 
         [TestMethod]
         [Ignore]
-        public void InterfaceNotEquals(){
+        public void InterfaceNotEquals()
+        {
             TimeSpan compileDuration;
             TimeSpan programDuration;
             var result = Test.DebugProgramFile("interface-not-equals.tan", out compileDuration, out programDuration);
