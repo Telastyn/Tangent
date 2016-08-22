@@ -48,13 +48,35 @@ namespace Tangent.Intermediate
         public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
         {
             var newbs = Arguments.Select(expr => expr.ReplaceParameterAccesses(mapping));
-            var newAccess = DelegateAccess.ReplaceParameterAccesses(mapping); 
+            var newAccess = DelegateAccess.ReplaceParameterAccesses(mapping);
 
-            if(Arguments.SequenceEqual(newbs) && DelegateAccess == newAccess) {
+            if (Arguments.SequenceEqual(newbs) && DelegateAccess == newAccess) {
                 return this;
             }
 
             return new DelegateInvocationExpression(newAccess, newbs, SourceInfo);
+        }
+
+        public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            if (workset.Contains(this)) {
+                return false;
+            }
+
+            workset.Add(this);
+
+            return DelegateAccess.RequiresClosureAround(parameters, workset) || Arguments.Any(arg => arg.RequiresClosureAround(parameters, workset));
+        }
+
+        public override bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            if (workset.Contains(this)) {
+                return false;
+            }
+
+            workset.Add(this);
+
+            return DelegateAccess.AccessesAnyParameters(parameters, workset) || Arguments.Any(arg => arg.AccessesAnyParameters(parameters, workset));
         }
     }
 }

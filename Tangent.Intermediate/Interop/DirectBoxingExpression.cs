@@ -39,5 +39,15 @@ namespace Tangent.Intermediate.Interop
 
             return new DirectBoxingExpression(newb);
         }
+
+        public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return Target.RequiresClosureAround(parameters, workset);
+        }
+
+        public override bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return Target.AccessesAnyParameters(parameters, workset);
+        }
     }
 }

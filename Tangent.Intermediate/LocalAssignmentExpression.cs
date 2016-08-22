@@ -43,5 +43,15 @@ namespace Tangent.Intermediate
             Local.ReplaceTypeResolvedFunctions(replacements, workset);
             Value.ReplaceTypeResolvedFunctions(replacements, workset);
         }
+
+        public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return Local.RequiresClosureAround(parameters, workset) || Value.RequiresClosureAround(parameters, workset);
+        }
+
+        public override bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return Local.AccessesAnyParameters(parameters, workset) || Value.AccessesAnyParameters(parameters, workset);
+        }
     }
 }

@@ -82,5 +82,15 @@ namespace Tangent.Intermediate
 
             return new ParenExpression(newBlock, newLast.ToList(), SourceInfo);
         }
+
+        public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return false;
+        }
+
+        public override bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return false;
+        }
     }
 }

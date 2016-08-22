@@ -38,5 +38,15 @@ namespace Tangent.Intermediate
 
             return mapping[Parameter];
         }
+
+        public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return false;
+        }
+
+        public override bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return parameters.Contains(Parameter);
+        }
     }
 }

@@ -36,6 +36,15 @@ namespace Tangent.Intermediate
             get { return "=>"; }
         }
 
+        public bool RequiresClosure
+        {
+            get
+            {
+                var scopedParameters = new HashSet<ParameterDeclaration>(Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).Concat(Returns.Implementation.Locals));
+                return Returns.Implementation.Statements.Any(stmt => stmt.RequiresClosureAround(scopedParameters, new HashSet<Expression>()));
+            }
+        }
+
         public bool MatchesSignatureOf(ReductionDeclaration rhs)
         {
             // TODO: generic returns.

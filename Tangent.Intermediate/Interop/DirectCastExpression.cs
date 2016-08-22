@@ -40,5 +40,15 @@ namespace Tangent.Intermediate.Interop
 
             return new DirectCastExpression(newb, TargetType);
         }
+
+        public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return Argument.RequiresClosureAround(parameters, workset);
+        }
+
+        public override bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return Argument.AccessesAnyParameters(parameters, workset);
+        }
     }
 }

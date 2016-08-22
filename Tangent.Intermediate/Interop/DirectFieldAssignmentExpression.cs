@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Tangent.Intermediate.Interop
 {
-    public class DirectFieldAssignmentExpression:Expression
+    public class DirectFieldAssignmentExpression : Expression
     {
         public readonly FieldInfo Field;
         public readonly IEnumerable<Expression> Arguments;
@@ -42,6 +42,27 @@ namespace Tangent.Intermediate.Interop
             }
 
             return new DirectFieldAssignmentExpression(Field, newbs);
+        }
+
+        public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            if (workset.Contains(this)) {
+                return false;
+            }
+
+            workset.Add(this);
+            return Arguments.Any(arg => arg.RequiresClosureAround(parameters, workset));
+        }
+
+        public override bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            if (workset.Contains(this)) {
+                return false;
+            }
+
+            workset.Add(this);
+
+            return Arguments.Any(arg => arg.AccessesAnyParameters(parameters, workset));
         }
     }
 }

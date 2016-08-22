@@ -58,5 +58,9 @@ namespace Tangent.Intermediate
         }
 
         public abstract Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping);
+
+        public abstract bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset);
+
+        public abstract bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset);
     }
 }

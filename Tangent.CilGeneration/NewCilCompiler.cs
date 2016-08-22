@@ -110,6 +110,8 @@ namespace Tangent.CilGeneration
 
             TypeDeclaration typeDecl;
             switch (target.ImplementationType) {
+                case KindOfType.SingleValue:
+                    return Compile(((SingleValueType)target).ValueType);
                 case KindOfType.Enum:
                     typeDecl = program.TypeDeclarations.First(td => td.Returns == target);
                     return BuildEnum(typeDecl);
@@ -235,7 +237,7 @@ namespace Tangent.CilGeneration
                 gen.Emit(OpCodes.Ldarg_0);
                 var thisAccessor = new Dictionary<ParameterDeclaration, PropertyCodes>() { { entry.Declaration.Takes.First(pp => !pp.IsIdentifier).Parameter, new PropertyCodes(g => g.Emit(OpCodes.Ldarg_0), null) } };
                 // TODO: make sure closures work here.
-                AddExpression(entry.Initializer, gen, thisAccessor, rootType, false);
+                AddExpression(entry.Initializer, gen, thisAccessor, null, false);
                 gen.Emit(OpCodes.Stfld, field);
             }
 
@@ -251,7 +253,7 @@ namespace Tangent.CilGeneration
             foreach (var entry in fields) {
                 var field = rootType.DefineField(GetNameFor(entry.Declaration), Compile(entry.Declaration.Returns), FieldAttributes.Static | FieldAttributes.Public);
                 fieldLookup.Add(entry, field);
-                AddExpression(entry.Initializer, gen, new Dictionary<ParameterDeclaration, PropertyCodes>(), rootType, false);
+                AddExpression(entry.Initializer, gen, new Dictionary<ParameterDeclaration, PropertyCodes>(), null, false);
                 gen.Emit(OpCodes.Stsfld, field);
             }
 
@@ -377,7 +379,7 @@ namespace Tangent.CilGeneration
             }
         }
 
-        private void BuildImplementation(ReductionDeclaration fn, MethodBuilder builder)
+        private void BuildImplementation(ReductionDeclaration fn, MethodBuilder builder, TypeBuilder parentScope = null)
         {
             var specializations = program.Functions.Where(other => other.IsSpecializationOf(fn)).ToList();
             foreach (var specialization in specializations) {
@@ -387,21 +389,101 @@ namespace Tangent.CilGeneration
 
             var gen = builder.GetILGenerator();
 
-            // TODO: refactor these codes once closures are more well baked.
+            Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes = BuildNormalAccesses(gen, fn);
+
+            AddDispatchCode(gen, fn, specializations, parameterCodes);
+
+            ClosureInfo closureScope = null;
+            if (fn.RequiresClosure) {
+                parameterCodes = BuildClosureStyleAccesses(gen, fn, parentScope ?? rootType, out closureScope);
+            } else {
+                foreach (var entry in BuildLocalAccesses(gen, fn)) {
+                    parameterCodes.Add(entry.Key, entry.Value);
+                }
+            }
+
+            AddFunctionCode(gen, fn.Returns.Implementation, parameterCodes, closureScope);
+
+            if (!(fn.Returns is InterfaceFunction)) {
+                gen.Emit(OpCodes.Ret);
+            }
+
+            if (closureScope != null) {
+                closureScope.ClosureType.CreateType();
+            }
+        }
+
+        private Dictionary<ParameterDeclaration, PropertyCodes> BuildClosureStyleAccesses(ILGenerator gen, ReductionDeclaration fn, TypeBuilder parentScope, out ClosureInfo closureInfo)
+        {
+            if (parentScope != rootType) {
+                throw new NotImplementedException("TODO: implement nested closures.");
+            }
+
+            if (fn.GenericParameters.Any()) {
+                throw new NotImplementedException("TODO: implement generic closures.");
+            }
+
+            var closureType = (parentScope ?? rootType).DefineNestedType("closure" + closureCounter++, TypeAttributes.Sealed | TypeAttributes.NestedPublic);
+
+            var scope = gen.DeclareLocal(closureType);
+            var ctor = closureType.DefineDefaultConstructor(MethodAttributes.Public);
+            gen.Emit(OpCodes.Newobj, ctor);
+            gen.Emit(OpCodes.Stloc, scope);
+
+            Dictionary<ParameterDeclaration, PropertyCodes> result = new Dictionary<ParameterDeclaration, PropertyCodes>();
+            var closureCodes = new Dictionary<ParameterDeclaration, PropertyCodes>();
+
+            int ix = 0;
+            foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) {
+                var paramField = closureType.DefineField(GetNameFor(parameter), Compile(parameter.Returns), FieldAttributes.Public);
+                gen.Emit(OpCodes.Ldloc, scope);
+                gen.Emit(OpCodes.Ldarg, ix);
+                gen.Emit(OpCodes.Stfld, paramField);
+
+                result.Add(parameter, new PropertyCodes(
+                    g => { g.Emit(OpCodes.Ldloc, scope); g.Emit(OpCodes.Ldfld, paramField); },
+                    (g, v) => { g.Emit(OpCodes.Ldloc, scope); v(); g.Emit(OpCodes.Stfld, paramField); }));
+
+                closureCodes.Add(parameter, new PropertyCodes(
+                    g => { g.Emit(OpCodes.Ldarg_0); g.Emit(OpCodes.Ldfld, paramField); },
+                    (g, v) => { g.Emit(OpCodes.Ldarg_0); v(); g.Emit(OpCodes.Stfld, paramField); }));
+
+                ix++;
+            }
+
+            foreach (var local in fn.Returns.Implementation.Locals) {
+                var localField = closureType.DefineField(GetNameFor(local), Compile(local.Returns), FieldAttributes.Public);
+                result.Add(local, new PropertyCodes(
+                    g => { g.Emit(OpCodes.Ldloc, scope); g.Emit(OpCodes.Ldfld, localField); },
+                    (g, v) => { g.Emit(OpCodes.Ldloc, scope); v(); g.Emit(OpCodes.Stfld, localField); }));
+
+                closureCodes.Add(local, new PropertyCodes(
+                    g => { g.Emit(OpCodes.Ldarg_0); g.Emit(OpCodes.Ldfld, localField); },
+                    (g, v) => { g.Emit(OpCodes.Ldarg_0); v(); g.Emit(OpCodes.Stfld, localField); }));
+            }
+
+            closureInfo = new ClosureInfo(closureType, closureCodes, g => g.Emit(OpCodes.Ldloc, scope), null);
+            return result;
+        }
+
+        private Dictionary<ParameterDeclaration, PropertyCodes> BuildNormalAccesses(ILGenerator gen, ReductionDeclaration fn)
+        {
             var parameterCodes = fn.Takes.Where(pp => !pp.IsIdentifier).Select((pp, ix) => new KeyValuePair<ParameterDeclaration, PropertyCodes>(pp.Parameter, new PropertyCodes(g => g.Emit(OpCodes.Ldarg, (Int16)ix), null))).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            return parameterCodes;
+        }
+
+        private Dictionary<ParameterDeclaration, PropertyCodes> BuildLocalAccesses(ILGenerator gen, ReductionDeclaration fn)
+        {
+            var parameterCodes = new Dictionary<ParameterDeclaration, PropertyCodes>();
             int localix = 0;
             foreach (var local in fn.Returns.Implementation.Locals) {
                 gen.DeclareLocal(Compile(local.Returns));
                 var closureIx = localix;
-                parameterCodes.Add(local, new PropertyCodes(g => g.Emit(OpCodes.Ldloc, closureIx), g => g.Emit(OpCodes.Stloc, closureIx)));
+                parameterCodes.Add(local, new PropertyCodes(g => g.Emit(OpCodes.Ldloc, closureIx), (g, v) => { v(); g.Emit(OpCodes.Stloc, closureIx); }));
                 localix++;
             }
 
-            AddDispatchCode(gen, fn, specializations, parameterCodes);
-            AddFunctionCode(gen, fn.Returns.Implementation, parameterCodes);
-            if (!(fn.Returns is InterfaceFunction)) {
-                gen.Emit(OpCodes.Ret);
-            }
+            return parameterCodes;
         }
 
         private void AddDispatchCode(ILGenerator gen, ReductionDeclaration fn, IEnumerable<ReductionDeclaration> specializations, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes)
@@ -715,9 +797,8 @@ namespace Tangent.CilGeneration
             }
         }
 
-        private void AddFunctionCode(ILGenerator gen, Block implementation, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes, TypeBuilder closureScope = null)
+        private void AddFunctionCode(ILGenerator gen, Block implementation, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes, ClosureInfo closureScope)
         {
-            closureScope = closureScope ?? rootType;
             var statements = implementation.Statements.ToList();
             for (int ix = 0; ix < statements.Count; ++ix) {
                 var stmt = statements[ix];
@@ -726,7 +807,7 @@ namespace Tangent.CilGeneration
             }
         }
 
-        private void AddExpression(Expression expr, ILGenerator gen, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes, TypeBuilder closureScope, bool lastStatement)
+        private void AddExpression(Expression expr, ILGenerator gen, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes, ClosureInfo closureScope, bool lastStatement)
         {
             switch (expr.NodeType) {
                 case ExpressionNodeType.FunctionInvocation:
@@ -910,7 +991,7 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.Lambda:
                     var lambda = (LambdaExpression)expr;
-                    BuildClosure(gen, lambda, parameterCodes, closureScope);
+                    BuildClosure(gen, lambda, closureScope);
                     return;
 
                 case ExpressionNodeType.InvalidProgramException:
@@ -924,8 +1005,7 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.LocalAssignment:
                     var localAssignment = (LocalAssignmentExpression)expr;
-                    AddExpression(localAssignment.Value, gen, parameterCodes, closureScope, lastStatement);
-                    parameterCodes[localAssignment.Local.Local].Mutator(gen);
+                    parameterCodes[localAssignment.Local.Local].Mutator(gen, () => AddExpression(localAssignment.Value, gen, parameterCodes, closureScope, lastStatement));
                     return;
 
                 case ExpressionNodeType.DirectBox:
@@ -1003,49 +1083,41 @@ namespace Tangent.CilGeneration
             }
         }
 
-        private void BuildClosure(ILGenerator gen, LambdaExpression lambda, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes, TypeBuilder closureScope)
+        private void BuildClosure(ILGenerator gen, LambdaExpression lambda, ClosureInfo closureScope)
         {
-            // Build the anonymous type.
-            var closure = closureScope.DefineNestedType("closure" + closureCounter++, TypeAttributes.Sealed | TypeAttributes.NestedPublic);
-            var closureCtor = closure.DefineDefaultConstructor(System.Reflection.MethodAttributes.Public);
-
-            // Push type creation and parameter assignment onto the stack.
-            var obj = gen.DeclareLocal(closure);
-            gen.Emit(OpCodes.Newobj, closureCtor);
-            gen.Emit(OpCodes.Stloc, obj);
-
-            var closureReferences = new Dictionary<ParameterDeclaration, PropertyCodes>();
-            foreach (var parameter in parameterCodes) {
-                gen.Emit(OpCodes.Ldloc, obj);
-                var fld = closure.DefineField(GetNameFor(parameter.Key), Compile(parameter.Key.Returns), System.Reflection.FieldAttributes.Public);
-                parameter.Value.Accessor(gen);
-                gen.Emit(OpCodes.Stfld, fld);
-
-                closureReferences.Add(parameter.Key, new PropertyCodes(
-                    g => { g.Emit(OpCodes.Ldarg_0); g.Emit(OpCodes.Ldfld, fld); },
-                    g => { g.Emit(OpCodes.Ldarg_0); g.Emit(OpCodes.Ldarg_1); g.Emit(OpCodes.Stfld, fld); } ));
+            if (lambda.RequiresClosureImplementation()) {
+                throw new NotImplementedException("TODO: support nested closures.");
             }
 
-            // Build actual function in anonymous type.
+            bool needsCreating = false;
+            if (closureScope == null) {
+                // Then we have a lambda, but don't need any vars. Just toss it at root level for calling.
+                var closureType = (rootType).DefineNestedType("closure" + closureCounter++, TypeAttributes.Sealed | TypeAttributes.NestedPublic);
+                var cctor = closureType.DefineDefaultConstructor(MethodAttributes.Public);
+                closureScope = new ClosureInfo(closureType, new Dictionary<ParameterDeclaration, PropertyCodes>(), g => g.Emit(OpCodes.Newobj, cctor));
+                needsCreating = true;
+            }
+
+            var nestedCodes = new Dictionary<ParameterDeclaration, PropertyCodes>(closureScope.ClosureCodes);
+
+            // Build actual function
             var returnType = Compile(lambda.ResolvedReturnType);
             var parameterTypes = lambda.ResolvedParameters.Select(pd => Compile(pd.Returns)).ToArray();
-            var closureFn = closure.DefineMethod("Implementation", System.Reflection.MethodAttributes.Public, returnType, parameterTypes);
+            var closureFn = closureScope.ClosureType.DefineMethod("Implementation" + closureScope.ImplementationCounter++, System.Reflection.MethodAttributes.Public, returnType, parameterTypes);
             closureFn.SetReturnType(returnType);
             int ix = 1;
             foreach (var pd in lambda.ResolvedParameters) {
                 var paramBuilder = closureFn.DefineParameter(ix++, ParameterAttributes.In, GetNameFor(pd));
-                closureReferences.Add(pd, new PropertyCodes(g => g.Emit(OpCodes.Ldarg, (Int16)ix - 1), g => g.Emit(OpCodes.Starg, (Int16)ix - 1)));
+                nestedCodes.Add(pd, new PropertyCodes(g => g.Emit(OpCodes.Ldarg, (Int16)ix - 1), null));
             }
 
             var closureGen = closureFn.GetILGenerator();
 
-            AddFunctionCode(closureGen, lambda.Implementation, closureReferences, closure);
+            AddFunctionCode(closureGen, lambda.Implementation, nestedCodes, new ClosureInfo(closureScope.ClosureType, closureScope.ClosureCodes, g => g.Emit(OpCodes.Ldarg_0)));
             closureGen.Emit(OpCodes.Ret);
 
-            closure.CreateType();
-
             // Push action creation onto stack.
-            gen.Emit(OpCodes.Ldloc, obj);
+            closureScope.ClosureAccessor(gen);
             gen.Emit(OpCodes.Ldftn, closureFn);
             var lambdaType = Compile(lambda.EffectiveType);
             ConstructorInfo ctor = null;
@@ -1058,6 +1130,10 @@ namespace Tangent.CilGeneration
             }
 
             gen.Emit(OpCodes.Newobj, ctor);
+
+            if (needsCreating) {
+                closureScope.ClosureType.CreateType();
+            }
         }
 
         private string GetNameFor(TypeDeclaration rule)
@@ -1078,6 +1154,10 @@ namespace Tangent.CilGeneration
 
         private string GetNameFor(TangentType type)
         {
+            if (type.ImplementationType == KindOfType.Delegate) {
+                return GenericDelegateTypeFor((DelegateType)type).Name;
+            }
+
             var decl = program.TypeDeclarations.FirstOrDefault(td => td.Returns == type);
             if (decl == null) {
                 // For now, assume we're doing closure shenanigans.

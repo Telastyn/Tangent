@@ -38,5 +38,15 @@ namespace Tangent.Intermediate
 
             return new AmbiguousExpression(newbs);
         }
+
+        public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return false;
+        }
+
+        public override bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return false;
+        }
     }
 }

@@ -55,5 +55,26 @@ namespace Tangent.Intermediate.Interop
 
             return new DirectCallExpression(this.Target, this.EffectiveType, newbs, GenericArguments);
         }
+
+        public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            if (workset.Contains(this)) {
+                return false;
+            }
+
+            workset.Add(this);
+            return Arguments.Any(arg => arg.RequiresClosureAround(parameters, workset));
+        }
+
+        public override bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            if (workset.Contains(this)) {
+                return false;
+            }
+
+            workset.Add(this);
+
+            return Arguments.Any(arg => arg.AccessesAnyParameters(parameters, workset));
+        }
     }
 }

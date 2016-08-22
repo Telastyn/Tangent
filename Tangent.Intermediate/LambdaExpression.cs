@@ -46,5 +46,21 @@ namespace Tangent.Intermediate
 
             return new LambdaExpression(ResolvedParameters, ResolvedReturnType, newb, SourceInfo);
         }
+
+        public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return Implementation.Statements.Any(stmt => stmt.AccessesAnyParameters(parameters, workset));
+        }
+
+        public bool RequiresClosureImplementation()
+        {
+            var scopeParameters = new HashSet<ParameterDeclaration>(ResolvedParameters.Concat(Implementation.Locals));
+            return Implementation.Statements.Any(stmt => stmt.RequiresClosureAround(scopeParameters, new HashSet<Expression>()));
+        }
+
+        public override bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return RequiresClosureAround(parameters, workset);
+        }
     }
 }

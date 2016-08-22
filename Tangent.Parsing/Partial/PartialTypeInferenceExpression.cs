@@ -43,5 +43,15 @@ namespace Tangent.Parsing.Partial
 
             return new PartialTypeInferenceExpression(InferenceName, newinf, SourceInfo);
         }
+
+        public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return false;
+        }
+
+        public override bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
+        {
+            return false;
+        }
     }
 }
