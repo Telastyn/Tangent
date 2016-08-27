@@ -62,5 +62,18 @@ namespace Tangent.Intermediate
         {
             return RequiresClosureAround(parameters, workset);
         }
+
+        internal override void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
+        {
+            if (workset.Contains(this)) {
+                return;
+            }
+
+            workset.Add(this);
+
+            foreach (var statement in Implementation.Statements) {
+                statement.ReplaceTypeResolvedFunctions(replacements, workset);
+            }
+        }
     }
 }

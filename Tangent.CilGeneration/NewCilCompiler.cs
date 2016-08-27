@@ -388,7 +388,6 @@ namespace Tangent.CilGeneration
             }
 
             var gen = builder.GetILGenerator();
-
             Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes = BuildNormalAccesses(gen, fn);
 
             AddDispatchCode(gen, fn, specializations, parameterCodes);
@@ -426,6 +425,7 @@ namespace Tangent.CilGeneration
             var closureType = (parentScope ?? rootType).DefineNestedType("closure" + closureCounter++, TypeAttributes.Sealed | TypeAttributes.NestedPublic);
 
             var scope = gen.DeclareLocal(closureType);
+            scope.SetLocalSymInfo("__closureScope");
             var ctor = closureType.DefineDefaultConstructor(MethodAttributes.Public);
             gen.Emit(OpCodes.Newobj, ctor);
             gen.Emit(OpCodes.Stloc, scope);
@@ -477,7 +477,8 @@ namespace Tangent.CilGeneration
             var parameterCodes = new Dictionary<ParameterDeclaration, PropertyCodes>();
             int localix = 0;
             foreach (var local in fn.Returns.Implementation.Locals) {
-                gen.DeclareLocal(Compile(local.Returns));
+                var lb = gen.DeclareLocal(Compile(local.Returns));
+                lb.SetLocalSymInfo(GetNameFor(local));
                 var closureIx = localix;
                 parameterCodes.Add(local, new PropertyCodes(g => g.Emit(OpCodes.Ldloc, closureIx), (g, v) => { v(); g.Emit(OpCodes.Stloc, closureIx); }));
                 localix++;
