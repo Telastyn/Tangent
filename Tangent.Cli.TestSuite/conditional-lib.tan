@@ -14,3 +14,6 @@ if (condition: boolean.true) (positive: ~>void) => void {
 if (condition: boolean.true) (positive: ~>void) else (negative: ~>void) => void {
     positive;
 }
+
+not (value: boolean) => boolean { true; }
+not (value: boolean.true) => boolean { false; }

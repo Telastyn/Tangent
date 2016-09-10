@@ -104,7 +104,7 @@ namespace Tangent.Cli.TestSuite
                 Assert.Fail("Process could not start.");
             }
 
-            if (!compileProcess.WaitForExit(5000)) {
+            if (!compileProcess.WaitForExit(500000)) {
                 Assert.Fail("Compilation timed out...");
             }
 

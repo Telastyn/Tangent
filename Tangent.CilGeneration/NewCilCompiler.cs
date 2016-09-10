@@ -1006,7 +1006,7 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.LocalAssignment:
                     var localAssignment = (LocalAssignmentExpression)expr;
-                    parameterCodes[localAssignment.Local.Local].Mutator(gen, () => AddExpression(localAssignment.Value, gen, parameterCodes, closureScope, lastStatement));
+                    parameterCodes[localAssignment.Local.Local].Mutator(gen, () => AddExpression(localAssignment.Value, gen, parameterCodes, closureScope, false));
                     return;
 
                 case ExpressionNodeType.DirectBox:
