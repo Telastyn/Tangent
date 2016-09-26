@@ -59,12 +59,12 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void GenericConstraintRecognized()
         {
-            var tokens = Tokenize.ProgramFile("(x: int)", "test.tan");
+            var tokens = Tokenize.ProgramFile("(x :: int)", "test.tan");
             int takes;
             var result = Grammar.TypeDeclParam.Parse(tokens, out takes);
 
             Assert.IsTrue(result.Success);
-            Assert.AreEqual(5, takes);
+            Assert.AreEqual(6, takes);
             Assert.AreEqual(1, result.Result.Takes.Count);
             Assert.AreEqual("x", result.Result.Takes.First().Identifier.Identifier);
             Assert.AreEqual(1, result.Result.Returns.Count);
@@ -76,12 +76,12 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void LongGenericConstraintRecognized()
         {
-            var tokens = Tokenize.ProgramFile("(x: int+y)", "test.tan");
+            var tokens = Tokenize.ProgramFile("(x :: int+y)", "test.tan");
             int takes;
             var result = Grammar.TypeDeclParam.Parse(tokens, out takes);
 
             Assert.IsTrue(result.Success);
-            Assert.AreEqual(7, takes);
+            Assert.AreEqual(8, takes);
             Assert.AreEqual(1, result.Result.Takes.Count);
             Assert.AreEqual("x", result.Result.Takes.First().Identifier.Identifier);
             Assert.AreEqual(3, result.Result.Returns.Count);

@@ -18,12 +18,12 @@ namespace Tangent.Parsing
         public static readonly Parser<ConstantElement<string>> StringConstant = new StringConstantParser();
         public static readonly Parser<ConstantElement<int>> IntConstant = new IntConstantParser();
 
-        // (id+(:id+)?)
+        // (id+(::id+)?)
         public static readonly Parser<PartialParameterDeclaration> TypeDeclParam =
             Parser.Combine(
                 LiteralParser.OpenParen,
                 ID.OneOrMore,
-                Parser.Combine(LiteralParser.Colon, ID.OneOrMore, (c, typeref) => typeref).Maybe,
+                Parser.Combine(LiteralParser.Colon, LiteralParser.Colon, ID.OneOrMore, (c, c2, typeref) => typeref).Maybe,
                 LiteralParser.CloseParen,
                 (o, phrase, typeref, c) => new PartialParameterDeclaration(phrase, (typeref ?? new List<IdentifierExpression>() { new IdentifierExpression("any", null) }).Select(idExpr => (Expression)idExpr).ToList()));
 
