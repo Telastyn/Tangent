@@ -116,7 +116,7 @@ namespace Tangent.Parsing
             Func<TangentType, TangentType> selector = t => t;
             selector = t => {
                 if (t is PartialProductType) {
-                    var newb = new ProductType(Enumerable.Empty<PhrasePart>(), Enumerable.Empty<Field>());
+                    var newb = new ProductType(Enumerable.Empty<PhrasePart>(), Enumerable.Empty<ParameterDeclaration>(), Enumerable.Empty<Field>());
                     bindings.AddRange((t as PartialProductType).InterfaceReferences.Select(iface => new Tuple<TangentType, TangentType>(iface, newb)));
                     inNeedOfPopulation.Add((PartialProductType)t, newb);
                     return newb;
@@ -220,6 +220,21 @@ namespace Tangent.Parsing
 
             interfaceToImplementerBindings.AddRange(newBindings);
 
+            foreach (var entry in newLookup) {
+                var pt = entry.Returns as ProductType;
+                if (pt != null && !pt.GenericParameters.Any()) {
+                    var genericParameters = entry.Takes.Aggregate(new List<ParameterDeclaration>(), (pds, pp) => {
+                        if (!pp.IsIdentifier) {
+                            pds.Add(pp.Parameter);
+                        }
+
+                        return pds;
+                    });
+
+                    pt.GenericParameters.AddRange(genericParameters);
+                }
+            }
+
             return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);
         }
 
@@ -313,6 +328,7 @@ namespace Tangent.Parsing
             types = types.Concat(new[] { new TypeDeclaration("this", target) });
 
             foreach (var part in partialType.DataConstructorParts) {
+                //throw new NotImplementedException("LASTWORKED: not handling PartialTypeInferenceBits here properly.");
                 var resolved = Resolve(part, types, genericArguments);
                 if (resolved.Success) {
                     target.DataConstructorParts.Add(resolved.Result);
@@ -384,7 +400,29 @@ namespace Tangent.Parsing
 
         internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
         {
-            var type = ResolveType(partial.Returns, types, ctorGenericArguments ?? Enumerable.Empty<ParameterDeclaration>());
+            var typeExprs = partial.Returns;
+            if (ctorGenericArguments != null) {
+                // We're resolving product type constructors. We need to fix any type inferences here.
+                for (int ix = 0; ix < typeExprs.Count; ++ix) {
+                    var inference = typeExprs[ix] as PartialTypeInferenceExpression;
+                    if (inference != null) {
+                        // First, check if it's a reference to the type generic.
+                        var match = ctorGenericArguments.FirstOrDefault(pd => {
+                            var genericName = pd.Takes.Select(pp => pp.Identifier).ToList();
+                            return inference.InferenceName.Count() == genericName.Count && inference.InferenceName.SequenceEqual(genericName);
+                        });
+
+                        if (match != null) {
+                            typeExprs[ix] = new GenericInferenceParameterAccessExpression(GenericInferencePlaceholder.For(match), typeExprs[ix].SourceInfo);
+                        } else {
+                            // otherwise, we're doing type inference in the constructor, but _not_ using it for the type's generic params.
+                            throw new NotImplementedException("Sorry, generic inference in constructors must infer a generic parameter for the generic type at this time.");
+                        }
+                    }
+                }
+            }
+
+            var type = ResolveType(typeExprs, types, ctorGenericArguments ?? Enumerable.Empty<ParameterDeclaration>());
             if (!type.Success) {
                 return new ResultOrParseError<ParameterDeclaration>(type.Error);
             }

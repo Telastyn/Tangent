@@ -329,6 +329,22 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void BasicGenericClassInference()
+        {
+            var result = Test.DebugProgramFile(new[] { "BasicGenericClassInference.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "42", "brown cow" }));
+        }
+
+        [TestMethod]
+        public void SimpleDependentInference()
+        {
+            var result = Test.DebugProgramFile(new[] { "SimpleDependentInference.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "at checkpoint", "foo" }));
+        }
+
+        [TestMethod]
         [Ignore]
         public void BasicGlobalUse()
         {

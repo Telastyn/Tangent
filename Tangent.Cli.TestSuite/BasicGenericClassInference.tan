@@ -1,0 +1,12 @@
+﻿pair of (A) and (B) :> pair (first:(A)), (second:(B)) {
+  (this).first : A := first;
+  (this).second : B := second;
+}
+
+entrypoint => void {
+  : x : pair of int and bool := pair 42, true;
+  : y : pair of string and string := pair "How now", "brown cow";
+
+  print x.first;
+  print y.second;
+}

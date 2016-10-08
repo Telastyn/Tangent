@@ -10,13 +10,14 @@ namespace Tangent.Intermediate
     {
         public readonly List<PhrasePart> DataConstructorParts;
         public readonly List<Field> Fields;
-        private IEnumerable<ParameterDeclaration> genericElements = null;
+        public readonly List<ParameterDeclaration> GenericParameters;
 
-        public ProductType(IEnumerable<PhrasePart> dataConstructorParts, IEnumerable<Field> fields)
+        public ProductType(IEnumerable<PhrasePart> dataConstructorParts, IEnumerable<ParameterDeclaration> genericTypeParameters, IEnumerable<Field> fields)
             : base(KindOfType.Product)
         {
             this.DataConstructorParts = new List<PhrasePart>(dataConstructorParts);
             this.Fields = new List<Field>(fields);
+            this.GenericParameters = new List<ParameterDeclaration>(genericTypeParameters);
         }
 
         public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
@@ -27,13 +28,12 @@ namespace Tangent.Intermediate
         public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
         {
             // Doing this lazily since we don't have generic info at ctor time.
-            genericElements = genericElements ?? ContainedGenericReferences(GenericTie.Inference);
-            if (!genericElements.Any()) {
+            if (!GenericParameters.Any()) {
                 return this;
             }
 
-            var bindings = genericElements.Select(pd => mapping(pd)).ToList();
-           
+            var bindings = GenericParameters.Select(pd => mapping(pd)).ToList();
+
             return BoundGenericProductType.For(this, bindings);
         }
 
@@ -47,9 +47,13 @@ namespace Tangent.Intermediate
             if (alreadyProcessed.Contains(this)) { return Enumerable.Empty<ParameterDeclaration>(); }
             alreadyProcessed.Add(this);
 
-            // For product types, generic references are also inferences.
-            genericElements = genericElements ?? DataConstructorParts.Where(pp => !pp.IsIdentifier).SelectMany(pp => pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference, alreadyProcessed));
-            return genericElements;
+            if (tie == GenericTie.Inference) {
+                return DataConstructorParts.Where(pp => !pp.IsIdentifier).SelectMany(pp => pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference, alreadyProcessed));
+            } else if (tie == GenericTie.Reference) {
+                return GenericParameters;
+            } else {
+                throw new NotImplementedException();
+            }
         }
     }
 }

@@ -54,12 +54,12 @@ namespace Tangent.Intermediate
 
         public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
         {
-            throw new NotImplementedException();
+            return this;
         }
 
         public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
         {
-            throw new NotImplementedException();
+            return this;
         }
 
         public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)

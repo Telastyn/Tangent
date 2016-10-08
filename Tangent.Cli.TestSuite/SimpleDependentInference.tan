@@ -1,0 +1,8 @@
+﻿checkpoint (value : (T)) => T {
+  print "at checkpoint";
+  value;
+}
+
+entrypoint => void {
+  print checkpoint "foo"
+}
