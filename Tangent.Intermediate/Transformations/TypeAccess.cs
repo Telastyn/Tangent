@@ -19,8 +19,13 @@ namespace Tangent.Intermediate
         {
             if (Declaration.IsGeneric) {
                 var genericBindingArgs = input.IncomingArguments.Select(expr => expr.EffectiveType.ImplementationType == KindOfType.TypeConstant ? ((TypeConstant)expr.EffectiveType).Value : expr.EffectiveType).ToList();
-                var genericBinding = BoundGenericType.For(Declaration, genericBindingArgs);
-                return new TypeAccessExpression(genericBinding.TypeConstant, input.MatchLocation);
+                if (Declaration.Returns.ImplementationType == KindOfType.Product) {
+                    var genericBinding = BoundGenericProductType.For((ProductType)Declaration.Returns, genericBindingArgs);
+                    return new TypeAccessExpression(genericBinding.TypeConstant, input.MatchLocation);
+                } else {
+                    var genericBinding = BoundGenericType.For(Declaration, genericBindingArgs);
+                    return new TypeAccessExpression(genericBinding.TypeConstant, input.MatchLocation);
+                }
             } else {
                 if (input.IncomingArguments.Any() || input.GenericInferences.Any()) {
                     throw new ApplicationException("Unexpected input to Type Access.");

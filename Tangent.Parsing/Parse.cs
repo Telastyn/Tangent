@@ -121,13 +121,11 @@ namespace Tangent.Parsing
             var fieldFunctions = new List<ReductionDeclaration>();
             Action<Field, ProductType> fieldFunctionizer = (field, productType) => {
                 if (productType.GenericParameters.Any()) {
-                    var newGenerics = productType.GenericParameters.Select(pd => new ParameterDeclaration(pd.Takes, pd.Returns)).ToList();
-                    var inferenceType = BoundGenericProductType.For(productType, newGenerics.Select(pd => GenericInferencePlaceholder.For(pd)));
+                    var inferenceType = BoundGenericProductType.For(productType, productType.GenericParameters.Select(pd => GenericInferencePlaceholder.For(pd)));
 
-                    throw new NotImplementedException("LASTWORKED: Need to be able to infer type arguments from this and then match them for field accessor/mutator. What's here doesn't work I think.");
-                    fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", inferenceType))), new Function(field.Declaration.Returns.ResolveGenericReferences(pd => GenericArgumentReferenceType.For(newGenerics[ productType.GenericParameters.IndexOf(pd)])), new Block(new Expression[] { new FieldAccessorExpression(productType, field) }, Enumerable.Empty<ParameterDeclaration>())), newGenerics));
+                    fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", inferenceType))), new Function(field.Declaration.Returns, new Block(new Expression[] { new FieldAccessorExpression(productType, field) }, Enumerable.Empty<ParameterDeclaration>())), productType.GenericParameters));
                     fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", inferenceType))).Concat(
-                        new[] { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", field.Declaration.Returns.ResolveGenericReferences(pd => GenericArgumentReferenceType.For(newGenerics[productType.GenericParameters.IndexOf(pd)])))) }), new Function(TangentType.Void, new Block(new Expression[] { new FieldMutatorExpression(productType, field) }, Enumerable.Empty<ParameterDeclaration>())), newGenerics));
+                        new[] { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", field.Declaration.Returns)) }), new Function(TangentType.Void, new Block(new Expression[] { new FieldMutatorExpression(productType, field) }, Enumerable.Empty<ParameterDeclaration>())), productType.GenericParameters));
                 } else {
                     fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", productType))), new Function(field.Declaration.Returns, new Block(new Expression[] { new FieldAccessorExpression(productType, field) }, Enumerable.Empty<ParameterDeclaration>()))));
                     fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", productType))).Concat(

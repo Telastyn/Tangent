@@ -25,7 +25,7 @@ namespace Tangent.Intermediate
 
         public List<Expression> InterpretTowards(TangentType target, List<Expression> input)
         {
-            //System.IO.File.AppendAllText("h:\\guessing.txt", string.Join("|", input.Select(x => x.ToString())) + "\n");
+            System.IO.File.AppendAllText("h:\\tangent-trace.txt", string.Join("|", input.Select(x => x.ToString())) + "\n");
             if (input.Count == 1) {
                 if (target == input[0].EffectiveType) {
                     return input;

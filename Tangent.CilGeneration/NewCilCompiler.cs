@@ -860,7 +860,8 @@ namespace Tangent.CilGeneration
                     // else, MethodInfo invocation.
                     if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
                     if (invoke.GenericArguments.Any()) {
-                        var parameterizedFn = Compile(invoke.FunctionDefinition).MakeGenericMethod(invoke.Arguments.Select(a => Compile(a.EffectiveType)).ToArray());
+                        // LASTWORKED: fixed this to take type-args, but is fubard specialization and still doesn't work for constructor inference test.
+                        var parameterizedFn = Compile(invoke.FunctionDefinition).MakeGenericMethod(invoke.GenericArguments.Select(a => Compile(a)).ToArray());
                         gen.EmitCall(OpCodes.Call, parameterizedFn, null);
                     } else {
                         gen.EmitCall(OpCodes.Call, Compile(invoke.FunctionDefinition), null);

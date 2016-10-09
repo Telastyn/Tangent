@@ -22,7 +22,7 @@ namespace Tangent.Intermediate
 
         public static BoundGenericProductType For(ProductType generic, IEnumerable<TangentType> arguments)
         {
-            if (arguments.Count() != generic.ContainedGenericReferences(GenericTie.Inference).Count()) { throw new InvalidOperationException(); }
+            if (arguments.Count() != generic.GenericParameters.Count) { throw new InvalidOperationException(); }
             var result = concreteTypes.FirstOrDefault(t => t.GenericProductType == generic && t.TypeArguments.SequenceEqual(arguments));
             if (result != null) {
                 return result;

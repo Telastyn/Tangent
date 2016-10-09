@@ -41,6 +41,11 @@ namespace Tangent.Intermediate
 
         public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
         {
+            var osvt = other as SingleValueType;
+            if(osvt != null) {
+                return CompatibilityMatches(osvt.ValueType, necessaryTypeInferences);
+            }
+
             // TODO: verify generic constraint.
             if (necessaryTypeInferences.ContainsKey(GenericArgument)) {
                 if (necessaryTypeInferences[GenericArgument] != other) {

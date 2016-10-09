@@ -18,6 +18,7 @@ namespace Tangent.Intermediate
             this.ThisParam = thisParam;
             this.CtorParam = ctorParam;
             this.Arguments = arguments;
+            effectiveType = CtorParam.Returns.RebindInferences(pd => GenericArgumentReferenceType.For(pd));
         }
 
         public override ExpressionNodeType NodeType
@@ -25,9 +26,14 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.CtorParamAccess; }
         }
 
+        private readonly TangentType effectiveType;
+
         public override TangentType EffectiveType
         {
-            get { return CtorParam.Returns; }
+            get
+            {
+                return effectiveType;
+            }
         }
 
         internal override void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
@@ -37,7 +43,7 @@ namespace Tangent.Intermediate
 
         public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
         {
-            if(mapping.ContainsKey(ThisParam) || mapping.ContainsKey(CtorParam)) {
+            if (mapping.ContainsKey(ThisParam) || mapping.ContainsKey(CtorParam)) {
                 throw new NotImplementedException("ReplaceParameterAccesses called with this/ctor param. This is unsupported.");
             }
 

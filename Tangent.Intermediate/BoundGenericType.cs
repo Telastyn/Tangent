@@ -55,6 +55,9 @@ namespace Tangent.Intermediate
         public static BoundGenericType For(TypeDeclaration genericTypeDecl, IEnumerable<TangentType> arguments)
         {
             lock (cache) {
+                // TODO: consider refactoring this to make it return the proper type rather than putting the onus on the calling code
+                //        to pick the right one.
+                if (genericTypeDecl.Returns is ProductType) { throw new ApplicationException("Calling code should produce BoundGenericProductTypes"); }
                 if (!cache.ContainsKey(genericTypeDecl)) {
                     cache.Add(genericTypeDecl, new Dictionary<IEnumerable<TangentType>, BoundGenericType>());
                 }
