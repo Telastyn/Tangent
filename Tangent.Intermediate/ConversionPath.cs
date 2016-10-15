@@ -47,7 +47,7 @@ namespace Tangent.Intermediate
         {
             Dictionary<ParameterDeclaration, TangentType> inferences = new Dictionary<ParameterDeclaration, TangentType>();
             if (fn.Takes.First().Parameter.RequiredArgumentType.CompatibilityMatches(arg.EffectiveType, inferences)) {
-                return new FunctionInvocationExpression(fn, new[] { arg }, fn.GenericParameters.Select(gp => inferences[gp]), arg.SourceInfo);
+                return new FunctionInvocationExpression(fn, new[] { arg }, fn.GenericParameters.Select(gp => inferences[gp]).ToList(), arg.SourceInfo);
             } else {
                 throw new ApplicationException("A conversion was called that doesn't match its type.");
             }

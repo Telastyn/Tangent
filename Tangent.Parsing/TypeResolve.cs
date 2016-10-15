@@ -274,7 +274,24 @@ namespace Tangent.Parsing
                 return new ResultOrParseError<ReductionDeclaration>(inferredTypes.Error);
             }
 
+            var thisGenericInferenceMapping = new Dictionary<ParameterDeclaration, GenericInferencePlaceholder>();
+            bool genericProductType = false;
+            var productScope = scope as ProductType;
+            if(productScope != null) {
+                genericProductType = productScope.GenericParameters.Any();
+            }
+
             var genericFnParams = inferredTypes.Result.Select(kvp => kvp.Value.GenericArgument);
+
+            if (genericProductType) {
+                foreach(var entry in productScope.GenericParameters) {
+                    var fnGeneric = new ParameterDeclaration(entry.Takes, entry.Returns);
+                    var fnGenericReference = GenericArgumentReferenceType.For(fnGeneric);
+                    var fnGenericInference = GenericInferencePlaceholder.For(fnGeneric);
+                    thisGenericInferenceMapping.Add(entry, fnGenericInference);
+                    genericFnParams = genericFnParams.Concat(new[] { fnGeneric });
+                }
+            }
 
             foreach (var part in partialFunction.Takes) {
                 if (!part.IsIdentifier && part.Parameter.IsThisParam) {
@@ -294,7 +311,8 @@ namespace Tangent.Parsing
                             throw new ApplicationException("Multiple this parameters declared in function.");
                         }
 
-                        phrase.Add(new PhrasePart(new ParameterDeclaration("this", scope)));
+                        // We need to replace generics in this so they can be inferred by the function.
+                        phrase.Add(new PhrasePart(new ParameterDeclaration("this", scope.ResolveGenericReferences(pd=>thisGenericInferenceMapping[pd]))));
                     }
 
                     thisFound = true;

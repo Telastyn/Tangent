@@ -18,7 +18,7 @@ namespace Tangent.Intermediate
 
         public override Expression Reduce(PhraseMatchResult input)
         {
-            return new FunctionInvocationExpression(Declaration, input.IncomingArguments, Declaration.GenericParameters.Select(gp => input.GenericInferences[gp]), input.MatchLocation);
+            return new FunctionInvocationExpression(Declaration, input.IncomingArguments, Declaration.GenericParameters.Select(gp => input.GenericInferences[gp]).ToList(), input.MatchLocation);
         }
 
         public override TransformationType Type

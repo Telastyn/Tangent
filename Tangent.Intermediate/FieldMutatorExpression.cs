@@ -8,10 +8,16 @@ namespace Tangent.Intermediate
 {
     public class FieldMutatorExpression : Expression
     {
-        public readonly ProductType OwningType;
+        public readonly TangentType OwningType;
         public readonly Field TargetField;
 
         public FieldMutatorExpression(ProductType type, Field targetField) : base(null)
+        {
+            OwningType = type;
+            TargetField = targetField;
+        }
+
+        public FieldMutatorExpression(BoundGenericProductType type, Field targetField) : base(null)
         {
             OwningType = type;
             TargetField = targetField;

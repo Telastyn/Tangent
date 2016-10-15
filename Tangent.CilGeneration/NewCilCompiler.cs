@@ -860,7 +860,6 @@ namespace Tangent.CilGeneration
                     // else, MethodInfo invocation.
                     if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
                     if (invoke.GenericArguments.Any()) {
-                        // LASTWORKED: fixed this to take type-args, but is fubard specialization and still doesn't work for constructor inference test.
                         var parameterizedFn = Compile(invoke.FunctionDefinition).MakeGenericMethod(invoke.GenericArguments.Select(a => Compile(a)).ToArray());
                         gen.EmitCall(OpCodes.Call, parameterizedFn, null);
                     } else {
@@ -898,9 +897,13 @@ namespace Tangent.CilGeneration
                 case ExpressionNodeType.FieldAccessor:
                     var fieldAccess = expr as FieldAccessorExpression;
                     if (fieldAccess.OwningType != null) {
-                        Compile(fieldAccess.OwningType);
+                        var ot = Compile(fieldAccess.OwningType);
                         gen.Emit(OpCodes.Ldarg_0);
-                        gen.Emit(OpCodes.Ldfld, fieldLookup[fieldAccess.TargetField]);
+                        if (fieldAccess.OwningType.ImplementationType == KindOfType.BoundGenericProduct) {
+                            gen.Emit(OpCodes.Ldfld, TypeBuilder.GetField(ot, fieldLookup[fieldAccess.TargetField]));
+                        } else {
+                            gen.Emit(OpCodes.Ldfld, fieldLookup[fieldAccess.TargetField]);
+                        }
                     } else {
                         gen.Emit(OpCodes.Ldsfld, fieldLookup[fieldAccess.TargetField]);
                     }
@@ -910,10 +913,15 @@ namespace Tangent.CilGeneration
                 case ExpressionNodeType.FieldMutator:
                     var fieldMutator = expr as FieldMutatorExpression;
                     if (fieldMutator.OwningType != null) {
-                        Compile(fieldMutator.OwningType);
+                        var ot = Compile(fieldMutator.OwningType);
                         gen.Emit(OpCodes.Ldarg_0);
                         gen.Emit(OpCodes.Ldarg_1);
-                        gen.Emit(OpCodes.Stfld, fieldLookup[fieldMutator.TargetField]);
+
+                        if (fieldMutator.OwningType.ImplementationType == KindOfType.BoundGenericProduct) {
+                            gen.Emit(OpCodes.Stfld, TypeBuilder.GetField(ot, fieldLookup[fieldMutator.TargetField]));
+                        } else {
+                            gen.Emit(OpCodes.Stfld, fieldLookup[fieldMutator.TargetField]);
+                        }
                     } else {
                         gen.Emit(OpCodes.Ldarg_0);
                         gen.Emit(OpCodes.Stsfld, fieldLookup[fieldMutator.TargetField]);
