@@ -63,23 +63,20 @@ namespace Tangent.Parsing
                 if (t.IsIdentifier) {
                     takes.Add(new PhrasePart(t.Identifier.Identifier));
                 } else {
-                    var interpretResults = scope.InterpretTowards(TangentType.Any.Kind, t.Parameter.Returns);
-                    if (interpretResults.Count == 1) {
-                        if (!t.Parameter.Takes.All(ppp => ppp.IsIdentifier)) {
-                            throw new NotImplementedException("Delegate parameter in type declaration not yet supported.");
-                        }
-
-                        takes.Add(new PhrasePart(new ParameterDeclaration(t.Parameter.Takes.Select(ppp => ppp.Identifier.Identifier), interpretResults.Cast<TypeAccessExpression>().First().TypeConstant.Value.Kind)));
-                    } else if (interpretResults.Count == 0) {
-                        // No way to parse things. 
-                        if (!hardError) {
-                            return null;
-                        } else {
-                            return new ResultOrParseError<TypeDeclaration>(new IncomprehensibleStatementError(t.Parameter.Returns));
-                        }
-                    } else {
-                        return new ResultOrParseError<TypeDeclaration>(new AmbiguousStatementError(t.Parameter.Returns, interpretResults));
+                    if (!t.Parameter.Takes.All(ppp => ppp.IsIdentifier)) {
+                        throw new NotImplementedException("Delegate parameter in type declaration not yet supported.");
                     }
+
+                    var constraintResult = ResolveGenericConstraint(t.Parameter.Returns, scope, hardError);
+                    if (constraintResult == null) {
+                        return null;
+                    }
+
+                    if (!constraintResult.Success) {
+                        return new ResultOrParseError<TypeDeclaration>(constraintResult.Error);
+                    }
+
+                    takes.Add(new PhrasePart(new ParameterDeclaration(t.Parameter.Takes.Select(ppp => ppp.Identifier.Identifier), constraintResult.Result)));
                 }
             }
 
@@ -277,20 +274,39 @@ namespace Tangent.Parsing
             var thisGenericInferenceMapping = new Dictionary<ParameterDeclaration, GenericInferencePlaceholder>();
             bool genericProductType = false;
             var productScope = scope as ProductType;
-            if(productScope != null) {
+            if (productScope != null) {
                 genericProductType = productScope.GenericParameters.Any();
             }
 
             var genericFnParams = inferredTypes.Result.Select(kvp => kvp.Value.GenericArgument);
 
             if (genericProductType) {
-                foreach(var entry in productScope.GenericParameters) {
+                foreach (var entry in productScope.GenericParameters) {
                     var fnGeneric = new ParameterDeclaration(entry.Takes, entry.Returns);
                     var fnGenericReference = GenericArgumentReferenceType.For(fnGeneric);
                     var fnGenericInference = GenericInferencePlaceholder.For(fnGeneric);
                     thisGenericInferenceMapping.Add(entry, fnGenericInference);
                     genericFnParams = genericFnParams.Concat(new[] { fnGeneric });
                 }
+            }
+
+            // Now check for explicit type parameters.
+            var explicitTypeParameterLookup = new Dictionary<PartialPhrasePart, ParameterDeclaration>();
+            TransformationScope genericScope = null;
+            foreach (var explicitTypeParameter in partialFunction.Takes.Where(ppp => !ppp.IsIdentifier && ppp.Parameter.IsTypeParameter)) {
+                if (!explicitTypeParameter.Parameter.Takes.All(ppp => ppp.IsIdentifier)) {
+                    throw new NotImplementedException("Delegate parameter in type declaration not yet supported.");
+                }
+
+                genericScope = genericScope ?? new TransformationScopeNew(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => new TypeAccess(td))), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>()));
+                var interpretResults = ResolveGenericConstraint(explicitTypeParameter.Parameter.Returns, genericScope, true);
+                if (!interpretResults.Success) {
+                    return new ResultOrParseError<ReductionDeclaration>(interpretResults.Error);
+                }
+
+                var genericRef = new ParameterDeclaration(explicitTypeParameter.Parameter.Takes.Select(ppp => ppp.Identifier.Identifier), interpretResults.Result);
+                genericFnParams = genericFnParams.Concat(new[] { genericRef });
+                explicitTypeParameterLookup.Add(explicitTypeParameter, genericRef);
             }
 
             foreach (var part in partialFunction.Takes) {
@@ -312,16 +328,20 @@ namespace Tangent.Parsing
                         }
 
                         // We need to replace generics in this so they can be inferred by the function.
-                        phrase.Add(new PhrasePart(new ParameterDeclaration("this", scope.ResolveGenericReferences(pd=>thisGenericInferenceMapping[pd]))));
+                        phrase.Add(new PhrasePart(new ParameterDeclaration("this", scope.ResolveGenericReferences(pd => thisGenericInferenceMapping[pd]))));
                     }
 
                     thisFound = true;
                 } else {
-                    var resolved = Resolve(FixInferences(part, inferredTypes.Result), types);
-                    if (resolved.Success) {
-                        phrase.Add(resolved.Result);
+                    if (explicitTypeParameterLookup.ContainsKey(part)) {
+                        phrase.Add(explicitTypeParameterLookup[part]);
                     } else {
-                        errors = errors.Concat(resolved.Error);
+                        var resolved = Resolve(FixInferences(part, inferredTypes.Result), types);
+                        if (resolved.Success) {
+                            phrase.Add(resolved.Result);
+                        } else {
+                            errors = errors.Concat(resolved.Error);
+                        }
                     }
                 }
             }
@@ -464,6 +484,25 @@ namespace Tangent.Parsing
             }
 
             return new ParameterDeclaration(takeResolutions, ctorGenericArguments == null ? type.Result : ConvertGenericReferencesToInferences(type.Result));
+        }
+
+        private static ResultOrParseError<TangentType> ResolveGenericConstraint(List<Expression> constraint, TransformationScope scope, bool hardError)
+        {
+            var interpretResults = scope.InterpretTowards(TangentType.Any.Kind, constraint);
+            if (interpretResults.Count == 1) {
+
+                return interpretResults.Cast<TypeAccessExpression>().First().TypeConstant.Value.Kind;
+
+            } else if (interpretResults.Count == 0) {
+                // No way to parse things. 
+                if (!hardError) {
+                    return null;
+                } else {
+                    return new ResultOrParseError<TangentType>(new IncomprehensibleStatementError(constraint));
+                }
+            } else {
+                return new ResultOrParseError<TangentType>(new AmbiguousStatementError(constraint, interpretResults));
+            }
         }
 
         private static ResultOrParseError<GenericInferencePlaceholder> Resolve(PartialTypeInferenceExpression inference, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)

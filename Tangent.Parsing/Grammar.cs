@@ -25,7 +25,7 @@ namespace Tangent.Parsing
                 ID.OneOrMore,
                 Parser.Combine(LiteralParser.Colon, LiteralParser.Colon, ID.OneOrMore, (c, c2, typeref) => typeref).Maybe,
                 LiteralParser.CloseParen,
-                (o, phrase, typeref, c) => new PartialParameterDeclaration(phrase, (typeref ?? new List<IdentifierExpression>() { new IdentifierExpression("any", null) }).Select(idExpr => (Expression)idExpr).ToList()));
+                (o, phrase, typeref, c) => new PartialParameterDeclaration(phrase, (typeref ?? new List<IdentifierExpression>() { new IdentifierExpression("any", null) }).Select(idExpr => (Expression)idExpr).ToList(), true));
 
         // enum { id+, id+, ... }
         public static readonly Parser<TangentType> EnumImpl =
@@ -102,7 +102,8 @@ namespace Tangent.Parsing
             Parser.Options("Phrase part",
                 ID.Select(id => new PartialPhrasePart(id)),
                 thisParam,
-                ParamDecl
+                ParamDecl,
+                TypeDeclParam.Select(tdp => new PartialPhrasePart(tdp))
             ).OneOrMore;
 
         public static readonly Parser<IEnumerable<PartialPhrasePart>> FunctionPhraseSansPipe =

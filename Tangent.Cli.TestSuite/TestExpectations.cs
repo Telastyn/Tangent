@@ -344,6 +344,15 @@ namespace Tangent.Cli.TestSuite
             Assert.IsTrue(results.SequenceEqual(new[] { "at checkpoint", "foo" }));
         }
 
+
+        [TestMethod]
+        public void ExplicitCtorTypeParam()
+        {
+            var result = Test.DebugProgramFile(new[] { "ExplicitCtorTypeParam.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "bar" }));
+        }
+
         [TestMethod]
         [Ignore]
         public void BasicGlobalUse()

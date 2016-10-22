@@ -1,0 +1,11 @@
+﻿foo (T) :> new Foo (T) {
+  (this).bar(value:T) => void {
+    print "bar";
+  }
+}
+
+entrypoint => void {
+  : x : foo int := new Foo int;
+
+  x.bar 42;
+}
