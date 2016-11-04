@@ -612,6 +612,7 @@ namespace Tangent.Parsing
                 case KindOfType.InferencePoint:
                 case KindOfType.Placeholder:
                 case KindOfType.Product:
+                case KindOfType.TypeClass:
                     return input;
                 case KindOfType.GenericReference:
                     var genref = input as GenericArgumentReferenceType;

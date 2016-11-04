@@ -1,0 +1,25 @@
+﻿element :> interface {
+  (this).value : int;
+  (this).next => element;
+}
+
+cons :> (value : int) , (next : element) :< element {
+  (this).value : int := value;
+  (this).next => element { next } 
+}
+
+nothing :> nothing :< element {
+  (this).value : int := 0;
+  (this).next => element { nothing }
+}
+
+entrypoint => void {
+  : x : int := 1000;
+  : chain : element := nothing;
+
+  while x > 0 {
+    chain = x , chain;
+	x = x - 1;
+	//print x;
+  }
+}
