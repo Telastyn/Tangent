@@ -29,10 +29,10 @@ namespace Tangent.Intermediate.UnitTests
             Assert.IsTrue(result.Success);
             Assert.AreEqual(3, result.TokenMatchLength);
             Assert.AreEqual(2, result.IncomingArguments.Count());
-            Assert.AreEqual(1, result.GenericInferences.Count());
+            Assert.AreEqual(1, result.GenericArguments.Count());
 
-            Assert.AreEqual(genericT, result.GenericInferences.First().Key);
-            Assert.AreEqual(TangentType.String, result.GenericInferences.First().Value);
+            Assert.AreEqual(genericT, result.GenericArguments.First().Key);
+            Assert.AreEqual(TangentType.String, result.GenericArguments.First().Value);
 
             Assert.IsTrue(result.IncomingArguments.First() is ConstantExpression<int>);
             Assert.IsTrue(result.IncomingArguments.Skip(1).First() is ConstantExpression<string>);
@@ -59,10 +59,10 @@ namespace Tangent.Intermediate.UnitTests
             Assert.IsTrue(result.Success);
             Assert.AreEqual(3, result.TokenMatchLength);
             Assert.AreEqual(2, result.IncomingArguments.Count());
-            Assert.AreEqual(1, result.GenericInferences.Count());
+            Assert.AreEqual(1, result.GenericArguments.Count());
 
-            Assert.AreEqual(genericT, result.GenericInferences.First().Key);
-            Assert.AreEqual(TangentType.String, result.GenericInferences.First().Value);
+            Assert.AreEqual(genericT, result.GenericArguments.First().Key);
+            Assert.AreEqual(TangentType.String, result.GenericArguments.First().Value);
 
             Assert.IsTrue(result.IncomingArguments.First() is ConstantExpression<int>);
             Assert.IsTrue(result.IncomingArguments.Skip(1).First() is ConstantExpression<string>);

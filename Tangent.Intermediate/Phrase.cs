@@ -44,6 +44,7 @@ namespace Tangent.Intermediate
                     if (element.Parameter.RequiredArgumentType == TangentType.Any.Kind && (inType.ImplementationType == KindOfType.Kind || inType.ImplementationType == KindOfType.TypeConstant || inType.ImplementationType == KindOfType.GenericReference || inType.ImplementationType == KindOfType.InferencePoint)) {
                         parameterCollector.Add(inputEnum.Current);
                         sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
+                        inferenceCollector.Add(element.Parameter, inType);
                     } else if (inputEnum.Current.NodeType == ExpressionNodeType.PartialLambda) {
                         var lambda = ((PartialLambdaExpression)inputEnum.Current).TryToFitIn(element.Parameter.RequiredArgumentType);
                         if (lambda == null) {

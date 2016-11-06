@@ -17,7 +17,7 @@ namespace Tangent.Intermediate
 
         public override Expression Reduce(PhraseMatchResult input)
         {
-            if (input.GenericInferences.Any()) {
+            if (input.GenericArguments.Any()) {
                 throw new ApplicationException("Unexpected input to Parameter Access.");
             }
 

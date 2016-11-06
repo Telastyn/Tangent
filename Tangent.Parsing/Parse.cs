@@ -402,7 +402,7 @@ namespace Tangent.Parsing
                 return new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(inner => fixer(inner)), pp.Parameter.Returns.RebindInferences(gen => genericMapping[gen])));
             };
 
-            var targetType = pt.RebindInferences(gen => GenericArgumentReferenceType.For(genericMapping[gen].GenericArgument));
+            var targetType = pt.RebindInferences(gen => genericMapping.ContainsKey(gen) ? GenericArgumentReferenceType.For(genericMapping[gen].GenericArgument) : GenericArgumentReferenceType.For(gen));
             Dictionary<ParameterDeclaration, ParameterDeclaration> paramMapping = new Dictionary<ParameterDeclaration, ParameterDeclaration>();
             Func<PhrasePart, PhrasePart> paramMapper = pp => {
                 if (pp.IsIdentifier) {
@@ -417,7 +417,8 @@ namespace Tangent.Parsing
             if (targetType is ProductType) {
                 return new ReductionDeclaration(pt.DataConstructorParts.Select(pp => paramMapper(pp)), new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as ProductType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())));
             } else if (targetType is BoundGenericProductType) {
-                return new ReductionDeclaration(pt.DataConstructorParts.Select(pp => paramMapper(pp)), new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as BoundGenericProductType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())), genericMapping.Values.Select(gip => gip.GenericArgument).ToList());
+                var takes = pt.DataConstructorParts.Select(pp => paramMapper(pp)).ToList();
+                return new ReductionDeclaration(takes, new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as BoundGenericProductType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())), genericMapping.Values.Select(gip => gip.GenericArgument).Concat(takes.Where(pp=>!pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.Kind).Select(pp=>pp.Parameter)).ToList());
             } else {
                 throw new NotImplementedException();
             }

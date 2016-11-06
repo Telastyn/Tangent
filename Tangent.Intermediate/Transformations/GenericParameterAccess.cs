@@ -22,7 +22,7 @@ namespace Tangent.Intermediate
 
         public override Expression Reduce(PhraseMatchResult input)
         {
-            if (input.IncomingArguments.Any() || input.GenericInferences.Any()) {
+            if (input.IncomingArguments.Any() || input.GenericArguments.Any()) {
                 throw new ApplicationException("Unexpected input to Generic Parameter Access.");
             }
 

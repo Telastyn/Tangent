@@ -27,7 +27,7 @@ namespace Tangent.Intermediate
                     return new TypeAccessExpression(genericBinding.TypeConstant, input.MatchLocation);
                 }
             } else {
-                if (input.IncomingArguments.Any() || input.GenericInferences.Any()) {
+                if (input.IncomingArguments.Any() || input.GenericArguments.Any()) {
                     throw new ApplicationException("Unexpected input to Type Access.");
                 }
 

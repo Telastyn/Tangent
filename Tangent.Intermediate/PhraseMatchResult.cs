@@ -10,7 +10,7 @@ namespace Tangent.Intermediate
     {
         public readonly int TokenMatchLength;
         public readonly IEnumerable<Expression> IncomingArguments;
-        public readonly Dictionary<ParameterDeclaration, TangentType> GenericInferences;
+        public readonly Dictionary<ParameterDeclaration, TangentType> GenericArguments;
         public readonly LineColumnRange MatchLocation;
         public readonly IEnumerable<ConversionPath> ConversionInfo;
 
@@ -18,7 +18,7 @@ namespace Tangent.Intermediate
         {
             get
             {
-                return GenericInferences != null && !IsAmbiguous;
+                return GenericArguments != null && !IsAmbiguous;
             }
         }
 
@@ -34,10 +34,10 @@ namespace Tangent.Intermediate
         public static readonly PhraseMatchResult Failure = new PhraseMatchResult();
 
         private PhraseMatchResult() { }
-        public PhraseMatchResult(int tokensMatched, LineColumnRange matchLocation, IEnumerable<Expression> matchedParameters = null, Dictionary<ParameterDeclaration, TangentType> genericInferences = null, IEnumerable<ConversionPath> conversionInfo = null)
+        public PhraseMatchResult(int tokensMatched, LineColumnRange matchLocation, IEnumerable<Expression> matchedParameters = null, Dictionary<ParameterDeclaration, TangentType> genericArguments = null, IEnumerable<ConversionPath> conversionInfo = null)
         {
             IncomingArguments = matchedParameters ?? Enumerable.Empty<Expression>();
-            GenericInferences = genericInferences == null ? new Dictionary<ParameterDeclaration, TangentType>() : new Dictionary<ParameterDeclaration, TangentType>(genericInferences);
+            GenericArguments = genericArguments == null ? new Dictionary<ParameterDeclaration, TangentType>() : new Dictionary<ParameterDeclaration, TangentType>(genericArguments);
             ConversionInfo = conversionInfo ?? Enumerable.Empty<ConversionPath>();
             TokenMatchLength = tokensMatched;
             MatchLocation = matchLocation;

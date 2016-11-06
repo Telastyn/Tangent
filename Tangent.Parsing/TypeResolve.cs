@@ -294,6 +294,7 @@ namespace Tangent.Parsing
             var explicitTypeParameterLookup = new Dictionary<PartialPhrasePart, ParameterDeclaration>();
             TransformationScope genericScope = null;
             foreach (var explicitTypeParameter in partialFunction.Takes.Where(ppp => !ppp.IsIdentifier && ppp.Parameter.IsTypeParameter)) {
+                throw new NotImplementedException("Need to rework this to tie explicit generic params to their declaration.");
                 if (!explicitTypeParameter.Parameter.Takes.All(ppp => ppp.IsIdentifier)) {
                     throw new NotImplementedException("Delegate parameter in type declaration not yet supported.");
                 }
@@ -336,7 +337,7 @@ namespace Tangent.Parsing
                     if (explicitTypeParameterLookup.ContainsKey(part)) {
                         phrase.Add(explicitTypeParameterLookup[part]);
                     } else {
-                        var resolved = Resolve(FixInferences(part, inferredTypes.Result), types);
+                        var resolved = Resolve(FixInferences(part, inferredTypes.Result), types, productScope == null ? null : productScope.GenericParameters);
                         if (resolved.Success) {
                             phrase.Add(resolved.Result);
                         } else {
@@ -440,6 +441,16 @@ namespace Tangent.Parsing
         {
             var typeExprs = partial.Returns;
             if (ctorGenericArguments != null) {
+                if (partial.IsTypeParameter) {
+                    throw new NotImplementedException("Need to rework this to tie explicit generic params to their declaration.");
+                    var arg = ctorGenericArguments.FirstOrDefault(pd => pd.Takes.Select(pp => pp.Identifier.Value).SequenceEqual(partial.Takes.Select(ppp => ppp.Identifier.Identifier.Value)));
+                    if (arg == null) {
+                        return new ResultOrParseError<ParameterDeclaration>(new IncomprehensibleStatementError(partial.Takes.Select(ppp => ppp.Identifier)));
+                    }
+
+                    return arg;
+                }
+
                 // We're resolving product type constructors. We need to fix any type inferences here.
                 for (int ix = 0; ix < typeExprs.Count; ++ix) {
                     var inference = typeExprs[ix] as PartialTypeInferenceExpression;
