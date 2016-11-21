@@ -354,6 +354,14 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void ExplicitTypeParam()
+        {
+            var result = Test.DebugProgramFile(new[] { "ExplicitTypeParam.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "foo" }));
+        }
+
+        [TestMethod]
         public void ConsBenchmark()
         {
             var result = Test.ProgramFile(new[] { "cons-benchmark.tan", "conditional-lib.tan", "looping-lib.tan" });

@@ -394,22 +394,27 @@ namespace Tangent.Parsing
 
         private static ReductionDeclaration GenerateConstructorFunctionFor(ProductType pt)
         {
-            var genericMapping = pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)).ToDictionary(gen => gen, gen => GenericInferencePlaceholder.For(new ParameterDeclaration(new[] { new PhrasePart("ctor") }.Concat(gen.Takes), gen.Returns)));
+            var inferenceMapping = pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)).ToDictionary(gen => gen, gen => GenericInferencePlaceholder.For(new ParameterDeclaration(new[] { new PhrasePart("ctor") }.Concat(gen.Takes), gen.Returns)));
+            var explicitGenerics = pt.GenericParameters.Except(inferenceMapping.Keys).ToDictionary(pd => pd, pd => new ParameterDeclaration(pd.Takes, pd.Returns));
 
             Func<PhrasePart, PhrasePart> fixer = null;
             fixer = pp => {
                 if (pp.IsIdentifier) { return pp; }
-                return new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(inner => fixer(inner)), pp.Parameter.Returns.RebindInferences(gen => genericMapping[gen])));
+                return new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(inner => fixer(inner)), pp.Parameter.Returns.RebindInferences(gen => inferenceMapping[gen])));
             };
 
-            var targetType = pt.RebindInferences(gen => genericMapping.ContainsKey(gen) ? GenericArgumentReferenceType.For(genericMapping[gen].GenericArgument) : GenericArgumentReferenceType.For(gen));
+            var targetType = pt.RebindInferences(gen => inferenceMapping.ContainsKey(gen) ? GenericArgumentReferenceType.For(inferenceMapping[gen].GenericArgument) : GenericArgumentReferenceType.For(explicitGenerics[gen]));
             Dictionary<ParameterDeclaration, ParameterDeclaration> paramMapping = new Dictionary<ParameterDeclaration, ParameterDeclaration>();
             Func<PhrasePart, PhrasePart> paramMapper = pp => {
                 if (pp.IsIdentifier) {
                     return pp;
                 }
 
-                var newb = new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(inner => fixer(inner)), pp.Parameter.Returns.RebindInferences(gen => genericMapping[gen])));
+                if (explicitGenerics.ContainsKey(pp.Parameter)) {
+                    return explicitGenerics[pp.Parameter];
+                }
+
+                var newb = new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(inner => fixer(inner)), pp.Parameter.Returns.RebindInferences(gen => inferenceMapping[gen])));
                 paramMapping.Add(pp.Parameter, newb.Parameter);
                 return newb;
             };
@@ -418,7 +423,7 @@ namespace Tangent.Parsing
                 return new ReductionDeclaration(pt.DataConstructorParts.Select(pp => paramMapper(pp)), new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as ProductType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())));
             } else if (targetType is BoundGenericProductType) {
                 var takes = pt.DataConstructorParts.Select(pp => paramMapper(pp)).ToList();
-                return new ReductionDeclaration(takes, new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as BoundGenericProductType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())), genericMapping.Values.Select(gip => gip.GenericArgument).Concat(takes.Where(pp=>!pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.Kind).Select(pp=>pp.Parameter)).ToList());
+                return new ReductionDeclaration(takes, new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as BoundGenericProductType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())), inferenceMapping.Values.Select(gip => gip.GenericArgument).Concat(takes.Where(pp => !pp.IsIdentifier && pp.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Kind).Select(pp => pp.Parameter)).ToList());
             } else {
                 throw new NotImplementedException();
             }

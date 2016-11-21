@@ -172,7 +172,7 @@ namespace Tangent.CilGeneration
 
             stub.SetReturnType(Compile(fn.Returns.EffectiveType));
             stub.SetParameters(
-                fn.Takes.Where(t => !t.IsIdentifier).Select(t =>
+                fn.Takes.Where(t => !t.IsIdentifier && t.Parameter.RequiredArgumentType.ImplementationType != KindOfType.Kind).Select(t =>
                     t.Parameter.RequiredArgumentType.ImplementationType == KindOfType.SingleValue ?
                     Compile(((SingleValueType)t.Parameter.RequiredArgumentType).ValueType) :
                     Compile(t.Parameter.RequiredArgumentType)).ToArray());
@@ -200,6 +200,10 @@ namespace Tangent.CilGeneration
         private Type BuildClass(TypeDeclaration decl)
         {
             var typeName = GetNameFor(decl);
+            if (typeName.Contains(".")) {
+                throw new NotImplementedException("TODO: fix dots in typenames causing CIL to namespace things.");
+            }
+
             var productType = (ProductType)decl.Returns;
 
             var classBuilder = targetModule.DefineType(typeName, System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Public);
@@ -214,7 +218,7 @@ namespace Tangent.CilGeneration
                 }
             }
 
-            var tangentCtorParams = productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).ToList();
+            var tangentCtorParams = productType.DataConstructorParts.Where(pp => !pp.IsIdentifier && pp.Parameter.RequiredArgumentType.ImplementationType != KindOfType.Kind).ToList();
             var dotnetCtorParamTypes = tangentCtorParams.Select(pp => Compile(pp.Parameter.RequiredArgumentType)).ToList();
             var ctor = classBuilder.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, dotnetCtorParamTypes.ToArray());
             productCtorLookup.Add(productType, ctor);
@@ -1146,13 +1150,26 @@ namespace Tangent.CilGeneration
             }
         }
 
-        private string GetNameFor(TypeDeclaration rule)
+        private string GetNameFor(TypeDeclaration rule, IEnumerable<TangentType> typeArguments = null)
         {
+            typeArguments = typeArguments ?? Enumerable.Empty<TangentType>();
+
             if (rule.Takes.First() == null) {
                 return "__AnonymousType" + anonymousTypeIndex++;
             }
 
-            string result = string.Join(" ", rule.Takes.Select(id => id.ToString()));
+            Func<PhrasePart, string> partPrinter = (pp) => {
+                if (pp.IsIdentifier) { return pp.ToString(); }
+                if (typeArguments.Any()) {
+                    var s = GetNameFor(typeArguments.First());
+                    typeArguments = typeArguments.Skip(1);
+                    return s;
+                }
+
+                return pp.ToString();
+            };
+
+            string result = string.Join(" ", rule.Takes.Select(id => partPrinter(id)));
             var t = rule.Returns as DelegateType;
             while (t != null && !t.Takes.Any()) {
                 result = "~> " + result;
@@ -1166,6 +1183,25 @@ namespace Tangent.CilGeneration
         {
             if (type.ImplementationType == KindOfType.Delegate) {
                 return GenericDelegateTypeFor((DelegateType)type).Name;
+            }
+
+            if (type.ImplementationType == KindOfType.BoundGeneric) {
+                var boundType = (BoundGenericType)type;
+                return GetNameFor(boundType.GenericTypeDeclatation, boundType.TypeArguments);
+            }
+
+            if (type.ImplementationType == KindOfType.BoundGenericProduct) {
+                var boundType = (BoundGenericProductType)type;
+                return GetNameFor(program.TypeDeclarations.FirstOrDefault(td => td.Returns == boundType.GenericProductType), boundType.TypeArguments);
+            }
+
+            if(type.ImplementationType == KindOfType.Kind) {
+                return "kind of " + GetNameFor(((KindType)type).KindOf);
+            }
+
+            if(type.ImplementationType == KindOfType.GenericReference) {
+                var reference = (GenericArgumentReferenceType)type;
+                return string.Join(" ", reference.GenericParameter.Takes);
             }
 
             var decl = program.TypeDeclarations.FirstOrDefault(td => td.Returns == type);

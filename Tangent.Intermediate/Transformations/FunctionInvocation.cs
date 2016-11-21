@@ -19,8 +19,10 @@ namespace Tangent.Intermediate
         public override Expression Reduce(PhraseMatchResult input)
         {
             // TODO: clean this up.
-            var parameterBindings = Declaration.Takes.Where(pp => !pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.Kind).Select(pp => pp.Parameter).Zip(input.IncomingArguments, (param, expr) => new { Parameter = param, Expression = expr }).ToDictionary(pair => pair.Parameter, pair => pair.Expression);
-            return new FunctionInvocationExpression(Declaration, input.IncomingArguments.Where(expr => !parameterBindings.Values.Contains(expr)), Declaration.GenericParameters.Select(gp => parameterBindings.ContainsKey(gp) ? parameterBindings[gp].EffectiveType : input.GenericArguments[gp]).ToList(), input.MatchLocation);
+            //var parameterBindings = Declaration.Takes.Where(pp => !pp.IsIdentifier && pp.Parameter.Returns.ImplementationType == KindOfType.Kind).Select(pp => pp.Parameter).Zip(input.IncomingArguments, (param, expr) => new { Parameter = param, Expression = expr }).ToDictionary(pair => pair.Parameter, pair => pair.Expression);
+            //return new FunctionInvocationExpression(Declaration, input.IncomingArguments.Where(expr => !parameterBindings.Values.Contains(expr)), Declaration.GenericParameters.Select(gp => parameterBindings.ContainsKey(gp) ? parameterBindings[gp].EffectiveType : input.GenericArguments[gp]).ToList(), input.MatchLocation);
+
+            return new FunctionInvocationExpression(Declaration, input.IncomingArguments, Declaration.GenericParameters.Select(gp => input.GenericArguments[gp]).ToList(), input.MatchLocation);
         }
 
         public override TransformationType Type

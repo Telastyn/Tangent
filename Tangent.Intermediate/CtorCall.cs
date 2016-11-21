@@ -30,7 +30,7 @@ namespace Tangent.Intermediate
         public CtorCallExpression(BoundGenericProductType type, Func<ParameterDeclaration, ParameterDeclaration> paramMapping) : base(null)
         {
             Target = type;
-            Arguments = type.GenericProductType.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(paramMapping(pp.Parameter), null));
+            Arguments = type.GenericProductType.DataConstructorParts.Where(pp => !pp.IsIdentifier && pp.Parameter.RequiredArgumentType.ImplementationType != KindOfType.Kind).Select(pp => new ParameterAccessExpression(paramMapping(pp.Parameter), null)).ToList();
         }
 
         private CtorCallExpression(TangentType target, IEnumerable<Expression> args) : base(null)

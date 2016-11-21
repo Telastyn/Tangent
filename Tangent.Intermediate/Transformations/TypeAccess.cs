@@ -18,12 +18,12 @@ namespace Tangent.Intermediate
         public override Expression Reduce(PhraseMatchResult input)
         {
             if (Declaration.IsGeneric) {
-                var genericBindingArgs = input.IncomingArguments.Select(expr => expr.EffectiveType.ImplementationType == KindOfType.TypeConstant ? ((TypeConstant)expr.EffectiveType).Value : expr.EffectiveType).ToList();
                 if (Declaration.Returns.ImplementationType == KindOfType.Product) {
-                    var genericBinding = BoundGenericProductType.For((ProductType)Declaration.Returns, genericBindingArgs);
+                    var generic = (ProductType)Declaration.Returns;
+                    var genericBinding = BoundGenericProductType.For(generic, generic.GenericParameters.Select(gp => input.GenericArguments[gp]));
                     return new TypeAccessExpression(genericBinding.TypeConstant, input.MatchLocation);
                 } else {
-                    var genericBinding = BoundGenericType.For(Declaration, genericBindingArgs);
+                    var genericBinding = BoundGenericType.For(Declaration, Declaration.Takes.Where(pp=>!pp.IsIdentifier).Select(pp=>input.GenericArguments[pp.Parameter]));
                     return new TypeAccessExpression(genericBinding.TypeConstant, input.MatchLocation);
                 }
             } else {

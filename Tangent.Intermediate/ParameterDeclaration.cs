@@ -8,7 +8,7 @@ namespace Tangent.Intermediate
     public class ParameterDeclaration : ReductionRule<PhrasePart, TangentType>
     {
         public ParameterDeclaration(Identifier takes, TangentType returns) : this(new[] { takes }, returns) { }
-        public ParameterDeclaration(IEnumerable<Identifier> takes, TangentType returns) : base(takes.Select(t => new PhrasePart(t)), returns) { }
+        public ParameterDeclaration(IEnumerable<Identifier> takes, TangentType returns) : this(takes.Select(t => new PhrasePart(t)), returns) { }
         public ParameterDeclaration(IEnumerable<PhrasePart> takes, TangentType returns) : base(takes, returns) { }
 
         public override string SeparatorToken
@@ -48,6 +48,10 @@ namespace Tangent.Intermediate
 
         public override string ToString()
         {
+            if (Returns == TangentType.Any.Kind) {
+                return string.Format("({0})", string.Join(" ", Takes));
+            }
+
             return string.Format("({0})", base.ToString());
         }
 

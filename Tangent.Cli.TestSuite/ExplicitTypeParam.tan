@@ -1,0 +1,7 @@
+﻿foo (T) => void {
+  print "foo"
+}
+
+entrypoint => void {
+  foo int
+}
