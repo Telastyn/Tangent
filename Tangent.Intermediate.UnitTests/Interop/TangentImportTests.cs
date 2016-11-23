@@ -17,7 +17,7 @@ namespace Tangent.Intermediate.Interop.UnitTests
         [TestMethod]
         public void TypeDeclarationParsesNameProperly()
         {
-            var td = TangentImport.TypeDeclarationFor(typeof(TestTarget));
+            var td = DotNetType.TypeDeclarationFor(typeof(TestTarget));
             Assert.AreEqual(11, td.Takes.Count);
             Assert.AreEqual(".", td.Takes.First().Identifier.Value);
             Assert.AreEqual("NET", td.Takes.Skip(1).First().Identifier.Value);

@@ -50,10 +50,11 @@ namespace Tangent.Intermediate.Interop
 
             foreach (var t in assembly.GetTypes()) {
                 if (t.IsPublic) {
-                    var tangentType = DotNetType.For(t);
-                    if (tangentType != null) {
+                    var typeDecl = DotNetType.TypeDeclarationFor(t);
+                    if (typeDecl != null) {
+                        var tangentType = typeDecl.Returns;
                         if (t != typeof(int) && t != typeof(string) && t != typeof(bool) && t != typeof(double) && t != typeof(void)) {
-                            result.Types.Add(t, TypeDeclarationFor(t));
+                            result.Types.Add(t, typeDecl);
                         }
 
                         foreach (var fn in t.GetMethods()) {
@@ -112,18 +113,6 @@ namespace Tangent.Intermediate.Interop
             return result;
         }
 
-        public static TypeDeclaration TypeDeclarationFor(Type t)
-        {
-            var tt = DotNetType.For(t);
-            if (t.ContainsGenericParameters) {
-                throw new NotImplementedException("Sorry, generic dot net types not yet supported.");
-            }
-
-            var phrase = Tokenize.ProgramFile(".NET " + t.FullName, "").Select(token => new Identifier(token.Value)).ToList();
-
-            return new TypeDeclaration(phrase, tt);
-        }
-
         public static ReductionDeclaration ReductionDeclarationFor(MethodInfo fn)
         {
             if (fn.IsStatic) {
@@ -141,6 +130,7 @@ namespace Tangent.Intermediate.Interop
             }
 
             var owningTangentType = DotNetType.For(fn.DeclaringType);
+            if (fn.DeclaringType.IsGenericTypeDefinition) { return null; }
             if (owningTangentType == null) { return null; }
 
             var returnTangentType = DotNetType.For(fn.ReturnType);
@@ -172,6 +162,7 @@ namespace Tangent.Intermediate.Interop
             }
 
             var owningType = DotNetType.For(property.DeclaringType);
+            if (property.DeclaringType.IsGenericTypeDefinition) { return null; }
 
             List<ReductionDeclaration> result = new List<ReductionDeclaration>();
 
@@ -221,6 +212,7 @@ namespace Tangent.Intermediate.Interop
             }
 
             var owningType = DotNetType.For(field.DeclaringType);
+            if (field.DeclaringType.IsGenericTypeDefinition) { return null; }
 
             List<ReductionDeclaration> result = new List<ReductionDeclaration>();
 
@@ -270,6 +262,7 @@ namespace Tangent.Intermediate.Interop
 
             var owningTangentType = DotNetType.For(fn.DeclaringType);
             if (owningTangentType == null) { return null; }
+            if (fn.DeclaringType.IsGenericTypeDefinition) { return null; }
 
             var returnTangentType = DotNetType.For(fn.ReturnType);
             if (returnTangentType == null) { return null; }
@@ -333,6 +326,7 @@ namespace Tangent.Intermediate.Interop
             }
 
             var owningType = DotNetType.For(ctor.DeclaringType);
+            if (ctor.DeclaringType.IsGenericTypeDefinition) { return null; }
             if (owningType == null) {
                 return null;
             }
@@ -392,8 +386,11 @@ namespace Tangent.Intermediate.Interop
             // T -> I?
 
             if (!t.IsValueType) {
-                var concreteConstantExpression = Activator.CreateInstance(GenericConstantExpressionType.MakeGenericType(new[] { t }), tangentType, null, null) as ConstantExpression;
-                yield return new ReductionDeclaration("null", new Function(tangentType, new Block(new Expression[] { concreteConstantExpression }, Enumerable.Empty<ParameterDeclaration>())));
+                // TODO: handle null for generics.
+                if (!t.IsGenericTypeDefinition) {
+                    var concreteConstantExpression = Activator.CreateInstance(GenericConstantExpressionType.MakeGenericType(new[] { t }), tangentType, null, null) as ConstantExpression;
+                    yield return new ReductionDeclaration("null", new Function(tangentType, new Block(new Expression[] { concreteConstantExpression }, Enumerable.Empty<ParameterDeclaration>())));
+                }
             }
 
             // TODO:
