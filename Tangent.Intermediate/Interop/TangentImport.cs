@@ -59,7 +59,7 @@ namespace Tangent.Intermediate.Interop
 
                         foreach (var fn in t.GetMethods()) {
                             if (fn.IsPublic) {
-                                var tfn = ReductionDeclarationFor(fn);
+                                var tfn = ReductionDeclarationFor(typeDecl, fn);
                                 if (tfn != null) {
                                     result.CommonFunctions.Add(fn, tfn);
                                 }
@@ -93,7 +93,7 @@ namespace Tangent.Intermediate.Interop
 
                         foreach (var ctor in t.GetConstructors()) {
                             if (ctor.IsPublic) {
-                                var ctorFn = ReductionDeclarationFor(ctor);
+                                var ctorFn = ReductionDeclarationFor(typeDecl, ctor);
                                 if (ctorFn != null) {
                                     result.Constructors.Add(ctor, ctorFn);
                                 }
@@ -113,10 +113,10 @@ namespace Tangent.Intermediate.Interop
             return result;
         }
 
-        public static ReductionDeclaration ReductionDeclarationFor(MethodInfo fn)
+        public static ReductionDeclaration ReductionDeclarationFor(TypeDeclaration typeDecl, MethodInfo fn)
         {
             if (fn.IsStatic) {
-                return ReductionDeclarationForStatic(fn);
+                return ReductionDeclarationForStatic(typeDecl, fn);
             }
 
             if (fn.IsGenericMethod) {
@@ -238,7 +238,7 @@ namespace Tangent.Intermediate.Interop
             return result;
         }
 
-        public static ReductionDeclaration ReductionDeclarationForStatic(MethodInfo fn)
+        public static ReductionDeclaration ReductionDeclarationForStatic(TypeDeclaration typeDecl, MethodInfo fn)
         {
             if (!fn.IsStatic) {
                 return null;
@@ -262,7 +262,6 @@ namespace Tangent.Intermediate.Interop
 
             var owningTangentType = DotNetType.For(fn.DeclaringType);
             if (owningTangentType == null) { return null; }
-            if (fn.DeclaringType.IsGenericTypeDefinition) { return null; }
 
             var returnTangentType = DotNetType.For(fn.ReturnType);
             if (returnTangentType == null) { return null; }
@@ -273,6 +272,7 @@ namespace Tangent.Intermediate.Interop
 
                 var extensionType = DotNetType.For(parameters.First().ParameterType);
                 if (extensionType == null) { return null; }
+                if (parameters.First().ParameterType.IsGenericTypeDefinition) { return null; }
 
                 var phrase = new List<PhrasePart>();
                 phrase.Add(new PhrasePart(new ParameterDeclaration("this", extensionType)));
@@ -292,15 +292,17 @@ namespace Tangent.Intermediate.Interop
                 return new ReductionDeclaration(phrase, new Function(returnTangentType, new Block(new Expression[] { new DirectCallExpression(fn, returnTangentType, phrase.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, Enumerable.Empty<ParameterDeclaration>())));
             } else {
 
-                List<Identifier> namePart;
+                List<PhrasePart> namePart = new List<PhrasePart>();
                 if (fn.DeclaringType == typeof(int)) {
-                    // RMS: hack for Int32 support since Tangent identifiers can't have numbers.
-                    namePart = Tokenize.ProgramFile("int." + fn.Name, "").Select(token => new Identifier(token.Value)).ToList();
+                    namePart.Add(new PhrasePart("int"));
                 } else {
-                    namePart = Tokenize.ProgramFile(".NET " + fn.DeclaringType.FullName + "." + fn.Name, "").Select(token => new Identifier(token.Value)).ToList();
+                    namePart = typeDecl.Takes.TakeWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").ToList();
                 }
-                List<PhrasePart> phrase = new List<PhrasePart>(namePart.Select(id => new PhrasePart(id)));
 
+                var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
+                var genericArguments = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
+                var methodPart = new List<PhrasePart>() { new PhrasePart("."), new PhrasePart(fn.Name) };
+                var parameterPart = new List<PhrasePart>();
                 foreach (var parameter in parameters) {
                     if (parameter.IsOut) {
                         return null;
@@ -308,14 +310,14 @@ namespace Tangent.Intermediate.Interop
 
                     var parameterType = DotNetType.For(parameter.ParameterType);
                     if (parameterType == null) { return null; }
-                    phrase.Add(new PhrasePart(new ParameterDeclaration(parameter.Name, parameterType)));
+                    parameterPart.Add(new PhrasePart(new ParameterDeclaration(parameter.Name, parameterType)));
                 }
 
-                return new ReductionDeclaration(phrase, new Function(returnTangentType, new Block(new Expression[] { new DirectCallExpression(fn, returnTangentType, phrase.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, Enumerable.Empty<ParameterDeclaration>())));
+                return new ReductionDeclaration(namePart.Concat(genericPart).Concat(methodPart).Concat(parameterPart), new Function(returnTangentType, new Block(new Expression[] { new DirectCallExpression(fn, returnTangentType, parameterPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, genericArguments)));
             }
         }
 
-        public static ReductionDeclaration ReductionDeclarationFor(ConstructorInfo ctor)
+        public static ReductionDeclaration ReductionDeclarationFor(TypeDeclaration typeDecl, ConstructorInfo ctor)
         {
             if (!ctor.IsPublic) {
                 return null;
@@ -325,13 +327,8 @@ namespace Tangent.Intermediate.Interop
                 return null;
             }
 
-            var owningType = DotNetType.For(ctor.DeclaringType);
-            if (ctor.DeclaringType.IsGenericTypeDefinition) { return null; }
-            if (owningType == null) {
-                return null;
-            }
-
-            var namePart = Tokenize.ProgramFile(".NET " + ctor.DeclaringType.FullName, "").Select(token => new PhrasePart(new Identifier(token.Value))).ToList();
+            var namePart = typeDecl.Takes.TakeWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").ToList();
+            var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
             var parameterPart = ctor.GetParameters().Select(pi => {
                 var pt = DotNetType.For(pi.ParameterType);
                 if (pt == null) {
@@ -345,7 +342,9 @@ namespace Tangent.Intermediate.Interop
                 return null;
             }
 
-            return new ReductionDeclaration(new[] { new PhrasePart("new") }.Concat(namePart).Concat(parameterPart.Select(pd => new PhrasePart(pd))), new Function(owningType, new Block(new Expression[] { new DirectConstructorCallExpression(ctor, parameterPart.Select(pd => new ParameterAccessExpression(pd, null))) }, Enumerable.Empty<ParameterDeclaration>())));
+            var genericArgs = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
+            var targetType = genericArgs.Any() ? BoundGenericType.For(typeDecl, genericArgs.Select(ga => GenericArgumentReferenceType.For(ga))) : typeDecl.Returns;
+            return new ReductionDeclaration(new[] { new PhrasePart("new") }.Concat(namePart).Concat(genericPart).Concat(parameterPart.Select(pd => new PhrasePart(pd))), new Function(targetType, new Block(new Expression[] { new DirectConstructorCallExpression(ctor, parameterPart.Select(pd => new ParameterAccessExpression(pd, null))) }, genericArgs)));
         }
 
         public static ReductionDeclaration ReductionDeclarationForStructInit(Type t)

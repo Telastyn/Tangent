@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Tangent.Intermediate.Interop
@@ -55,7 +56,7 @@ namespace Tangent.Intermediate.Interop
 
         public override string ToString()
         {
-            return ".NET " + DotNetType.FullName;
+            return ".NET " + Regex.Replace(DotNetType.FullName ?? DotNetType.Name, "`[0-9]+", "");
         }
     }
 }

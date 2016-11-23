@@ -47,7 +47,7 @@ namespace Tangent.Intermediate.Interop
             return declarationCache.GetOrAdd(t, x => {
                 var tt = DotNetType.For(t);
                 if (tt == null) { return null; }
-                var phrase = Tokenize.ProgramFile(".NET " + Regex.Replace(t.FullName ?? t.Name, "`[0-9]", ""), "").Select(token => new PhrasePart(token.Value)).ToList();
+                var phrase = Tokenize.ProgramFile(".NET " + Regex.Replace(t.FullName ?? t.Name, "`[0-9]+", ""), "").Select(token => new PhrasePart(token.Value)).ToList();
                 if (t.IsGenericTypeDefinition) {
                     // TODO: constraints.
                     var genericParameters = t.GetGenericArguments().Select(ga => new ParameterDeclaration(ga.Name, TangentType.Any.Kind)).ToList();
@@ -76,7 +76,7 @@ namespace Tangent.Intermediate.Interop
 
         public override string ToString()
         {
-            return ".NET " + Regex.Replace(MappedType.FullName ?? MappedType.Name, "`[0-9]", "") + GenericSignature;
+            return ".NET " + Regex.Replace(MappedType.FullName ?? MappedType.Name, "`[0-9]+", "") + GenericSignature;
         }
 
         private static IEnumerable<PhrasePart> FormatGenericParameters(List<ParameterDeclaration> parameters)
