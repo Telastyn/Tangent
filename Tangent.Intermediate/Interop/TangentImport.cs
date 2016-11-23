@@ -129,17 +129,14 @@ namespace Tangent.Intermediate.Interop
                 return null;
             }
 
-            var owningTangentType = DotNetType.For(fn.DeclaringType);
-            if (fn.DeclaringType.IsGenericTypeDefinition) { return null; }
-            if (owningTangentType == null) { return null; }
-
             var returnTangentType = DotNetType.For(fn.ReturnType);
             if (returnTangentType == null) { return null; }
 
-            var phrase = new List<PhrasePart>();
-            phrase.Add(new PhrasePart(new ParameterDeclaration("this", owningTangentType)));
-            phrase.Add(new PhrasePart("."));
-            phrase.Add(new PhrasePart(fn.Name));
+            var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
+            var genericArguments = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
+            var thisPart = new List<PhrasePart>() { new PhrasePart(new ParameterDeclaration("this", genericArguments.Any() ? BoundGenericType.For(typeDecl, genericArguments.Select(ga => GenericInferencePlaceholder.For(ga)).ToList()) : typeDecl.Returns)) };
+            var methodPart = new List<PhrasePart>() { new PhrasePart("."), new PhrasePart(fn.Name) };
+            var parameterPart = new List<PhrasePart>();
 
             foreach (var parameter in fn.GetParameters()) {
                 if (parameter.IsOut) {
@@ -148,10 +145,10 @@ namespace Tangent.Intermediate.Interop
 
                 var parameterType = DotNetType.For(parameter.ParameterType);
                 if (parameterType == null) { return null; }
-                phrase.Add(new PhrasePart(new ParameterDeclaration(parameter.Name, parameterType)));
+                parameterPart.Add(new PhrasePart(new ParameterDeclaration(parameter.Name, parameterType)));
             }
 
-            return new ReductionDeclaration(phrase, new Function(returnTangentType, new Block(new Expression[] { new DirectCallExpression(fn, returnTangentType, phrase.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, Enumerable.Empty<ParameterDeclaration>())));
+            return new ReductionDeclaration(thisPart.Concat(methodPart).Concat(parameterPart), new Function(returnTangentType, new Block(new Expression[] { new DirectCallExpression(fn, returnTangentType, thisPart.Concat(parameterPart).Select(pp=>pp.Parameter).ToList(), genericArguments.Select(ga=>GenericArgumentReferenceType.For(ga)).ToList()) }, Enumerable.Empty<ParameterDeclaration>())), genericArguments);
         }
 
         public static IEnumerable<ReductionDeclaration> ReductionDeclarationsFor(TypeDeclaration typeDecl, PropertyInfo property)
