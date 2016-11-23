@@ -131,7 +131,7 @@ namespace Tangent.Parsing
                         referenceLookup.Add(generic, GenericArgumentReferenceType.For(fnGeneric));
                     }
 
-                    var inferenceType = BoundGenericProductType.For(productType, productType.GenericParameters.Select(pd => inferenceLookup[pd]));
+                    var inferenceType = BoundGenericType.For(productType, productType.GenericParameters.Select(pd => inferenceLookup[pd]));
 
                     fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", inferenceType))), new Function(field.Declaration.Returns.ResolveGenericReferences(pd => referenceLookup[pd]), new Block(new Expression[] { new FieldAccessorExpression(inferenceType, field) }, Enumerable.Empty<ParameterDeclaration>())), fnGenerics));
                     fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", inferenceType))).Concat(
@@ -421,9 +421,9 @@ namespace Tangent.Parsing
 
             if (targetType is ProductType) {
                 return new ReductionDeclaration(pt.DataConstructorParts.Select(pp => paramMapper(pp)), new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as ProductType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())));
-            } else if (targetType is BoundGenericProductType) {
+            } else if (targetType is BoundGenericType) {
                 var takes = pt.DataConstructorParts.Select(pp => paramMapper(pp)).ToList();
-                return new ReductionDeclaration(takes, new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as BoundGenericProductType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())), inferenceMapping.Values.Select(gip => gip.GenericArgument).Concat(takes.Where(pp => !pp.IsIdentifier && pp.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Kind).Select(pp => pp.Parameter)).ToList());
+                return new ReductionDeclaration(takes, new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as BoundGenericType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())), inferenceMapping.Values.Select(gip => gip.GenericArgument).Concat(takes.Where(pp => !pp.IsIdentifier && pp.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Kind).Select(pp => pp.Parameter)).ToList());
             } else {
                 throw new NotImplementedException();
             }

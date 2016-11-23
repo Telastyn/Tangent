@@ -128,8 +128,6 @@ namespace Tangent.CilGeneration
                     return BuildVariant(typeDecl);
                 case KindOfType.BoundGeneric:
                     return InstantiateGeneric(target as BoundGenericType);
-                case KindOfType.BoundGenericProduct:
-                    return InstantiateGeneric(target as BoundGenericProductType);
                 case KindOfType.Delegate:
                     return BuildDelegateType(target as DelegateType);
                 case KindOfType.Builtin:
@@ -331,21 +329,15 @@ namespace Tangent.CilGeneration
 
         private Type InstantiateGeneric(BoundGenericType boundGeneric)
         {
-            Type genericType = Compile(boundGeneric.GenericTypeDeclatation.Returns);
+            Type genericType = Compile(boundGeneric.GenericType);
             var arguments = boundGeneric.TypeArguments.Select(tt => Compile(tt)).ToArray();
             var instance = genericType.MakeGenericType(arguments);
-            typeLookup.Add(boundGeneric, instance);
-            return instance;
-        }
+            if (boundGeneric.GenericType.ImplementationType == KindOfType.Product) {
+                var genericCtor = productCtorLookup[boundGeneric.GenericType];
+                var instanceCtor = TypeBuilder.GetConstructor(instance, genericCtor);
+                productCtorLookup.Add(boundGeneric, instanceCtor);
+            }
 
-        private Type InstantiateGeneric(BoundGenericProductType boundGeneric)
-        {
-            Type genericType = Compile(boundGeneric.GenericProductType);
-            var arguments = boundGeneric.TypeArguments.Select(tt => Compile(tt)).ToArray();
-            var instance = genericType.MakeGenericType(arguments);
-            var genericCtor = productCtorLookup[boundGeneric.GenericProductType];
-            var instanceCtor = TypeBuilder.GetConstructor(instance, genericCtor);
-            productCtorLookup.Add(boundGeneric, instanceCtor);
             typeLookup.Add(boundGeneric, instance);
             return instance;
         }
@@ -830,7 +822,7 @@ namespace Tangent.CilGeneration
 
                         switch (invoke.EffectiveType.ImplementationType) {
                             case KindOfType.Product:
-                            case KindOfType.BoundGenericProduct:
+                            case KindOfType.BoundGeneric:
                                 ctorFn = productCtorLookup[invoke.EffectiveType];
                                 break;
                             case KindOfType.TypeClass:
@@ -885,7 +877,7 @@ namespace Tangent.CilGeneration
 
                     switch (ctorExpr.EffectiveType.ImplementationType) {
                         case KindOfType.Product:
-                        case KindOfType.BoundGenericProduct:
+                        case KindOfType.BoundGeneric:
                             ctorExprFn = productCtorLookup[ctorExpr.EffectiveType];
                             break;
                         case KindOfType.TypeClass:
@@ -903,7 +895,7 @@ namespace Tangent.CilGeneration
                     if (fieldAccess.OwningType != null) {
                         var ot = Compile(fieldAccess.OwningType);
                         gen.Emit(OpCodes.Ldarg_0);
-                        if (fieldAccess.OwningType.ImplementationType == KindOfType.BoundGenericProduct) {
+                        if (fieldAccess.OwningType.ImplementationType == KindOfType.BoundGeneric) {
                             gen.Emit(OpCodes.Ldfld, TypeBuilder.GetField(ot, fieldLookup[fieldAccess.TargetField]));
                         } else {
                             gen.Emit(OpCodes.Ldfld, fieldLookup[fieldAccess.TargetField]);
@@ -921,7 +913,7 @@ namespace Tangent.CilGeneration
                         gen.Emit(OpCodes.Ldarg_0);
                         gen.Emit(OpCodes.Ldarg_1);
 
-                        if (fieldMutator.OwningType.ImplementationType == KindOfType.BoundGenericProduct) {
+                        if (fieldMutator.OwningType.ImplementationType == KindOfType.BoundGeneric) {
                             gen.Emit(OpCodes.Stfld, TypeBuilder.GetField(ot, fieldLookup[fieldMutator.TargetField]));
                         } else {
                             gen.Emit(OpCodes.Stfld, fieldLookup[fieldMutator.TargetField]);
@@ -1056,7 +1048,26 @@ namespace Tangent.CilGeneration
                         AddExpression(arg, gen, parameterCodes, closureScope, false);
                     }
 
-                    gen.Emit(OpCodes.Newobj, directCtor.Constructor);
+                    var genericArguments = directCtor.GenericArguments.Select(ga => Compile(((GenericParameterAccessExpression)ga).Parameter.Returns)).ToList();
+                    if (genericArguments.Any()) {
+                        var concreteType = directCtor.Constructor.DeclaringType.MakeGenericType(genericArguments.ToArray());
+                        var candidates = concreteType.GetConstructors().Where(c => c.GetParameters().Count() == directCtor.Constructor.GetParameters().Count()).ToList();
+                        if (candidates.Count == 0) {
+                            throw new NotImplementedException("Unable to find matching instance constructor for generic call.");
+                        } else if (candidates.Count == 1) {
+
+                        } else {
+                            // match on concrete
+                            candidates = candidates.Where(c => c.GetGenericArguments().Zip(directCtor.Constructor.GetGenericArguments(), (a, b) => new { CandidateArgumentType = a, GenericArgumentType = b }).All(pair => pair.GenericArgumentType.IsGenericType || pair.GenericArgumentType == pair.CandidateArgumentType)).ToList();
+                            if (candidates.Count != 1) {
+                                throw new NotImplementedException("Unable to find matching instance constructor for " + directCtor.Constructor.ToString() + " with arguments " + string.Join(", ", genericArguments));
+                            }
+                        }
+
+                        gen.Emit(OpCodes.Newobj, candidates[0]);
+                    } else {
+                        gen.Emit(OpCodes.Newobj, directCtor.Constructor);
+                    }
                     return;
 
                 case ExpressionNodeType.DirectFieldAccess:
@@ -1187,19 +1198,14 @@ namespace Tangent.CilGeneration
 
             if (type.ImplementationType == KindOfType.BoundGeneric) {
                 var boundType = (BoundGenericType)type;
-                return GetNameFor(boundType.GenericTypeDeclatation, boundType.TypeArguments);
+                return GetNameFor(program.TypeDeclarations.FirstOrDefault(td => td.Returns == boundType.GenericType), boundType.TypeArguments);
             }
 
-            if (type.ImplementationType == KindOfType.BoundGenericProduct) {
-                var boundType = (BoundGenericProductType)type;
-                return GetNameFor(program.TypeDeclarations.FirstOrDefault(td => td.Returns == boundType.GenericProductType), boundType.TypeArguments);
-            }
-
-            if(type.ImplementationType == KindOfType.Kind) {
+            if (type.ImplementationType == KindOfType.Kind) {
                 return "kind of " + GetNameFor(((KindType)type).KindOf);
             }
 
-            if(type.ImplementationType == KindOfType.GenericReference) {
+            if (type.ImplementationType == KindOfType.GenericReference) {
                 var reference = (GenericArgumentReferenceType)type;
                 return string.Join(" ", reference.GenericParameter.Takes);
             }

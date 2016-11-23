@@ -17,7 +17,7 @@ namespace Tangent.Intermediate
             TargetField = targetField;
         }
 
-        public FieldMutatorExpression(BoundGenericProductType type, Field targetField) : base(null)
+        public FieldMutatorExpression(BoundGenericType type, Field targetField) : base(null)
         {
             OwningType = type;
             TargetField = targetField;

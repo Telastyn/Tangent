@@ -11,11 +11,13 @@ namespace Tangent.Intermediate.Interop
     {
         public readonly ConstructorInfo Constructor;
         public readonly IEnumerable<Expression> Arguments;
+        public readonly IEnumerable<Expression> GenericArguments;
 
-        public DirectConstructorCallExpression(ConstructorInfo ctor, IEnumerable<Expression> args) : base(null)
+        public DirectConstructorCallExpression(ConstructorInfo ctor, IEnumerable<Expression> args, IEnumerable<Expression> genericArgs) : base(null)
         {
             Constructor = ctor;
             Arguments = args;
+            GenericArguments = genericArgs;
         }
 
         public override TangentType EffectiveType
@@ -41,7 +43,8 @@ namespace Tangent.Intermediate.Interop
                 return this;
             }
 
-            return new DirectConstructorCallExpression(Constructor, newbs);
+            // TODO: replace generic accesses too?
+            return new DirectConstructorCallExpression(Constructor, newbs, GenericArguments);
         }
 
         public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)

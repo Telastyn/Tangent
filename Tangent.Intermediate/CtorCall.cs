@@ -8,7 +8,7 @@ namespace Tangent.Intermediate
 {
     public class CtorCall : Function
     {
-        public CtorCall(BoundGenericProductType type) : base(type, null) { }
+        public CtorCall(BoundGenericType type) : base(type, null) { }
         public CtorCall(ProductType type) : base(type, null) { }
         internal override void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
         {
@@ -27,10 +27,16 @@ namespace Tangent.Intermediate
             Arguments = type.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(paramMapping(pp.Parameter), null));
         }
 
-        public CtorCallExpression(BoundGenericProductType type, Func<ParameterDeclaration, ParameterDeclaration> paramMapping) : base(null)
+        public CtorCallExpression(BoundGenericType type, Func<ParameterDeclaration, ParameterDeclaration> paramMapping) : base(null)
         {
             Target = type;
-            Arguments = type.GenericProductType.DataConstructorParts.Where(pp => !pp.IsIdentifier && pp.Parameter.RequiredArgumentType.ImplementationType != KindOfType.Kind).Select(pp => new ParameterAccessExpression(paramMapping(pp.Parameter), null)).ToList();
+            switch (type.GenericType.ImplementationType) {
+                case KindOfType.Product:
+                    Arguments = ((ProductType)type.GenericType).DataConstructorParts.Where(pp => !pp.IsIdentifier && pp.Parameter.RequiredArgumentType.ImplementationType != KindOfType.Kind).Select(pp => new ParameterAccessExpression(paramMapping(pp.Parameter), null)).ToList();
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
         private CtorCallExpression(TangentType target, IEnumerable<Expression> args) : base(null)

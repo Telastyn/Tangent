@@ -9,7 +9,7 @@ using Tangent.Tokenization;
 
 namespace Tangent.Intermediate.Interop
 {
-    public class DotNetType : TangentType
+    public class DotNetType : TangentType, HasGenericParameters
     {
         public readonly Type MappedType;
 
@@ -101,6 +101,18 @@ namespace Tangent.Intermediate.Interop
                 }
 
                 return "";
+            }
+        }
+
+        public IEnumerable<ParameterDeclaration> GenericParameters
+        {
+            get
+            {
+                if (!MappedType.IsGenericTypeDefinition) {
+                    return Enumerable.Empty<ParameterDeclaration>();
+                }
+
+                return TypeDeclarationFor(MappedType).Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
             }
         }
     }

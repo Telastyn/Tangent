@@ -80,8 +80,8 @@ namespace Tangent.Intermediate.UnitTests
             var inference = GenericInferencePlaceholder.For(genericParam);
             var listTsT = new ParameterDeclaration("T", TangentType.Any.Kind);
             var listT = new TypeDeclaration(new[] { new PhrasePart("List"), new PhrasePart(listTsT) }, new ProductType(new PhrasePart[0], new[] { genericParam }, Enumerable.Empty<Field>()));
-            var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericProductType.For((ProductType)listT.Returns, new[] { TangentType.Int })), new Function(TangentType.Void, null));
-            var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericProductType.For((ProductType)listT.Returns, new[] { inference })), new Function(TangentType.Void, null));
+            var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericType.For((ProductType)listT.Returns, new[] { TangentType.Int })), new Function(TangentType.Void, null));
+            var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericType.For((ProductType)listT.Returns, new[] { inference })), new Function(TangentType.Void, null));
 
             Assert.IsTrue(fn1.IsSpecializationOf(fn2));
             Assert.IsFalse(fn2.IsSpecializationOf(fn1));
@@ -97,8 +97,8 @@ namespace Tangent.Intermediate.UnitTests
             var genericParam3 = new ParameterDeclaration("V", TangentType.Any.Kind);
             var inference3 = GenericInferencePlaceholder.For(genericParam3);
             var dictKV = new TypeDeclaration(new[] { new PhrasePart("Dict"), new PhrasePart(new ParameterDeclaration("K", TangentType.Any.Kind)), new PhrasePart(new ParameterDeclaration("V", TangentType.Any.Kind)) }, new ProductType(new PhrasePart[0], new[] { genericParam1, genericParam2 }, Enumerable.Empty<Field>()));
-            var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericProductType.For((ProductType)dictKV.Returns, new[] { TangentType.Int, inference3 })), new Function(TangentType.Void, null));
-            var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericProductType.For((ProductType)dictKV.Returns, new[] { inference1, inference2 })), new Function(TangentType.Void, null));
+            var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericType.For((ProductType)dictKV.Returns, new[] { TangentType.Int, inference3 })), new Function(TangentType.Void, null));
+            var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericType.For((ProductType)dictKV.Returns, new[] { inference1, inference2 })), new Function(TangentType.Void, null));
 
             Assert.IsTrue(fn1.IsSpecializationOf(fn2));
             Assert.IsFalse(fn2.IsSpecializationOf(fn1));

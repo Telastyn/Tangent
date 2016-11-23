@@ -17,7 +17,7 @@ namespace Tangent.Intermediate
             TargetField = targetField;
         }
 
-        public FieldAccessorExpression(BoundGenericProductType type, Field targetField) : base(null)
+        public FieldAccessorExpression(BoundGenericType type, Field targetField) : base(null)
         {
             OwningType = type;
             TargetField = targetField;

@@ -614,7 +614,7 @@ namespace Tangent.Parsing
             switch (input.ImplementationType) {
                 case KindOfType.BoundGeneric:
                     var boundGeneric = input as BoundGenericType;
-                    return BoundGenericType.For(boundGeneric.GenericTypeDeclatation, boundGeneric.TypeArguments.Select(ta => ConvertGenericReferencesToInferences(ta)));
+                    return BoundGenericType.For(boundGeneric.GenericType as HasGenericParameters, boundGeneric.TypeArguments.Select(ta => ConvertGenericReferencesToInferences(ta)));
                 case KindOfType.Builtin:
                 case KindOfType.Enum:
                 case KindOfType.SingleValue:

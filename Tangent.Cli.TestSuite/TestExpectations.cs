@@ -3,6 +3,7 @@ using System.Linq;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tangent.Intermediate.Interop;
+using System.Collections.Generic;
 
 namespace Tangent.Cli.TestSuite
 {
@@ -365,6 +366,14 @@ namespace Tangent.Cli.TestSuite
         public void ConsBenchmark()
         {
             var result = Test.ProgramFile(new[] { "cons-benchmark.tan", "conditional-lib.tan", "looping-lib.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new string[] { }));
+        }
+
+        [TestMethod]
+        public void GenericInteropConstructors()
+        {
+            var result = Test.DebugProgramFile(new[] { "GenericInteropConstructors.tan" }, new[] { typeof(List<>).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new string[] { }));
         }

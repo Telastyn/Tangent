@@ -44,11 +44,11 @@
   <ItemGroup>
     <Compile Include="AmbiguousExpression.cs" />
     <Compile Include="Block.cs" />
-    <Compile Include="BoundGenericProductType.cs" />
     <Compile Include="BoundGenericType.cs" />
     <Compile Include="CompositeTransformationLookupTree.cs" />
     <Compile Include="ConversionGraph.cs" />
     <Compile Include="ConversionPath.cs" />
+    <Compile Include="HasGenericParameters.cs" />
     <Compile Include="Interop\BoolEnumAdapterType.cs" />
     <Compile Include="Interop\BuiltinFunctions.cs" />
     <Compile Include="ConstantExpression.cs" />

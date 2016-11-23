@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Tangent.Intermediate
 {
-    public class ProductType : TangentType
+    public class ProductType : TangentType, HasGenericParameters
     {
         public readonly List<PhrasePart> DataConstructorParts;
         public readonly List<Field> Fields;
@@ -34,7 +34,7 @@ namespace Tangent.Intermediate
 
             var bindings = GenericParameters.Select(pd => mapping(pd)).ToList();
 
-            return BoundGenericProductType.For(this, bindings);
+            return BoundGenericType.For(this, bindings);
         }
 
         public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
@@ -53,6 +53,14 @@ namespace Tangent.Intermediate
                 return GenericParameters;
             } else {
                 throw new NotImplementedException();
+            }
+        }
+
+        IEnumerable<ParameterDeclaration> HasGenericParameters.GenericParameters
+        {
+            get
+            {
+                return GenericParameters;
             }
         }
     }

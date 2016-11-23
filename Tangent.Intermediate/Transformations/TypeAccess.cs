@@ -18,14 +18,9 @@ namespace Tangent.Intermediate
         public override Expression Reduce(PhraseMatchResult input)
         {
             if (Declaration.IsGeneric) {
-                if (Declaration.Returns.ImplementationType == KindOfType.Product) {
-                    var generic = (ProductType)Declaration.Returns;
-                    var genericBinding = BoundGenericProductType.For(generic, generic.GenericParameters.Select(gp => input.GenericArguments[gp]));
-                    return new TypeAccessExpression(genericBinding.TypeConstant, input.MatchLocation);
-                } else {
-                    var genericBinding = BoundGenericType.For(Declaration, Declaration.Takes.Where(pp=>!pp.IsIdentifier).Select(pp=>input.GenericArguments[pp.Parameter]));
-                    return new TypeAccessExpression(genericBinding.TypeConstant, input.MatchLocation);
-                }
+                var generic = Declaration.Returns as HasGenericParameters;
+                var genericBinding = BoundGenericType.For(generic, generic.GenericParameters.Select(gp => input.GenericArguments[gp]).ToList());
+                return new TypeAccessExpression(genericBinding.TypeConstant, input.MatchLocation);
             } else {
                 if (input.IncomingArguments.Any() || input.GenericArguments.Any()) {
                     throw new ApplicationException("Unexpected input to Type Access.");
