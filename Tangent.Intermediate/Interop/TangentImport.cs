@@ -67,7 +67,7 @@ namespace Tangent.Intermediate.Interop
                         }
 
                         foreach (var property in t.GetProperties()) {
-                            var propFns = ReductionDeclarationsFor(property);
+                            var propFns = ReductionDeclarationsFor(typeDecl, property);
                             if (propFns != null) {
                                 foreach (var fn in propFns) {
                                     result.CommonFunctions.Add(fn.Takes.Any(pp => pp.IsIdentifier && pp.Identifier.Value == "=") ? property.GetSetMethod() : property.GetGetMethod(), fn);
@@ -77,7 +77,7 @@ namespace Tangent.Intermediate.Interop
 
                         foreach (var field in t.GetFields()) {
                             if (field.IsPublic) {
-                                var fieldFns = ReductionDeclarationsFor(field);
+                                var fieldFns = ReductionDeclarationsFor(typeDecl, field);
                                 if (fieldFns != null) {
                                     foreach (var fn in fieldFns) {
                                         if (fn.Takes.Any(pp => pp.IsIdentifier && pp.Identifier.Value == "=")) {
@@ -154,56 +154,61 @@ namespace Tangent.Intermediate.Interop
             return new ReductionDeclaration(phrase, new Function(returnTangentType, new Block(new Expression[] { new DirectCallExpression(fn, returnTangentType, phrase.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, Enumerable.Empty<ParameterDeclaration>())));
         }
 
-        public static IEnumerable<ReductionDeclaration> ReductionDeclarationsFor(PropertyInfo property)
+        public static IEnumerable<ReductionDeclaration> ReductionDeclarationsFor(TypeDeclaration typeDecl, PropertyInfo property)
         {
             var propertyType = DotNetType.For(property.PropertyType);
             if (propertyType == null) {
                 return null;
             }
 
-            var owningType = DotNetType.For(property.DeclaringType);
-            if (property.DeclaringType.IsGenericTypeDefinition) { return null; }
-
             List<ReductionDeclaration> result = new List<ReductionDeclaration>();
-
             if (property.CanRead) {
                 var readFn = property.GetGetMethod();
                 if (readFn.IsPublic) {
-                    Phrase namePart = null;
+                    if (readFn.GetParameters().Any()) { return null; }
                     if (readFn.IsStatic) {
-                        namePart = new Phrase(Tokenize.ProgramFile(".NET " + property.DeclaringType.FullName + "." + property.Name, "").Select(token => token.Value).ToArray());
+                        
+                        var namePart = typeDecl.Takes.TakeWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").ToList();
+                        var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
+                        var genericArguments = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
+                        var propertyPart = new List<PhrasePart>() { new PhrasePart("."), new PhrasePart(property.Name)};
+                        result.Add(new ReductionDeclaration(namePart.Concat(genericPart).Concat(propertyPart), new Function(propertyType, new Block(new Expression[] { new DirectCallExpression(readFn, propertyType, Enumerable.Empty<Expression>(), genericArguments.Select(ga => GenericArgumentReferenceType.For(ga)).ToList()) }, Enumerable.Empty<ParameterDeclaration>())), genericArguments));
                     } else {
-                        if (owningType == null) {
-                            return null;
-                        }
-
-                        namePart = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("this", owningType)), new PhrasePart("."), new PhrasePart(property.Name) });
+                        var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
+                        var genericArguments = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
+                        var thisPart = new List<PhrasePart>() { new PhrasePart(new ParameterDeclaration("this", genericArguments.Any() ? BoundGenericType.For(typeDecl, genericArguments.Select(ga => GenericInferencePlaceholder.For(ga))) : typeDecl.Returns)) };
+                        var propertyPart = new List<PhrasePart>() { new PhrasePart("."), new PhrasePart(property.Name) };
+                        result.Add(new ReductionDeclaration(thisPart.Concat(propertyPart), new Function(propertyType, new Block(new Expression[] { new DirectCallExpression(readFn, propertyType, new Expression[] { new ParameterAccessExpression(thisPart[0].Parameter, null) }, genericArguments.Select(ga => GenericArgumentReferenceType.For(ga)).ToList()) }, Enumerable.Empty<ParameterDeclaration>())), genericArguments));
                     }
-
-                    result.Add(new ReductionDeclaration(namePart.Pattern, new Function(propertyType, new Block(new Expression[] { new DirectCallExpression(readFn, propertyType, namePart.Pattern.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, Enumerable.Empty<ParameterDeclaration>()))));
                 }
             }
 
             if (property.CanWrite) {
                 var writeFn = property.GetSetMethod();
                 if (writeFn != null && writeFn.IsPublic) {
-                    Phrase namePart = null;
+                    if(writeFn.GetParameters().Count() > 1) { return null; }
                     if (writeFn.IsStatic) {
-                        namePart = new Phrase(Tokenize.ProgramFile(".NET " + property.DeclaringType.FullName + "." + property.Name, "").Select(token => token.Value).ToArray());
+                        var namePart = typeDecl.Takes.TakeWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").ToList();
+                        var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
+                        var genericArguments = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
+                        var propertyPart = new List<PhrasePart>() { new PhrasePart("."), new PhrasePart(property.Name) };
+                        var assignmentPart = new List<PhrasePart>() { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) };
+                        result.Add(new ReductionDeclaration(namePart.Concat(genericPart).Concat(propertyPart).Concat(assignmentPart), new Function(TangentType.Void, new Block(new Expression[] { new DirectCallExpression(writeFn, TangentType.Void, new Expression[] { new ParameterAccessExpression(assignmentPart[1].Parameter, null) }, genericArguments.Select(ga => GenericArgumentReferenceType.For(ga)).ToList()) }, Enumerable.Empty<ParameterDeclaration>())), genericArguments));
                     } else {
-                        namePart = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("this", owningType)), new PhrasePart("."), new PhrasePart(property.Name) });
+                        var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
+                        var genericArguments = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
+                        var thisPart = new List<PhrasePart>() { new PhrasePart(new ParameterDeclaration("this", genericArguments.Any() ? BoundGenericType.For(typeDecl, genericArguments.Select(ga => GenericInferencePlaceholder.For(ga))) : typeDecl.Returns)) };
+                        var propertyPart = new List<PhrasePart>() { new PhrasePart("."), new PhrasePart(property.Name) };
+                        var assignmentPart = new List<PhrasePart>() { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) };
+                        result.Add(new ReductionDeclaration(thisPart.Concat(propertyPart).Concat(assignmentPart), new Function(TangentType.Void, new Block(new Expression[] { new DirectCallExpression(writeFn, TangentType.Void, new Expression[] { new ParameterAccessExpression(thisPart[0].Parameter, null), new ParameterAccessExpression(assignmentPart[1].Parameter, null) }, genericArguments.Select(ga => GenericArgumentReferenceType.For(ga)).ToList()) }, Enumerable.Empty<ParameterDeclaration>())), genericArguments));
                     }
-
-                    namePart = new Phrase(namePart.Pattern.Concat(new[] { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) }));
-
-                    result.Add(new ReductionDeclaration(namePart.Pattern, new Function(propertyType, new Block(new Expression[] { new DirectCallExpression(writeFn, propertyType, namePart.Pattern.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, Enumerable.Empty<ParameterDeclaration>()))));
                 }
             }
 
             return result;
         }
 
-        public static IEnumerable<ReductionDeclaration> ReductionDeclarationsFor(FieldInfo field)
+        public static IEnumerable<ReductionDeclaration> ReductionDeclarationsFor(TypeDeclaration typeDecl, FieldInfo field)
         {
             if (!field.IsPublic) { return null; }
             var propertyType = DotNetType.For(field.FieldType);
@@ -211,28 +216,29 @@ namespace Tangent.Intermediate.Interop
                 return null;
             }
 
-            var owningType = DotNetType.For(field.DeclaringType);
-            if (field.DeclaringType.IsGenericTypeDefinition) { return null; }
-
             List<ReductionDeclaration> result = new List<ReductionDeclaration>();
 
-            Phrase namePart = null;
+            var fieldPart = new List<PhrasePart>() { new PhrasePart("."), new PhrasePart(field.Name) };
+
             if (field.IsStatic) {
-                namePart = new Phrase(Tokenize.ProgramFile(".NET " + field.DeclaringType.FullName + "." + field.Name, "").Select(token => token.Value).ToArray());
-            } else {
-                if (owningType == null) {
-                    return null;
+                var namePart = typeDecl.Takes.TakeWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").ToList();
+                var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
+                var genericArguments = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
+                
+                result.Add(new ReductionDeclaration(namePart.Concat(genericPart).Concat(fieldPart), new Function(propertyType, new Block(new Expression[] { new DirectFieldAccessExpression(field, Enumerable.Empty<Expression>()) }, Enumerable.Empty<ParameterDeclaration>())), genericArguments));
+                if (!(field.IsInitOnly || field.IsLiteral)) {
+                    var assignmentPart = new List<PhrasePart>() { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) };
+                    result.Add(new ReductionDeclaration(namePart.Concat(genericPart).Concat(fieldPart).Concat(assignmentPart), new Function(TangentType.Void, new Block(new Expression[] { new DirectFieldAssignmentExpression(field, new Expression[] { new ParameterAccessExpression(assignmentPart[1].Parameter, null) }) }, Enumerable.Empty<ParameterDeclaration>())), genericArguments));
                 }
-
-                namePart = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("this", owningType)), new PhrasePart("."), new PhrasePart(field.Name) });
-            }
-
-            result.Add(new ReductionDeclaration(namePart.Pattern, new Function(propertyType, new Block(new Expression[] { new DirectFieldAccessExpression(field, namePart.Pattern.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(pp.Parameter, null))) }, Enumerable.Empty<ParameterDeclaration>()))));
-
-            if (!(field.IsInitOnly || field.IsLiteral)) {
-                namePart = new Phrase(namePart.Pattern.Concat(new[] { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) }));
-
-                result.Add(new ReductionDeclaration(namePart.Pattern, new Function(propertyType, new Block(new Expression[] { new DirectFieldAssignmentExpression(field, namePart.Pattern.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(pp.Parameter, null))) }, Enumerable.Empty<ParameterDeclaration>()))));
+            } else {
+                var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
+                var genericArguments = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
+                var thisPart = new List<PhrasePart>() { new ParameterDeclaration("this", genericArguments.Any() ? BoundGenericType.For(typeDecl, genericArguments.Select(ga => GenericInferencePlaceholder.For(ga)).ToList()) : typeDecl.Returns) };
+                result.Add(new ReductionDeclaration(thisPart.Concat(fieldPart), new Function(propertyType, new Block(new Expression[] { new DirectFieldAccessExpression(field, new Expression[] { new ParameterAccessExpression(thisPart[0].Parameter, null) }) }, Enumerable.Empty<ParameterDeclaration>())), genericArguments));
+                if (!(field.IsInitOnly || field.IsLiteral)) {
+                    var assignmentPart = new List<PhrasePart>() { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) };
+                    result.Add(new ReductionDeclaration(thisPart.Concat(fieldPart).Concat(assignmentPart), new Function(TangentType.Void, new Block(new Expression[] { new DirectFieldAssignmentExpression(field, new Expression[] { new ParameterAccessExpression(thisPart[0].Parameter, null), new ParameterAccessExpression(assignmentPart[1].Parameter, null) }) }, Enumerable.Empty<ParameterDeclaration>())), genericArguments));
+                }
             }
 
             return result;
@@ -313,7 +319,7 @@ namespace Tangent.Intermediate.Interop
                     parameterPart.Add(new PhrasePart(new ParameterDeclaration(parameter.Name, parameterType)));
                 }
 
-                return new ReductionDeclaration(namePart.Concat(genericPart).Concat(methodPart).Concat(parameterPart), new Function(returnTangentType, new Block(new Expression[] { new DirectCallExpression(fn, returnTangentType, parameterPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, genericArguments)));
+                return new ReductionDeclaration(namePart.Concat(genericPart).Concat(methodPart).Concat(parameterPart), new Function(returnTangentType, new Block(new Expression[] { new DirectCallExpression(fn, returnTangentType, parameterPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), genericArguments.Select(ga=>GenericArgumentReferenceType.For(ga)).ToList()) }, genericArguments)));
             }
         }
 
