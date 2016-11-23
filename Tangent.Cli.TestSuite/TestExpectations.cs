@@ -379,6 +379,14 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void GenericInteropInstanceOperations()
+        {
+            var result = Test.DebugProgramFile(new[] { "GenericInteropInstanceOperations.tan" }, new[] { typeof(List<>).Assembly });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new string[] { "2" }));
+        }
+
+        [TestMethod]
         [Ignore]
         public void BasicGlobalUse()
         {

@@ -1,0 +1,8 @@
+﻿entrypoint => void {
+  : list : .NET System.Collections.Generic.List<int> := new .NET System.Collections.Generic.List<int>;
+
+  list.Add 42;
+  list.Add 0;
+
+  print list.Count;
+}

@@ -66,5 +66,10 @@ namespace Tangent.Intermediate
         {
             return Intermediate.BoundGenericType.For((HasGenericParameters)this.GenericType, this.TypeArguments.Select(t => t.RebindInferences(mapping)));
         }
+
+        public override string ToString()
+        {
+            return string.Format("{0}<{1}>", GenericType.ToString(), string.Join(", ", TypeArguments.Select(ta=>ta.ToString())));
+        }
     }
 }

@@ -143,7 +143,14 @@ namespace Tangent.Intermediate.Interop
                     return null;
                 }
 
-                var parameterType = DotNetType.For(parameter.ParameterType);
+                TangentType parameterType;
+                // TODO: identify things like List<T> where the T is from generic arguments.
+                if (parameter.ParameterType.IsGenericParameter) {
+                    parameterType = GenericArgumentReferenceType.For(genericArguments[parameter.ParameterType.GenericParameterPosition]);
+                } else {
+                    parameterType = DotNetType.For(parameter.ParameterType);
+                }
+
                 if (parameterType == null) { return null; }
                 parameterPart.Add(new PhrasePart(new ParameterDeclaration(parameter.Name, parameterType)));
             }
