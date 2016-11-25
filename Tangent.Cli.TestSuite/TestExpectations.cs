@@ -65,7 +65,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void IfFalseCase()
         {
-            var result = Test.ProgramFile("IfFalse.tan");
+            var result = Test.DebugProgramFile("IfFalse.tan");
             Assert.AreEqual("zzz.", result.Trim());
         }
 
@@ -384,6 +384,14 @@ namespace Tangent.Cli.TestSuite
             var result = Test.DebugProgramFile(new[] { "GenericInteropInstanceOperations.tan" }, new[] { typeof(List<>).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new string[] { "2" }));
+        }
+
+        [TestMethod]
+        public void GenericPair()
+        {
+            var result = Test.DebugProgramFile(new[] { "GenericPair.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "True", "True" }));
         }
 
         [TestMethod]
