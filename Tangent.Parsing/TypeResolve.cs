@@ -273,15 +273,15 @@ namespace Tangent.Parsing
 
             var thisGenericInferenceMapping = new Dictionary<ParameterDeclaration, GenericInferencePlaceholder>();
             bool genericProductType = false;
-            var productScope = scope as ProductType;
-            if (productScope != null) {
-                genericProductType = productScope.GenericParameters.Any();
+            var genericScope = scope as HasGenericParameters;
+            if (genericScope != null) {
+                genericProductType = genericScope.GenericParameters.Any();
             }
 
             var genericFnParams = inferredTypes.Result.Select(kvp => kvp.Value.GenericArgument);
 
             if (genericProductType) {
-                foreach (var entry in productScope.GenericParameters) {
+                foreach (var entry in genericScope.GenericParameters) {
                     var fnGeneric = new ParameterDeclaration(entry.Takes, entry.Returns);
                     var fnGenericReference = GenericArgumentReferenceType.For(fnGeneric);
                     var fnGenericInference = GenericInferencePlaceholder.For(fnGeneric);
@@ -292,14 +292,14 @@ namespace Tangent.Parsing
 
             // Now check for explicit type parameters.
             var explicitTypeParameterLookup = new Dictionary<PartialPhrasePart, ParameterDeclaration>();
-            TransformationScope genericScope = null;
+            TransformationScope genericTransformationScope = null;
             foreach (var explicitTypeParameter in partialFunction.Takes.Where(ppp => !ppp.IsIdentifier && ppp.Parameter.IsTypeParameter)) {
                 if (!explicitTypeParameter.Parameter.Takes.All(ppp => ppp.IsIdentifier)) {
                     throw new NotImplementedException("Delegate parameter in type declaration not yet supported.");
                 }
 
-                genericScope = genericScope ?? new TransformationScopeNew(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => new TypeAccess(td))), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>()));
-                var interpretResults = ResolveGenericConstraint(explicitTypeParameter.Parameter.Returns, genericScope, true);
+                genericTransformationScope = genericTransformationScope ?? new TransformationScopeNew(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => new TypeAccess(td))), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>()));
+                var interpretResults = ResolveGenericConstraint(explicitTypeParameter.Parameter.Returns, genericTransformationScope, true);
                 if (!interpretResults.Success) {
                     return new ResultOrParseError<ReductionDeclaration>(interpretResults.Error);
                 }
@@ -336,7 +336,7 @@ namespace Tangent.Parsing
                     if (explicitTypeParameterLookup.ContainsKey(part)) {
                         phrase.Add(explicitTypeParameterLookup[part]);
                     } else {
-                        var resolved = Resolve(FixInferences(part, inferredTypes.Result), types, productScope == null ? null : genericFnParams);
+                        var resolved = Resolve(FixInferences(part, inferredTypes.Result), types, genericFnParams.Any() ? genericFnParams : null);
                         if (resolved.Success) {
                             phrase.Add(resolved.Result);
                         } else {
@@ -366,7 +366,6 @@ namespace Tangent.Parsing
             types = types.Concat(new[] { new TypeDeclaration("this", target) });
 
             foreach (var part in partialType.DataConstructorParts) {
-                //throw new NotImplementedException("LASTWORKED: not handling PartialTypeInferenceBits here properly.");
                 var resolved = Resolve(part, types, genericArguments);
                 if (resolved.Success) {
                     target.DataConstructorParts.Add(resolved.Result);

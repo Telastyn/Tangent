@@ -25,7 +25,23 @@ namespace Tangent.Intermediate
 
         public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
         {
-            return this == other;
+            if (this == other) {
+                return true;
+            }
+
+            if (necessaryTypeInferences.ContainsKey(this.GenericParameter)) {
+                return necessaryTypeInferences[this.GenericParameter].CompatibilityMatches(other, necessaryTypeInferences);
+            }
+
+            var otherInference = other as GenericInferencePlaceholder;
+            if (otherInference != null) {
+                return this.GenericParameter == otherInference.GenericArgument;
+            }
+
+            // TODO: test constraints.
+            // TODO: This isn't really an inference, but we need to set something so that later inferences fail if there's a mismatch.
+            necessaryTypeInferences.Add(GenericParameter, other);
+            return true;
         }
 
         public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)

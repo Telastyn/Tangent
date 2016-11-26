@@ -143,3 +143,40 @@ entrypoint => void {
 }
 ```
 
+```
+// For read only fields, just use functions
+point :> (x : int), (y : int) {
+  (this).x => int { x }       
+  (this).y => int { y }       
+}
+
+// Functions don't need to be declared in the class
+(a : point) = (b : point) => bool {
+  a.x = b.x and a.y = b.y
+}
+
+entrypoint => void {
+  print 2,4 = 2,4;
+  print 2,4 = 4,2;
+}
+```
+
+```
+// Tangent supports generics
+pair (T) :> (x : T), (y : T) {
+  (this).x : T := x;       
+  (this).y : T := y;       
+}
+
+// Tangent also supports generic inference. 
+// (T) here says "please infer the type argument of a, and assign it to T"
+// b then is required to be a pair of that type.
+(a : pair (T)) = (b : pair T) => bool {
+  a.x = b.x and a.y = b.y
+}
+
+entrypoint => void {
+  print 2,4 = 2,4;
+  print "foo", "bar" = "foo", "bar";
+}
+```

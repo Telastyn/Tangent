@@ -34,6 +34,9 @@ namespace Tangent.Intermediate.Interop
         public static ReductionDeclaration GtDouble = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Double), new Identifier(">"), new ParameterDeclaration("b", TangentType.Double) }, new DirectOpCode(OpCodes.Cgt, TangentType.Bool));
         public static ReductionDeclaration LtDouble = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", TangentType.Double), new Identifier("<"), new ParameterDeclaration("b", TangentType.Double) }, new DirectOpCode(OpCodes.Clt, TangentType.Bool));
 
+        private static ParameterDeclaration EqGenericParameter = new ParameterDeclaration("T", TangentType.Any.Kind);
+        public static ReductionDeclaration EqGeneric = new ReductionDeclaration(new PhrasePart[] { new ParameterDeclaration("a", GenericInferencePlaceholder.For(EqGenericParameter)), new Identifier("="), new ParameterDeclaration("b", GenericArgumentReferenceType.For(EqGenericParameter)) }, new DirectOpCode(OpCodes.Ceq, TangentType.Bool));
+
         private static readonly Dictionary<ReductionDeclaration, MethodInfo> lookup = new Dictionary<ReductionDeclaration, MethodInfo>(){
             {PrintString, typeof(Console).GetMethod("WriteLine", new[]{typeof(string)})},
             {PrintInt, typeof(Console).GetMethod("WriteLine", new[]{typeof(int)})},
@@ -46,20 +49,22 @@ namespace Tangent.Intermediate.Interop
             AddInt,
             SubInt,
             MulInt,
-            EqInt,
+            //EqInt,
             GtInt,
             LtInt,
 
             AndBool,
             OrBool,
-            EqBool,
+            //EqBool,
 
             AddDouble,
             SubDouble,
             MulDouble,
-            EqDouble,
+            //EqDouble,
             GtDouble,
             LtDouble,
+
+            EqGeneric
         };
 
         public static IEnumerable<ReductionDeclaration> All

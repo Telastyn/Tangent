@@ -394,7 +394,14 @@ namespace Tangent.Parsing
 
         private static ReductionDeclaration GenerateConstructorFunctionFor(ProductType pt)
         {
-            var inferenceMapping = pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)).ToDictionary(gen => gen, gen => GenericInferencePlaceholder.For(new ParameterDeclaration(new[] { new PhrasePart("ctor") }.Concat(gen.Takes), gen.Returns)));
+            var inferences = pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)).ToList();
+            var inferenceMapping = new Dictionary<ParameterDeclaration, GenericInferencePlaceholder>();
+            foreach (var entry in inferences) {
+                if (!inferenceMapping.ContainsKey(entry)) {
+                    inferenceMapping.Add(entry, GenericInferencePlaceholder.For(new ParameterDeclaration(new[] { new PhrasePart("ctor") }.Concat(entry.Takes), entry.Returns)));
+                }
+            }
+
             var explicitGenerics = pt.GenericParameters.Except(inferenceMapping.Keys).ToDictionary(pd => pd, pd => new ParameterDeclaration(pd.Takes, pd.Returns));
 
             Func<PhrasePart, PhrasePart> fixer = null;

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Tangent.Intermediate.Interop;
 
 namespace Tangent.Intermediate.UnitTests
 {
@@ -19,7 +20,7 @@ namespace Tangent.Intermediate.UnitTests
                 new PhrasePart(new ParameterDeclaration("x", TangentType.Int)),
                 new PhrasePart(new ParameterDeclaration("y", GenericInferencePlaceholder.For(genericT)))});
 
-            var input = new Expression[]{ 
+            var input = new Expression[]{
                 new IdentifierExpression(new Identifier("foo"), null),
                 new ConstantExpression<int>(TangentType.Int, 42, null),
                 new ConstantExpression<string>(TangentType.String, "moo", null)};
@@ -47,7 +48,7 @@ namespace Tangent.Intermediate.UnitTests
                 new PhrasePart(new ParameterDeclaration("x", TangentType.Int)),
                 new PhrasePart(new ParameterDeclaration("y", GenericInferencePlaceholder.For(genericT)))});
 
-            var input = new Expression[]{ 
+            var input = new Expression[]{
                 new IdentifierExpression(new Identifier("foo"), null),
                 new ConstantExpression<int>(TangentType.Int, 42, null),
                 new ConstantExpression<string>(TangentType.String, "moo", null),
@@ -77,7 +78,7 @@ namespace Tangent.Intermediate.UnitTests
                 new PhrasePart(new ParameterDeclaration("x", TangentType.Int)),
                 new PhrasePart(new ParameterDeclaration("y", GenericInferencePlaceholder.For(genericT)))});
 
-            var input = new Expression[]{ 
+            var input = new Expression[]{
                 new IdentifierExpression(new Identifier("foo"), null),
                 new ConstantExpression<int>(TangentType.Int, 42, null)};
 
@@ -95,7 +96,7 @@ namespace Tangent.Intermediate.UnitTests
                 new PhrasePart(new ParameterDeclaration("x", TangentType.Int)),
                 new PhrasePart(new ParameterDeclaration("y", GenericInferencePlaceholder.For(genericT)))});
 
-            var input = new Expression[]{ 
+            var input = new Expression[]{
                 new IdentifierExpression(new Identifier("foo"), null),
                 new ConstantExpression<string>(TangentType.String, "42", null),
                 new ConstantExpression<string>(TangentType.String, "moo", null)};
@@ -114,7 +115,7 @@ namespace Tangent.Intermediate.UnitTests
                 new PhrasePart(new ParameterDeclaration("x", TangentType.Int)),
                 new PhrasePart(new ParameterDeclaration("y", GenericInferencePlaceholder.For(genericT)))});
 
-            var input = new Expression[]{ 
+            var input = new Expression[]{
                 new IdentifierExpression(new Identifier("foo"), null),
                 new ConstantExpression<int>(TangentType.Int, 42, null),
                 new IdentifierExpression(new Identifier("foo"), null)};
@@ -122,6 +123,21 @@ namespace Tangent.Intermediate.UnitTests
             var result = phrase.TryMatch(input, new TransformationScopeOld(Enumerable.Empty<TransformationRule>(), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>())));
 
             Assert.IsFalse(result.Success);
+        }
+
+        [TestMethod]
+        public void GenericInferenceWithReferenceWorks()
+        {
+            var phrase = new Phrase(BuiltinFunctions.EqGeneric.Takes);
+            var input = new Expression[] {
+                new ConstantExpression<int>(TangentType.Int, 42, null),
+                new IdentifierExpression(new Identifier("="), null),
+                new ConstantExpression<int>(TangentType.Int, 42, null)
+            };
+
+            var result = phrase.TryMatch(input, new TransformationScopeOld(Enumerable.Empty<TransformationRule>(), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>())));
+
+            Assert.IsTrue(result.Success);
         }
     }
 }
