@@ -1028,16 +1028,27 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.DirectCall:
                     var directCall = (DirectCallExpression)expr;
+                    var thisGenericCount = 0;
                     foreach (var arg in directCall.Arguments) {
                         AddExpression(arg, gen, parameterCodes, closureScope, false);
                     }
 
                     if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
-                    if (directCall.GenericArguments.Any()) {
-                        var parameterizedFn = directCall.Target.MakeGenericMethod(directCall.Arguments.Select(a => Compile(a.EffectiveType)).ToArray());
+
+                    if (!directCall.Target.IsStatic && directCall.Arguments.Any()) {
+                        thisGenericCount = directCall.Arguments.First().EffectiveType.ContainedGenericReferences(GenericTie.Reference).Count();
+                    }
+
+                    if (directCall.GenericArguments.Skip(thisGenericCount).Any()) {
+                        var parameterizedFn = directCall.Target.MakeGenericMethod(directCall.Arguments.Skip(thisGenericCount).Select(a => Compile(a.EffectiveType)).ToArray());
                         gen.EmitCall(OpCodes.Call, parameterizedFn, null);
                     } else {
-                        gen.EmitCall(OpCodes.Call, directCall.Target, null);
+                        if (thisGenericCount > 0) {
+                            var directConcreteCall = TypeBuilder.GetMethod(Compile(directCall.Arguments.First().EffectiveType), directCall.Target);
+                            gen.EmitCall(OpCodes.Call, directConcreteCall, null);
+                        } else {
+                            gen.EmitCall(OpCodes.Call, directCall.Target, null);
+                        }
                     }
 
                     return;
@@ -1048,23 +1059,10 @@ namespace Tangent.CilGeneration
                         AddExpression(arg, gen, parameterCodes, closureScope, false);
                     }
 
-                    var genericArguments = directCtor.GenericArguments.Select(ga => Compile(((GenericParameterAccessExpression)ga).Parameter.Returns)).ToList();
+                    var genericArguments = directCtor.GenericArguments.Select(ga => Compile(GenericArgumentReferenceType.For(((GenericParameterAccessExpression)ga).Parameter))).ToList();
                     if (genericArguments.Any()) {
                         var concreteType = directCtor.Constructor.DeclaringType.MakeGenericType(genericArguments.ToArray());
-                        var candidates = concreteType.GetConstructors().Where(c => c.GetParameters().Count() == directCtor.Constructor.GetParameters().Count()).ToList();
-                        if (candidates.Count == 0) {
-                            throw new NotImplementedException("Unable to find matching instance constructor for generic call.");
-                        } else if (candidates.Count == 1) {
-
-                        } else {
-                            // match on concrete
-                            candidates = candidates.Where(c => c.GetGenericArguments().Zip(directCtor.Constructor.GetGenericArguments(), (a, b) => new { CandidateArgumentType = a, GenericArgumentType = b }).All(pair => pair.GenericArgumentType.IsGenericType || pair.GenericArgumentType == pair.CandidateArgumentType)).ToList();
-                            if (candidates.Count != 1) {
-                                throw new NotImplementedException("Unable to find matching instance constructor for " + directCtor.Constructor.ToString() + " with arguments " + string.Join(", ", genericArguments));
-                            }
-                        }
-
-                        gen.Emit(OpCodes.Newobj, candidates[0]);
+                        gen.Emit(OpCodes.Newobj, TypeBuilder.GetConstructor(concreteType, directCtor.Constructor));
                     } else {
                         gen.Emit(OpCodes.Newobj, directCtor.Constructor);
                     }
