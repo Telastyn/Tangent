@@ -18,6 +18,9 @@ namespace Tangent.Intermediate
                     if (buffer[1].NodeType == ExpressionNodeType.TypeAccess) {
                         var arg = (TypeAccessExpression)buffer[1];
                         return new TransformationResult(2, Enumerable.Empty<ConversionPath>(), new TypeAccessExpression(arg.TypeConstant.Value.Lazy.TypeConstant, null));
+                    } else if (buffer[1].NodeType == ExpressionNodeType.GenericParameterAccess) {
+                        var arg = (GenericParameterAccessExpression)buffer[1];
+                        return new TransformationResult(2, Enumerable.Empty<ConversionPath>(), new TypeAccessExpression(GenericArgumentReferenceType.For(arg.Parameter).Lazy.TypeConstant, null));
                     }
                 }
             }

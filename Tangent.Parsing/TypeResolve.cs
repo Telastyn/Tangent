@@ -426,7 +426,7 @@ namespace Tangent.Parsing
                 return new PhrasePart(partial.Identifier.Identifier);
             }
 
-            var resolved = Resolve(partial.Parameter, types, ctorGenericArguments);
+            var resolved = Resolve(partial.Parameter, types, ctorGenericArguments, ctorGenericArguments != null);
             if (resolved.Success) {
                 return new ResultOrParseError<PhrasePart>(new PhrasePart(resolved.Result));
             } else {
@@ -434,7 +434,7 @@ namespace Tangent.Parsing
             }
         }
 
-        internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
+        internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null, bool forceInferences = false)
         {
             var typeExprs = partial.Returns;
             if (ctorGenericArguments != null) {
@@ -490,7 +490,7 @@ namespace Tangent.Parsing
                 }
             }
 
-            return new ParameterDeclaration(takeResolutions, ctorGenericArguments == null ? type.Result : ConvertGenericReferencesToInferences(type.Result));
+            return new ParameterDeclaration(takeResolutions, forceInferences ? ConvertGenericReferencesToInferences(type.Result) : type.Result);
         }
 
         private static ResultOrParseError<TangentType> ResolveGenericConstraint(List<Expression> constraint, TransformationScope scope, bool hardError)
@@ -627,6 +627,9 @@ namespace Tangent.Parsing
                 case KindOfType.Kind:
                     var kind = input as KindType;
                     return ConvertGenericReferencesToInferences(kind.KindOf).Kind;
+                case KindOfType.Delegate:
+                    var fn = input as DelegateType;
+                    return DelegateType.For(fn.Takes.Select(t => ConvertGenericReferencesToInferences(t)), ConvertGenericReferencesToInferences(fn.Returns));
                 default:
                     throw new NotImplementedException();
             }

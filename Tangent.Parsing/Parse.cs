@@ -172,7 +172,7 @@ namespace Tangent.Parsing
                     if (partialFunction.Scope is TypeClass) {
                         lookup.Add(partialFunction, new InterfaceFunction(partialFunction.Scope as TypeClass, partialFunction.EffectiveType));
                     } else {
-                        var locals = BuildLocals(partialFunction.Implementation.Locals, resolvedTypes.Result, errors).ToList();
+                        var locals = BuildLocals(partialFunction.Implementation.Locals, resolvedTypes.Result, fn.GenericParameters, errors).ToList();
                         var scope = new TransformationScopeNew(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
                             .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
                             .Concat((partialFunction.Scope as ProductType) != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, (partialFunction.Scope as ProductType).DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
@@ -180,7 +180,7 @@ namespace Tangent.Parsing
                             .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }), conversionGraph)
                             .CreateNestedLocalScope(locals);
 
-                        Function newb = BuildBlock(scope, types, partialFunction.EffectiveType, partialFunction.Implementation, locals, errors);
+                        Function newb = BuildBlock(scope, types, fn.GenericParameters, partialFunction.EffectiveType, partialFunction.Implementation, locals, errors);
 
                         lookup.Add(partialFunction, newb);
                     }
@@ -204,7 +204,7 @@ namespace Tangent.Parsing
                             .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }), conversionGraph);
                 }
 
-                var expr = castPlaceholder.UnresolvedInitializer.FlatTokens.Select(pe => ElementToExpression(scope, types, pe, errors)).ToList();
+                var expr = castPlaceholder.UnresolvedInitializer.FlatTokens.Select(pe => ElementToExpression(scope, types, Enumerable.Empty<ParameterDeclaration>(), pe, errors)).ToList();
                 var result = scope.InterpretTowards(field.Declaration.Returns, expr);
 
                 if (result.Count == 0) {
@@ -268,26 +268,27 @@ namespace Tangent.Parsing
             }).ToList(), globalFields.Result, inputSources);
         }
 
-        private static IEnumerable<ParameterDeclaration> BuildLocals(IEnumerable<VarDeclElement> locals, IEnumerable<TypeDeclaration> types, List<ParseError> errors)
+        private static IEnumerable<ParameterDeclaration> BuildLocals(IEnumerable<VarDeclElement> locals, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> fnGenerics, List<ParseError> errors)
         {
             foreach (var entry in locals) {
-                var decl = TypeResolve.Resolve(entry.ParameterDeclaration, types);
+                var decl = TypeResolve.Resolve(entry.ParameterDeclaration, types, fnGenerics, false);
                 if (!decl.Success) {
                     errors.Add(decl.Error);
                 } else {
+                    // gross. TODO: fix up the code so it knows to infer or refer (or combine them).
                     yield return decl.Result;
                 }
             }
         }
 
-        private static Function BuildBlock(TransformationScope scope, IEnumerable<TypeDeclaration> types, TangentType effectiveType, PartialBlock partialBlock, IEnumerable<ParameterDeclaration> locals, List<ParseError> errors)
+        private static Function BuildBlock(TransformationScope scope, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> fnGenerics, TangentType effectiveType, PartialBlock partialBlock, IEnumerable<ParameterDeclaration> locals, List<ParseError> errors)
         {
-            var block = BuildBlock(scope, types, effectiveType, partialBlock.Statements, locals, errors);
+            var block = BuildBlock(scope, types, fnGenerics, effectiveType, partialBlock.Statements, locals, errors);
 
             return new Function(effectiveType, block);
         }
 
-        private static Block BuildBlock(TransformationScope scope, IEnumerable<TypeDeclaration> types, TangentType effectiveType, IEnumerable<PartialStatement> elements, IEnumerable<ParameterDeclaration> locals, List<ParseError> errors)
+        private static Block BuildBlock(TransformationScope scope, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> fnGenerics, TangentType effectiveType, IEnumerable<PartialStatement> elements, IEnumerable<ParameterDeclaration> locals, List<ParseError> errors)
         {
             List<Expression> statements = new List<Expression>();
             if (!elements.Any()) {
@@ -298,7 +299,7 @@ namespace Tangent.Parsing
             var allElements = elements.ToList();
             for (int ix = 0; ix < allElements.Count; ++ix) {
                 var line = allElements[ix];
-                var statementBits = line.FlatTokens.Select(t => ElementToExpression(scope, types, t, errors)).ToList();
+                var statementBits = line.FlatTokens.Select(t => ElementToExpression(scope, types, fnGenerics, t, errors)).ToList();
                 var statement = scope.InterpretTowards((effectiveType != null && ix == allElements.Count - 1) ? effectiveType : TangentType.Void, statementBits);
                 if (statement.Count == 0) {
                     errors.Add(new IncomprehensibleStatementError(statementBits));
@@ -312,21 +313,21 @@ namespace Tangent.Parsing
             return new Block(statements, locals);
         }
 
-        private static Expression ElementToExpression(TransformationScope scope, IEnumerable<TypeDeclaration> types, PartialElement element, List<ParseError> errors)
+        private static Expression ElementToExpression(TransformationScope scope, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> fnGenerics, PartialElement element, List<ParseError> errors)
         {
             switch (element.Type) {
                 case ElementType.Identifier:
                     return new IdentifierExpression(((IdentifierElement)element).Identifier, element.SourceInfo);
                 case ElementType.Block:
                     var stmts = ((BlockElement)element).Block.Statements.ToList();
-                    var locals = BuildLocals(((BlockElement)element).Block.Locals, types, errors);
+                    var locals = BuildLocals(((BlockElement)element).Block.Locals, types, fnGenerics, errors);
                     if (locals.Any()) {
                         scope = scope.CreateNestedLocalScope(locals);
                     }
                     var last = stmts.Last();
                     stmts.RemoveAt(stmts.Count - 1);
-                    var notLast = stmts.Any() ? BuildBlock(scope, types, null, stmts, locals, errors) : new Block(Enumerable.Empty<Expression>(), Enumerable.Empty<ParameterDeclaration>());
-                    var lastExpr = last.FlatTokens.Select(e => ElementToExpression(scope, types, e, errors)).ToList();
+                    var notLast = stmts.Any() ? BuildBlock(scope, types, fnGenerics, null, stmts, locals, errors) : new Block(Enumerable.Empty<Expression>(), Enumerable.Empty<ParameterDeclaration>());
+                    var lastExpr = last.FlatTokens.Select(e => ElementToExpression(scope, types, fnGenerics, e, errors)).ToList();
                     var info = lastExpr.Aggregate((LineColumnRange)null, (a, expr) => expr.SourceInfo.Combine(a));
                     info = notLast.Statements.Any() ? notLast.Statements.Aggregate(info, (a, stmt) => a.Combine(stmt.SourceInfo)) : info;
                     return new ParenExpression(notLast, lastExpr, info);
@@ -339,7 +340,7 @@ namespace Tangent.Parsing
                         if (concrete.Body.Block.Locals.Any()) {
                             throw new NotImplementedException("TODO: make locals in lambdas work.");
                         }
-                        var implementation = BuildBlock(newScope, types, returnType, concrete.Body.Block, Enumerable.Empty<ParameterDeclaration>(), lambdaErrors);
+                        var implementation = BuildBlock(newScope, types, fnGenerics, returnType, concrete.Body.Block, Enumerable.Empty<ParameterDeclaration>(), lambdaErrors);
                         if (lambdaErrors.Where(e => !(e is AmbiguousStatementError)).Any()) {
                             return null;
                         }
