@@ -395,6 +395,14 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void IfReadme()
+        {
+            var result = Test.DebugProgramFile(new[] { "IfReadme.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "x", "y" }));
+        }
+
+        [TestMethod]
         [Ignore]
         public void BasicGlobalUse()
         {

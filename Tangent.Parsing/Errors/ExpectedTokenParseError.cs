@@ -16,5 +16,10 @@ namespace Tangent.Parsing.Errors
             Expected = expected;
             FoundInstead = foundInstead;
         }
+
+        public override string ToString()
+        {
+            return string.Format("Expected {0}, but found '{1}' at {2}.", Expected, FoundInstead.Value, FoundInstead.SourceInfo);
+        }
     }
 }

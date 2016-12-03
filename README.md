@@ -180,3 +180,36 @@ entrypoint => void {
   print "foo", "bar" = "foo", "bar";
 }
 ```
+
+```
+// The lazy arrow ~> makes something like C#'s Func<T> or Action
+entrypoint => void {
+  : x : int := 42;
+  : immediate : bool := x < 100;
+  : lazy : ~> bool := x < 100;
+  
+  print immediate;  // true
+  print lazy;       // true
+  
+  x = 256;
+  
+  print immediate;  // true
+  print lazy;       // false
+}
+```
+
+```
+// It works in parameters too
+// Combined with specialization and dynamic dispatch, you get conditionals.
+
+if (condition : bool) (when true : ~> void) else (when false : ~> void) => void { when false }
+if (condition : bool.true) (when true : ~> void) else (when false : ~> void) => void { when true }  
+
+entrypoint => void {
+  : x : bool := true;
+  
+  if x print "x" else print "y";      // x
+  x = false;
+  if x print "x" else print "y";      // y
+}
+```
