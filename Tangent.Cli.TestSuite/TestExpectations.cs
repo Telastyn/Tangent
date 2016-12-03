@@ -403,6 +403,14 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void InterfaceReadme()
+        {
+            var result = Test.DebugProgramFile(new[] { "InterfaceReadme.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "True", "False" }));
+        }
+
+        [TestMethod]
         [Ignore]
         public void BasicGlobalUse()
         {

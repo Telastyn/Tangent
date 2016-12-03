@@ -19,6 +19,7 @@ namespace Tangent.Intermediate
         {
             if (Declaration.IsGeneric) {
                 var generic = Declaration.Returns as HasGenericParameters;
+                if (generic == null) { throw new NotImplementedException("Generic interfaces don't quite work yet, sorry."); }
                 var genericBinding = BoundGenericType.For(generic, generic.GenericParameters.Select(gp => input.GenericArguments[gp]).ToList());
                 return new TypeAccessExpression(genericBinding.TypeConstant, input.MatchLocation);
             } else {

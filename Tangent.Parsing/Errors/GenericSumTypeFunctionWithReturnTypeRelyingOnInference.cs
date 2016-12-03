@@ -7,7 +7,7 @@ using Tangent.Intermediate;
 
 namespace Tangent.Parsing.Errors
 {
-    public class GenericSumTypeFunctionWithReturnTypeRelyingOnInference:ParseError
+    public class GenericSumTypeFunctionWithReturnTypeRelyingOnInference : ParseError
     {
         public readonly ParameterDeclaration TroublesomeGenericReference;
         public readonly IEnumerable<PhrasePart> SumTypeVariant;

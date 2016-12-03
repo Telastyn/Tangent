@@ -318,10 +318,9 @@ namespace Tangent.Parsing
                         // Other thises, generic reference.
                         if (!thisFound) {
                             genericFnParams = genericFnParams.Concat(new[] { thisGeneric });
-                            phrase.Add(new PhrasePart(new ParameterDeclaration("this", GenericInferencePlaceholder.For(thisGeneric))));
-                        } else {
-                            phrase.Add(new PhrasePart(new ParameterDeclaration("this", GenericArgumentReferenceType.For(thisGeneric))));
                         }
+
+                        phrase.Add(new PhrasePart(new ParameterDeclaration("this", GenericInferencePlaceholder.For(thisGeneric))));
                     } else {
                         if (thisFound) { // TODO: nicer error.
                             throw new ApplicationException("Multiple this parameters declared in function.");

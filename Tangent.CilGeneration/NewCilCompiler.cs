@@ -397,7 +397,12 @@ namespace Tangent.CilGeneration
                 }
             }
 
-            AddFunctionCode(gen, fn.Returns.Implementation, parameterCodes, closureScope);
+            var doc = fn.Returns as DirectOpCode;
+            if (doc != null) {
+                AddExpression(new FunctionInvocationExpression(fn, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(pp.Parameter, null)), Enumerable.Empty<TangentType>(), null), gen, parameterCodes, closureScope, true);
+            } else {
+                AddFunctionCode(gen, fn.Returns.Implementation, parameterCodes, closureScope);
+            }
 
             if (!(fn.Returns is InterfaceFunction)) {
                 gen.Emit(OpCodes.Ret);
@@ -471,6 +476,8 @@ namespace Tangent.CilGeneration
         private Dictionary<ParameterDeclaration, PropertyCodes> BuildLocalAccesses(ILGenerator gen, ReductionDeclaration fn)
         {
             var parameterCodes = new Dictionary<ParameterDeclaration, PropertyCodes>();
+            if (fn.Returns.Implementation == null) { return parameterCodes; }
+
             int localix = 0;
             foreach (var local in fn.Returns.Implementation.Locals) {
                 var lb = gen.DeclareLocal(Compile(local.Returns));
