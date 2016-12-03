@@ -23,14 +23,14 @@ namespace Tangent.Intermediate
             foreach (var entry in parameters) {
                 if (entry.Returns == null) {
                     generics.Add(new ParameterDeclaration(string.Format("<lambda-generic{0}>", generics.Count), TangentType.Any.Kind));
-                    entry.Returns = GenericInferencePlaceholder.For(generics.Last());
+                    entry.Returns = GenericArgumentReferenceType.For(generics.Last());
                 }
             }
 
             this.resolver = resolver;
             this.GenericParameters = generics;
             this.Parameters = new List<ParameterDeclaration>(parameters);
-            this.fullInferenceType = DelegateType.For(parameters.Select(p => p.Returns), GenericInferencePlaceholder.For(generics.First()));
+            this.fullInferenceType = DelegateType.For(parameters.Select(p => p.Returns), GenericArgumentReferenceType.For(generics.First()));
             this.ContainingScope = containingScope;
         }
 
@@ -48,10 +48,10 @@ namespace Tangent.Intermediate
             // Inference works? Great. See if the block actually works.
             var realParams = new List<ParameterDeclaration>();
             foreach (var entry in Parameters) {
-                realParams.Add(new ParameterDeclaration(entry.Takes, entry.Returns.ImplementationType == KindOfType.InferencePoint ? inferenceCollector[((GenericInferencePlaceholder)entry.Returns).GenericArgument] : entry.Returns));
+                realParams.Add(new ParameterDeclaration(entry.Takes, entry.Returns.ImplementationType == KindOfType.GenericReference ? inferenceCollector[((GenericArgumentReferenceType)entry.Returns).GenericParameter] : entry.Returns));
             }
 
-            var returnType = inferenceCollector[((GenericInferencePlaceholder)fullInferenceType.Returns).GenericArgument];
+            var returnType = inferenceCollector[((GenericArgumentReferenceType)fullInferenceType.Returns).GenericParameter];
             var newScope = ContainingScope.CreateNestedParameterScope(realParams);
             var implementation = resolver(newScope, returnType);
             if (implementation == null) {

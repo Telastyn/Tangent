@@ -41,12 +41,24 @@ namespace Tangent.Intermediate
                 } else {
                     var inType = inputEnum.Current.EffectiveType;
                     if (inType == null) { return PhraseMatchResult.Failure; }
-                    if (element.Parameter.RequiredArgumentType == TangentType.Any.Kind && (inType.ImplementationType == KindOfType.Kind || inType.ImplementationType == KindOfType.TypeConstant || inType.ImplementationType == KindOfType.GenericReference || inType.ImplementationType == KindOfType.InferencePoint)) {
+                    if (element.Parameter.RequiredArgumentType == TangentType.Any.Kind && (inType.ImplementationType == KindOfType.Kind || inType.ImplementationType == KindOfType.TypeConstant || inType.ImplementationType == KindOfType.GenericReference)) {
                         sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
                         if (inType.ImplementationType == KindOfType.TypeConstant) {
-                            inferenceCollector.Add(element.Parameter, ((TypeConstant)inType).Value);
+                            if (inferenceCollector.ContainsKey(element.Parameter)) {
+                                if (inferenceCollector[element.Parameter] != ((TypeConstant)inType).Value) {
+                                    return PhraseMatchResult.Failure;
+                                }
+                            } else {
+                                inferenceCollector.Add(element.Parameter, ((TypeConstant)inType).Value);
+                            }
                         } else {
-                            inferenceCollector.Add(element.Parameter, inType);
+                            if (inferenceCollector.ContainsKey(element.Parameter)) {
+                                if (inferenceCollector[element.Parameter] != inType) {
+                                    return PhraseMatchResult.Failure;
+                                }
+                            } else {
+                                inferenceCollector.Add(element.Parameter, inType);
+                            }
                         }
                     } else if (inputEnum.Current.NodeType == ExpressionNodeType.PartialLambda) {
                         var lambda = ((PartialLambdaExpression)inputEnum.Current).TryToFitIn(element.Parameter.RequiredArgumentType);
@@ -68,7 +80,7 @@ namespace Tangent.Intermediate
 
                         if (resolution.Count() > 1) {
                             resolvedParenExpression = new AmbiguousExpression(resolution);
-                        }else {
+                        } else {
                             resolvedParenExpression = resolution.First();
                         }
 
@@ -77,7 +89,7 @@ namespace Tangent.Intermediate
                         sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
                     } else if (element.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Delegate &&
                          !((DelegateType)element.Parameter.RequiredArgumentType).Takes.Any() &&
-                         ((DelegateType)element.Parameter.RequiredArgumentType).Returns == inType) {
+                         ((DelegateType)element.Parameter.RequiredArgumentType).Returns.CompatibilityMatches(inType, inferenceCollector)) {
 
                         // We have something like ~>int == int
                         parameterCollector.Add(new LambdaExpression(Enumerable.Empty<ParameterDeclaration>(), inType, new Block(new[] { inputEnum.Current }, Enumerable.Empty<ParameterDeclaration>()), inputEnum.Current.SourceInfo));

@@ -134,7 +134,7 @@ namespace Tangent.Intermediate.Interop
 
             var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
             var genericArguments = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
-            var thisPart = new List<PhrasePart>() { new PhrasePart(new ParameterDeclaration("this", genericArguments.Any() ? BoundGenericType.For(typeDecl.Returns as HasGenericParameters, genericArguments.Select(ga => GenericInferencePlaceholder.For(ga)).ToList()) : typeDecl.Returns)) };
+            var thisPart = new List<PhrasePart>() { new PhrasePart(new ParameterDeclaration("this", genericArguments.Any() ? BoundGenericType.For(typeDecl.Returns as HasGenericParameters, genericArguments.Select(ga => GenericArgumentReferenceType.For(ga)).ToList()) : typeDecl.Returns)) };
             var methodPart = new List<PhrasePart>() { new PhrasePart("."), new PhrasePart(fn.Name) };
             var parameterPart = new List<PhrasePart>();
 
@@ -180,7 +180,7 @@ namespace Tangent.Intermediate.Interop
                     } else {
                         var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
                         var genericArguments = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
-                        var thisPart = new List<PhrasePart>() { new PhrasePart(new ParameterDeclaration("this", genericArguments.Any() ? BoundGenericType.For((HasGenericParameters)typeDecl.Returns, genericArguments.Select(ga => GenericInferencePlaceholder.For(ga))) : typeDecl.Returns)) };
+                        var thisPart = new List<PhrasePart>() { new PhrasePart(new ParameterDeclaration("this", genericArguments.Any() ? BoundGenericType.For((HasGenericParameters)typeDecl.Returns, genericArguments.Select(ga => GenericArgumentReferenceType.For(ga))) : typeDecl.Returns)) };
                         var propertyPart = new List<PhrasePart>() { new PhrasePart("."), new PhrasePart(property.Name) };
                         result.Add(new ReductionDeclaration(thisPart.Concat(propertyPart), new Function(propertyType, new Block(new Expression[] { new DirectCallExpression(readFn, propertyType, new Expression[] { new ParameterAccessExpression(thisPart[0].Parameter, null) }, genericArguments.Select(ga => GenericArgumentReferenceType.For(ga)).ToList()) }, Enumerable.Empty<ParameterDeclaration>())), genericArguments));
                     }
@@ -201,7 +201,7 @@ namespace Tangent.Intermediate.Interop
                     } else {
                         var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
                         var genericArguments = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
-                        var thisPart = new List<PhrasePart>() { new PhrasePart(new ParameterDeclaration("this", genericArguments.Any() ? BoundGenericType.For((HasGenericParameters)typeDecl.Returns, genericArguments.Select(ga => GenericInferencePlaceholder.For(ga))) : typeDecl.Returns)) };
+                        var thisPart = new List<PhrasePart>() { new PhrasePart(new ParameterDeclaration("this", genericArguments.Any() ? BoundGenericType.For((HasGenericParameters)typeDecl.Returns, genericArguments.Select(ga => GenericArgumentReferenceType.For(ga))) : typeDecl.Returns)) };
                         var propertyPart = new List<PhrasePart>() { new PhrasePart("."), new PhrasePart(property.Name) };
                         var assignmentPart = new List<PhrasePart>() { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) };
                         result.Add(new ReductionDeclaration(thisPart.Concat(propertyPart).Concat(assignmentPart), new Function(TangentType.Void, new Block(new Expression[] { new DirectCallExpression(writeFn, TangentType.Void, new Expression[] { new ParameterAccessExpression(thisPart[0].Parameter, null), new ParameterAccessExpression(assignmentPart[1].Parameter, null) }, genericArguments.Select(ga => GenericArgumentReferenceType.For(ga)).ToList()) }, Enumerable.Empty<ParameterDeclaration>())), genericArguments));
@@ -237,7 +237,7 @@ namespace Tangent.Intermediate.Interop
             } else {
                 var genericPart = typeDecl.Takes.SkipWhile(pp => pp.IsIdentifier && pp.Identifier.Value != "<").Select(pp => pp.IsIdentifier ? pp : new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes, pp.Parameter.Returns))).ToList();
                 var genericArguments = genericPart.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
-                var thisPart = new List<PhrasePart>() { new ParameterDeclaration("this", genericArguments.Any() ? BoundGenericType.For((HasGenericParameters)typeDecl.Returns, genericArguments.Select(ga => GenericInferencePlaceholder.For(ga)).ToList()) : typeDecl.Returns) };
+                var thisPart = new List<PhrasePart>() { new ParameterDeclaration("this", genericArguments.Any() ? BoundGenericType.For((HasGenericParameters)typeDecl.Returns, genericArguments.Select(ga => GenericArgumentReferenceType.For(ga)).ToList()) : typeDecl.Returns) };
                 result.Add(new ReductionDeclaration(thisPart.Concat(fieldPart), new Function(propertyType, new Block(new Expression[] { new DirectFieldAccessExpression(field, new Expression[] { new ParameterAccessExpression(thisPart[0].Parameter, null) }) }, Enumerable.Empty<ParameterDeclaration>())), genericArguments));
                 if (!(field.IsInitOnly || field.IsLiteral)) {
                     var assignmentPart = new List<PhrasePart>() { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) };

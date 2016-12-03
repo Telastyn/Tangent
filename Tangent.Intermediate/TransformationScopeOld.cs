@@ -29,7 +29,7 @@ namespace Tangent.Intermediate
             if (input.Count == 1) {
                 if (target == input[0].EffectiveType) {
                     return input;
-                } else if (target == TangentType.Any.Kind && (input[0].EffectiveType is KindType || input[0].EffectiveType is TypeConstant || input[0].EffectiveType is GenericArgumentReferenceType || input[0].EffectiveType is GenericInferencePlaceholder)) {
+                } else if (target == TangentType.Any.Kind && (input[0].EffectiveType is KindType || input[0].EffectiveType is TypeConstant || input[0].EffectiveType is GenericArgumentReferenceType)) {
                     // mild hack because there is no subtyping.
                     return input;
                 } else if (target.ImplementationType == KindOfType.Delegate && input[0].NodeType == ExpressionNodeType.PartialLambda) {

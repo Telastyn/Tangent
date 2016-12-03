@@ -14,13 +14,11 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.ParameterAccess; }
         }
 
-        private readonly TangentType effectiveType;
-
         public override TangentType EffectiveType
         {
             get
             {
-                return effectiveType;
+                return Parameter.Returns;
             }
         }
 
@@ -28,7 +26,6 @@ namespace Tangent.Intermediate
             : base(sourceInfo)
         {
             Parameter = decl;
-            effectiveType = decl.Returns.RebindInferences(pd => GenericArgumentReferenceType.For(pd));
         }
 
         public override string ToString()

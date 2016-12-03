@@ -122,16 +122,14 @@ namespace Tangent.Parsing
             Action<Field, ProductType> fieldFunctionizer = (field, productType) => {
                 if (productType.GenericParameters.Any()) {
                     var fnGenerics = new List<ParameterDeclaration>();
-                    var inferenceLookup = new Dictionary<ParameterDeclaration, GenericInferencePlaceholder>();
                     var referenceLookup = new Dictionary<ParameterDeclaration, GenericArgumentReferenceType>();
                     foreach (var generic in productType.GenericParameters) {
                         var fnGeneric = new ParameterDeclaration(generic.Takes, generic.Returns);
                         fnGenerics.Add(fnGeneric);
-                        inferenceLookup.Add(generic, GenericInferencePlaceholder.For(fnGeneric));
                         referenceLookup.Add(generic, GenericArgumentReferenceType.For(fnGeneric));
                     }
 
-                    var inferenceType = BoundGenericType.For(productType, productType.GenericParameters.Select(pd => inferenceLookup[pd]));
+                    var inferenceType = BoundGenericType.For(productType, productType.GenericParameters.Select(pd => referenceLookup[pd]));
 
                     fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", inferenceType))), new Function(field.Declaration.Returns.ResolveGenericReferences(pd => referenceLookup[pd]), new Block(new Expression[] { new FieldAccessorExpression(inferenceType, field) }, Enumerable.Empty<ParameterDeclaration>())), fnGenerics));
                     fieldFunctions.Add(new ReductionDeclaration(field.Declaration.Takes.Select(pp => pp.IsIdentifier ? pp.Identifier : new PhrasePart(new ParameterDeclaration("this", inferenceType))).Concat(
@@ -271,7 +269,7 @@ namespace Tangent.Parsing
         private static IEnumerable<ParameterDeclaration> BuildLocals(IEnumerable<VarDeclElement> locals, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> fnGenerics, List<ParseError> errors)
         {
             foreach (var entry in locals) {
-                var decl = TypeResolve.Resolve(entry.ParameterDeclaration, types, fnGenerics, false);
+                var decl = TypeResolve.Resolve(entry.ParameterDeclaration, types, fnGenerics);
                 if (!decl.Success) {
                     errors.Add(decl.Error);
                 } else {
@@ -395,11 +393,11 @@ namespace Tangent.Parsing
 
         private static ReductionDeclaration GenerateConstructorFunctionFor(ProductType pt)
         {
-            var inferences = pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference)).ToList();
-            var inferenceMapping = new Dictionary<ParameterDeclaration, GenericInferencePlaceholder>();
+            var inferences = pt.DataConstructorParts.SelectMany(pp => pp.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : pp.Parameter.Returns.ContainedGenericReferences()).ToList();
+            var inferenceMapping = new Dictionary<ParameterDeclaration, GenericArgumentReferenceType>();
             foreach (var entry in inferences) {
                 if (!inferenceMapping.ContainsKey(entry)) {
-                    inferenceMapping.Add(entry, GenericInferencePlaceholder.For(new ParameterDeclaration(new[] { new PhrasePart("ctor") }.Concat(entry.Takes), entry.Returns)));
+                    inferenceMapping.Add(entry, GenericArgumentReferenceType.For(new ParameterDeclaration(new[] { new PhrasePart("ctor") }.Concat(entry.Takes), entry.Returns)));
                 }
             }
 
@@ -408,10 +406,10 @@ namespace Tangent.Parsing
             Func<PhrasePart, PhrasePart> fixer = null;
             fixer = pp => {
                 if (pp.IsIdentifier) { return pp; }
-                return new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(inner => fixer(inner)), pp.Parameter.Returns.RebindInferences(gen => inferenceMapping[gen])));
+                return new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(inner => fixer(inner)), pp.Parameter.Returns.ResolveGenericReferences(gen => inferenceMapping[gen])));
             };
 
-            var targetType = pt.RebindInferences(gen => inferenceMapping.ContainsKey(gen) ? GenericArgumentReferenceType.For(inferenceMapping[gen].GenericArgument) : GenericArgumentReferenceType.For(explicitGenerics[gen]));
+            var targetType = pt.ResolveGenericReferences(gen => inferenceMapping.ContainsKey(gen) ? GenericArgumentReferenceType.For(inferenceMapping[gen].GenericParameter) : GenericArgumentReferenceType.For(explicitGenerics[gen]));
             Dictionary<ParameterDeclaration, ParameterDeclaration> paramMapping = new Dictionary<ParameterDeclaration, ParameterDeclaration>();
             Func<PhrasePart, PhrasePart> paramMapper = pp => {
                 if (pp.IsIdentifier) {
@@ -422,7 +420,7 @@ namespace Tangent.Parsing
                     return explicitGenerics[pp.Parameter];
                 }
 
-                var newb = new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(inner => fixer(inner)), pp.Parameter.Returns.RebindInferences(gen => inferenceMapping[gen])));
+                var newb = new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(inner => fixer(inner)), pp.Parameter.Returns.ResolveGenericReferences(gen => inferenceMapping[gen])));
                 paramMapping.Add(pp.Parameter, newb.Parameter);
                 return newb;
             };
@@ -431,7 +429,7 @@ namespace Tangent.Parsing
                 return new ReductionDeclaration(pt.DataConstructorParts.Select(pp => paramMapper(pp)), new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as ProductType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())));
             } else if (targetType is BoundGenericType) {
                 var takes = pt.DataConstructorParts.Select(pp => paramMapper(pp)).ToList();
-                return new ReductionDeclaration(takes, new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as BoundGenericType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())), inferenceMapping.Values.Select(gip => gip.GenericArgument).Concat(takes.Where(pp => !pp.IsIdentifier && pp.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Kind).Select(pp => pp.Parameter)).ToList());
+                return new ReductionDeclaration(takes, new Function(targetType, new Block(new Expression[] { new CtorCallExpression(targetType as BoundGenericType, pd => paramMapping[pd]) }, Enumerable.Empty<ParameterDeclaration>())), inferenceMapping.Values.Select(gip => gip.GenericParameter).Concat(takes.Where(pp => !pp.IsIdentifier && pp.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Kind).Select(pp => pp.Parameter)).ToList());
             } else {
                 throw new NotImplementedException();
             }

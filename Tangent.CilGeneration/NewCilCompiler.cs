@@ -162,9 +162,7 @@ namespace Tangent.CilGeneration
 
                 foreach (var entry in fn.GenericParameters.Zip(dotNetGenerics, (pd, g) => Tuple.Create(pd, g))) {
                     var genRef = GenericArgumentReferenceType.For(entry.Item1);
-                    var genInf = GenericInferencePlaceholder.For(entry.Item1);
                     if (!typeLookup.ContainsKey(genRef)) { typeLookup.Add(genRef, entry.Item2); }
-                    if (!typeLookup.ContainsKey(genInf)) { typeLookup.Add(genInf, entry.Item2); }
                 }
             }
 
@@ -212,7 +210,6 @@ namespace Tangent.CilGeneration
                 var genericBuilders = classBuilder.DefineGenericParameters(genericRefs.Select(pd => GetNameFor(pd)).ToArray());
                 foreach (var entry in genericRefs.Zip(genericBuilders, (pd, gb) => Tuple.Create(pd, gb))) {
                     typeLookup.Add(GenericArgumentReferenceType.For(entry.Item1), entry.Item2);
-                    typeLookup.Add(GenericInferencePlaceholder.For(entry.Item1), entry.Item2);
                 }
             }
 
@@ -549,7 +546,8 @@ namespace Tangent.CilGeneration
                             break;
 
                         case DispatchType.GenericSpecialization:
-                            var inferredTypeClass = (specializationParam.GeneralFunctionParameter.RequiredArgumentType as GenericInferencePlaceholder)?.TypeClassInferred;
+                            var gart = (specializationParam.GeneralFunctionParameter.RequiredArgumentType as GenericArgumentReferenceType);
+                            var inferredTypeClass = gart != null ? ((KindType)gart.GenericParameter.Returns).KindOf as TypeClass : null;
                             FieldInfo typeClassAccessor = null;
 
                             // TODO: order specializations to prevent dispatching to something that is just going to dispatch again?
@@ -636,7 +634,8 @@ namespace Tangent.CilGeneration
                         parameterCodes[parameter].Accessor(gen);
                         gen.Emit(OpCodes.Box, Compile(parameter.RequiredArgumentType));
 
-                        var inferredTypeClass = (parameter.RequiredArgumentType as GenericInferencePlaceholder)?.TypeClassInferred;
+                        var gart = (parameter.RequiredArgumentType as GenericArgumentReferenceType);
+                        var inferredTypeClass = gart != null ? ((KindType)gart.GenericParameter.Returns).KindOf as TypeClass : null;
                         if (inferredTypeClass != null) {
                             Compile(inferredTypeClass);
                             var typeClassAccessor = variantValueLookup[inferredTypeClass];
@@ -701,7 +700,7 @@ namespace Tangent.CilGeneration
                                 foreach (var boundGenericArgument in ((BoundGenericType)tt).TypeArguments) {
                                     switch (boundGenericArgument.ImplementationType) {
                                         case KindOfType.BoundGeneric:
-                                        case KindOfType.InferencePoint:
+                                        case KindOfType.GenericReference:
                                             // Nested type.
                                             inferenceTypeWalker(boundGenericArgument, () => {
                                                 gen.Emit(OpCodes.Ldloc, genericArgArray);
@@ -722,11 +721,11 @@ namespace Tangent.CilGeneration
 
                                 break;
 
-                            case KindOfType.InferencePoint:
+                            case KindOfType.GenericReference:
                                 // Awesome. What we're actually looking for add it to the type arg array.
                                 // Load type array, target index, found type arg from array then store.
                                 gen.Emit(OpCodes.Ldloc, typeArgArray);
-                                gen.Emit(OpCodes.Ldc_I4, specialization.GenericParameters.IndexOf(((GenericInferencePlaceholder)tt).GenericArgument));
+                                gen.Emit(OpCodes.Ldc_I4, specialization.GenericParameters.IndexOf(((GenericArgumentReferenceType)tt).GenericParameter));
 
                                 typeAccessor();
 
@@ -1043,7 +1042,7 @@ namespace Tangent.CilGeneration
                     if (lastStatement) { gen.Emit(OpCodes.Tailcall); }
 
                     if (!directCall.Target.IsStatic && directCall.Arguments.Any()) {
-                        thisGenericCount = directCall.Arguments.First().EffectiveType.ContainedGenericReferences(GenericTie.Reference).Count();
+                        thisGenericCount = directCall.Arguments.First().EffectiveType.ContainedGenericReferences().Count();
                     }
 
                     if (directCall.GenericArguments.Skip(thisGenericCount).Any()) {
@@ -1256,7 +1255,7 @@ namespace Tangent.CilGeneration
                 var svt = ((SingleValueType)rule.RequiredArgumentType);
                 paramTypeName = GetNameFor(svt.ValueType) + "." + svt.Value.Value;
             } else {
-                if (!rule.RequiredArgumentType.ContainedGenericReferences(GenericTie.Inference).Any()) {
+                if (!rule.RequiredArgumentType.ContainedGenericReferences().Any()) {
                     paramTypeName = GetNameFor(rule.RequiredArgumentType);
                 } else {
                     paramTypeName = "<inference>";

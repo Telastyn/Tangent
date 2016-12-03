@@ -64,11 +64,6 @@ namespace Tangent.Intermediate.Interop
             return this == other;
         }
 
-        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
-        {
-            return this;
-        }
-
         public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
         {
             return this;

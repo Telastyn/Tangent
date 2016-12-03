@@ -266,26 +266,25 @@ namespace Tangent.Parsing
                 scope = conversions[partialFunction.Returns.Scope];
             }
 
-            var inferredTypes = ExtractAndCompileInferredTypes(partialFunction, types, scope == null ? Enumerable.Empty<ParameterDeclaration>() : scope == null ? Enumerable.Empty<ParameterDeclaration>() : scope.ContainedGenericReferences(GenericTie.Reference));
+            var inferredTypes = ExtractAndCompileInferredTypes(partialFunction, types, scope == null ? Enumerable.Empty<ParameterDeclaration>() : scope == null ? Enumerable.Empty<ParameterDeclaration>() : scope.ContainedGenericReferences());
             if (!inferredTypes.Success) {
                 return new ResultOrParseError<ReductionDeclaration>(inferredTypes.Error);
             }
 
-            var thisGenericInferenceMapping = new Dictionary<ParameterDeclaration, GenericInferencePlaceholder>();
+            var thisGenericInferenceMapping = new Dictionary<ParameterDeclaration, GenericArgumentReferenceType>();
             bool genericProductType = false;
             var genericScope = scope as HasGenericParameters;
             if (genericScope != null) {
                 genericProductType = genericScope.GenericParameters.Any();
             }
 
-            var genericFnParams = inferredTypes.Result.Select(kvp => kvp.Value.GenericArgument);
+            var genericFnParams = inferredTypes.Result.Select(kvp => kvp.Value.GenericParameter);
 
             if (genericProductType) {
                 foreach (var entry in genericScope.GenericParameters) {
                     var fnGeneric = new ParameterDeclaration(entry.Takes, entry.Returns);
                     var fnGenericReference = GenericArgumentReferenceType.For(fnGeneric);
-                    var fnGenericInference = GenericInferencePlaceholder.For(fnGeneric);
-                    thisGenericInferenceMapping.Add(entry, fnGenericInference);
+                    thisGenericInferenceMapping.Add(entry, fnGenericReference);
                     genericFnParams = genericFnParams.Concat(new[] { fnGeneric });
                 }
             }
@@ -320,7 +319,7 @@ namespace Tangent.Parsing
                             genericFnParams = genericFnParams.Concat(new[] { thisGeneric });
                         }
 
-                        phrase.Add(new PhrasePart(new ParameterDeclaration("this", GenericInferencePlaceholder.For(thisGeneric))));
+                        phrase.Add(new PhrasePart(new ParameterDeclaration("this", GenericArgumentReferenceType.For(thisGeneric))));
                     } else {
                         if (thisFound) { // TODO: nicer error.
                             throw new ApplicationException("Multiple this parameters declared in function.");
@@ -426,7 +425,7 @@ namespace Tangent.Parsing
                 return new PhrasePart(partial.Identifier.Identifier);
             }
 
-            var resolved = Resolve(partial.Parameter, types, ctorGenericArguments, ctorGenericArguments != null);
+            var resolved = Resolve(partial.Parameter, types, ctorGenericArguments);
             if (resolved.Success) {
                 return new ResultOrParseError<PhrasePart>(new PhrasePart(resolved.Result));
             } else {
@@ -434,7 +433,7 @@ namespace Tangent.Parsing
             }
         }
 
-        internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null, bool forceInferences = false)
+        internal static ResultOrParseError<ParameterDeclaration> Resolve(PartialParameterDeclaration partial, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
         {
             var typeExprs = partial.Returns;
             if (ctorGenericArguments != null) {
@@ -458,7 +457,7 @@ namespace Tangent.Parsing
                         });
 
                         if (match != null) {
-                            typeExprs[ix] = new GenericInferenceParameterAccessExpression(GenericInferencePlaceholder.For(match), typeExprs[ix].SourceInfo);
+                            typeExprs[ix] = new GenericParameterAccessExpression(match, typeExprs[ix].SourceInfo);
                         } else {
                             // otherwise, we're doing type inference in the constructor, but _not_ using it for the type's generic params.
                             throw new NotImplementedException("Sorry, generic inference in constructors must infer a generic parameter for the generic type at this time.");
@@ -490,7 +489,7 @@ namespace Tangent.Parsing
                 }
             }
 
-            return new ParameterDeclaration(takeResolutions, forceInferences ? ConvertGenericReferencesToInferences(type.Result) : type.Result);
+            return new ParameterDeclaration(takeResolutions, type.Result);
         }
 
         private static ResultOrParseError<TangentType> ResolveGenericConstraint(List<Expression> constraint, TransformationScope scope, bool hardError)
@@ -512,15 +511,15 @@ namespace Tangent.Parsing
             }
         }
 
-        private static ResultOrParseError<GenericInferencePlaceholder> Resolve(PartialTypeInferenceExpression inference, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
+        private static ResultOrParseError<GenericArgumentReferenceType> Resolve(PartialTypeInferenceExpression inference, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> ctorGenericArguments = null)
         {
 
             var type = ResolveType(inference.InferenceExpression, types, ctorGenericArguments ?? Enumerable.Empty<ParameterDeclaration>());
             if (!type.Success) {
-                return new ResultOrParseError<GenericInferencePlaceholder>(type.Error);
+                return new ResultOrParseError<GenericArgumentReferenceType>(type.Error);
             }
 
-            return GenericInferencePlaceholder.For(new ParameterDeclaration(inference.InferenceName, type.Result.Kind));
+            return GenericArgumentReferenceType.For(new ParameterDeclaration(inference.InferenceName, type.Result.Kind));
         }
 
         internal static ResultOrParseError<TangentType> ResolveType(IEnumerable<Expression> identifiers, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
@@ -539,7 +538,7 @@ namespace Tangent.Parsing
                     }
 
                     return resolvedType;
-                } else if (resolvedType.ImplementationType == KindOfType.GenericReference || resolvedType.ImplementationType == KindOfType.InferencePoint) {
+                } else if (resolvedType.ImplementationType == KindOfType.GenericReference) {
                     // some type reference. Just go with it?
                     return resolvedType;
                 } else {
@@ -607,35 +606,7 @@ namespace Tangent.Parsing
             return new ResultOrParseError<IEnumerable<PhrasePart>>(name.Select(ppp => ppp.IsIdentifier ? new PhrasePart(ppp.Identifier.Identifier) : new PhrasePart(new ParameterDeclaration("this", target))));
         }
 
-        private static TangentType ConvertGenericReferencesToInferences(TangentType input)
-        {
-            switch (input.ImplementationType) {
-                case KindOfType.BoundGeneric:
-                    var boundGeneric = input as BoundGenericType;
-                    return BoundGenericType.For(boundGeneric.GenericType as HasGenericParameters, boundGeneric.TypeArguments.Select(ta => ConvertGenericReferencesToInferences(ta)));
-                case KindOfType.Builtin:
-                case KindOfType.Enum:
-                case KindOfType.SingleValue:
-                case KindOfType.InferencePoint:
-                case KindOfType.Placeholder:
-                case KindOfType.Product:
-                case KindOfType.TypeClass:
-                    return input;
-                case KindOfType.GenericReference:
-                    var genref = input as GenericArgumentReferenceType;
-                    return GenericInferencePlaceholder.For(genref.GenericParameter);
-                case KindOfType.Kind:
-                    var kind = input as KindType;
-                    return ConvertGenericReferencesToInferences(kind.KindOf).Kind;
-                case KindOfType.Delegate:
-                    var fn = input as DelegateType;
-                    return DelegateType.For(fn.Takes.Select(t => ConvertGenericReferencesToInferences(t)), ConvertGenericReferencesToInferences(fn.Returns));
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
-        private static ResultOrParseError<Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder>> ExtractAndCompileInferredTypes(PartialReductionDeclaration partialFunctionDecl, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> typeGenerics)
+        private static ResultOrParseError<Dictionary<PartialTypeInferenceExpression, GenericArgumentReferenceType>> ExtractAndCompileInferredTypes(PartialReductionDeclaration partialFunctionDecl, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> typeGenerics)
         {
             var inferenceParameters = partialFunctionDecl.Takes.Where(ppp => !ppp.IsIdentifier).SelectMany(ppp => ppp.Parameter.Returns.Where(expr => expr.NodeType == ExpressionNodeType.TypeInference)).Cast<PartialTypeInferenceExpression>().ToList();
             var dependencyGraph = new Dictionary<PartialTypeInferenceExpression, HashSet<PartialTypeInferenceExpression>>();
@@ -643,13 +614,13 @@ namespace Tangent.Parsing
                 BuildInferenceDependencyGraph(tie, dependencyGraph);
             }
 
-            var result = new Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder>();
+            var result = new Dictionary<PartialTypeInferenceExpression, GenericArgumentReferenceType>();
             while (result.Count < dependencyGraph.Count) {
                 var workset = dependencyGraph.Where(kvp => !result.ContainsKey(kvp.Key) && kvp.Value.All(tie => result.ContainsKey(tie))).Select(kvp => kvp.Key).ToList();
                 foreach (var entry in workset) {
                     var resolved = Resolve(entry, types, typeGenerics);
                     if (!resolved.Success) {
-                        return new ResultOrParseError<Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder>>(resolved.Error);
+                        return new ResultOrParseError<Dictionary<PartialTypeInferenceExpression, GenericArgumentReferenceType>>(resolved.Error);
                     }
 
                     result.Add(entry, resolved.Result);
@@ -669,7 +640,7 @@ namespace Tangent.Parsing
             }
         }
 
-        private static PartialPhrasePart FixInferences(PartialPhrasePart part, Dictionary<PartialTypeInferenceExpression, GenericInferencePlaceholder> inferredTypes)
+        private static PartialPhrasePart FixInferences(PartialPhrasePart part, Dictionary<PartialTypeInferenceExpression, GenericArgumentReferenceType> inferredTypes)
         {
             if (part.IsIdentifier) { return part; }
             Func<Expression, Expression> fixer = expr => {
@@ -678,7 +649,7 @@ namespace Tangent.Parsing
                     return expr;
                 }
 
-                return new GenericInferenceParameterAccessExpression(inferredTypes[partial], partial.SourceInfo);
+                return new GenericParameterAccessExpression(inferredTypes[partial].GenericParameter, partial.SourceInfo);
             };
 
             return new PartialPhrasePart(new PartialParameterDeclaration(part.Parameter.Takes, part.Parameter.Returns.Select(fixer).ToList()));

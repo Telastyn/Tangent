@@ -37,23 +37,12 @@ namespace Tangent.Intermediate
             return BoundGenericType.For(this, bindings);
         }
 
-        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
-        {
-            return ResolveGenericReferences(mapping);
-        }
-
-        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(HashSet<TangentType> alreadyProcessed)
         {
             if (alreadyProcessed.Contains(this)) { return Enumerable.Empty<ParameterDeclaration>(); }
             alreadyProcessed.Add(this);
 
-            if (tie == GenericTie.Inference) {
-                return DataConstructorParts.Where(pp => !pp.IsIdentifier).SelectMany(pp => pp.Parameter.Returns.ContainedGenericReferences(GenericTie.Inference, alreadyProcessed));
-            } else if (tie == GenericTie.Reference) {
-                return GenericParameters;
-            } else {
-                throw new NotImplementedException();
-            }
+            return GenericParameters;
         }
 
         IEnumerable<ParameterDeclaration> HasGenericParameters.GenericParameters

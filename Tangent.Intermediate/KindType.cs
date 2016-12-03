@@ -28,17 +28,12 @@ namespace Tangent.Intermediate
             return this.KindOf.ResolveGenericReferences(mapping).Kind;
         }
 
-        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
-        {
-            return this.KindOf.RebindInferences(mapping).Kind;
-        }
-
-        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(HashSet<TangentType> alreadyProcessed)
         {
             if (alreadyProcessed.Contains(this)) { yield break; }
             alreadyProcessed.Add(this);
 
-            foreach (var entry in KindOf.ContainedGenericReferences(tie, alreadyProcessed)) {
+            foreach (var entry in KindOf.ContainedGenericReferences(alreadyProcessed)) {
                 yield return entry;
             }
         }

@@ -18,7 +18,7 @@ namespace Tangent.Intermediate.UnitTests
             var phrase = new Phrase(new[]{
                 new PhrasePart(new Identifier("foo")),
                 new PhrasePart(new ParameterDeclaration("x", TangentType.Int)),
-                new PhrasePart(new ParameterDeclaration("y", GenericInferencePlaceholder.For(genericT)))});
+                new PhrasePart(new ParameterDeclaration("y", GenericArgumentReferenceType.For(genericT)))});
 
             var input = new Expression[]{
                 new IdentifierExpression(new Identifier("foo"), null),
@@ -46,7 +46,7 @@ namespace Tangent.Intermediate.UnitTests
             var phrase = new Phrase(new[]{
                 new PhrasePart(new Identifier("foo")),
                 new PhrasePart(new ParameterDeclaration("x", TangentType.Int)),
-                new PhrasePart(new ParameterDeclaration("y", GenericInferencePlaceholder.For(genericT)))});
+                new PhrasePart(new ParameterDeclaration("y", GenericArgumentReferenceType.For(genericT)))});
 
             var input = new Expression[]{
                 new IdentifierExpression(new Identifier("foo"), null),
@@ -76,7 +76,7 @@ namespace Tangent.Intermediate.UnitTests
             var phrase = new Phrase(new[]{
                 new PhrasePart(new Identifier("foo")),
                 new PhrasePart(new ParameterDeclaration("x", TangentType.Int)),
-                new PhrasePart(new ParameterDeclaration("y", GenericInferencePlaceholder.For(genericT)))});
+                new PhrasePart(new ParameterDeclaration("y", GenericArgumentReferenceType.For(genericT)))});
 
             var input = new Expression[]{
                 new IdentifierExpression(new Identifier("foo"), null),
@@ -94,7 +94,7 @@ namespace Tangent.Intermediate.UnitTests
             var phrase = new Phrase(new[]{
                 new PhrasePart(new Identifier("foo")),
                 new PhrasePart(new ParameterDeclaration("x", TangentType.Int)),
-                new PhrasePart(new ParameterDeclaration("y", GenericInferencePlaceholder.For(genericT)))});
+                new PhrasePart(new ParameterDeclaration("y", GenericArgumentReferenceType.For(genericT)))});
 
             var input = new Expression[]{
                 new IdentifierExpression(new Identifier("foo"), null),
@@ -113,7 +113,7 @@ namespace Tangent.Intermediate.UnitTests
             var phrase = new Phrase(new[]{
                 new PhrasePart(new Identifier("foo")),
                 new PhrasePart(new ParameterDeclaration("x", TangentType.Int)),
-                new PhrasePart(new ParameterDeclaration("y", GenericInferencePlaceholder.For(genericT)))});
+                new PhrasePart(new ParameterDeclaration("y", GenericArgumentReferenceType.For(genericT)))});
 
             var input = new Expression[]{
                 new IdentifierExpression(new Identifier("foo"), null),

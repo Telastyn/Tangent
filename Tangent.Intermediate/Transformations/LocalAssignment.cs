@@ -17,9 +17,9 @@ namespace Tangent.Intermediate
 
         public override Expression Reduce(PhraseMatchResult input)
         {
-            if (input.GenericArguments.Any()) {
-                throw new ApplicationException("Unexpected input to Local Access.");
-            }
+            //if (input.GenericArguments.Any()) {
+            //    throw new ApplicationException("Unexpected input to Local Access.");
+            //}
 
             return new LocalAssignmentExpression(new LocalAccessExpression(Local, input.MatchLocation), input.IncomingArguments.First());
         }

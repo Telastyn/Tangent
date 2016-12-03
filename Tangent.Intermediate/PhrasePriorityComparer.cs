@@ -91,8 +91,8 @@ namespace Tangent.Intermediate
             // Non-generics preferred.
             // Generics that can infer the other are considered more general, and thus less preferred.
 
-            var isXGeneric = x.RequiredArgumentType.ContainedGenericReferences(GenericTie.Inference).Any();
-            var isYGeneric = y.RequiredArgumentType.ContainedGenericReferences(GenericTie.Inference).Any();
+            var isXGeneric = x.RequiredArgumentType.ContainedGenericReferences().Any();
+            var isYGeneric = y.RequiredArgumentType.ContainedGenericReferences().Any();
 
             if (isXGeneric) {
                 if (!isYGeneric) {

@@ -29,17 +29,22 @@ namespace Tangent.Intermediate
                 return true;
             }
 
-            if (necessaryTypeInferences.ContainsKey(this.GenericParameter)) {
-                return necessaryTypeInferences[this.GenericParameter].CompatibilityMatches(other, necessaryTypeInferences);
+            var othersvt = other as SingleValueType;
+            if (othersvt != null) {
+                return CompatibilityMatches(othersvt.ValueType, necessaryTypeInferences);
             }
 
-            var otherInference = other as GenericInferencePlaceholder;
-            if (otherInference != null) {
-                return this.GenericParameter == otherInference.GenericArgument;
+            // TODO: verify generic constraint.
+            if (necessaryTypeInferences.ContainsKey(GenericParameter)) {
+                if (necessaryTypeInferences[GenericParameter] != other) {
+                    // Some inference mismatch. We should probably try to provide better errors.
+                    //  Should probably also work to intersect the inferences. For now, just fail.
+                    return false;
+                }
+
+                return true;
             }
 
-            // TODO: test constraints.
-            // TODO: This isn't really an inference, but we need to set something so that later inferences fail if there's a mismatch.
             necessaryTypeInferences.Add(GenericParameter, other);
             return true;
         }
@@ -49,14 +54,9 @@ namespace Tangent.Intermediate
             return mapping(this.GenericParameter);
         }
 
-        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(HashSet<TangentType> alreadyProcessed)
         {
-            return this;
-        }
-
-        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
-        {
-            if (tie == GenericTie.Reference) { yield return this.GenericParameter; }
+            yield return this.GenericParameter;
         }
     }
 }

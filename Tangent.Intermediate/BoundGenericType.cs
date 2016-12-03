@@ -50,11 +50,11 @@ namespace Tangent.Intermediate
             return true;
         }
 
-        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(HashSet<TangentType> alreadyProcessed)
         {
             if (alreadyProcessed.Contains(this)) { return Enumerable.Empty<ParameterDeclaration>(); }
             alreadyProcessed.Add(this);
-            return TypeArguments.SelectMany(t => t.ContainedGenericReferences(tie, alreadyProcessed));
+            return TypeArguments.SelectMany(t => t.ContainedGenericReferences(alreadyProcessed));
         }
 
         public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
@@ -62,14 +62,9 @@ namespace Tangent.Intermediate
             return Intermediate.BoundGenericType.For((HasGenericParameters)this.GenericType, this.TypeArguments.Select(t => t.ResolveGenericReferences(mapping)));
         }
 
-        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
-        {
-            return Intermediate.BoundGenericType.For((HasGenericParameters)this.GenericType, this.TypeArguments.Select(t => t.RebindInferences(mapping)));
-        }
-
         public override string ToString()
         {
-            return string.Format("{0}<{1}>", GenericType.ToString(), string.Join(", ", TypeArguments.Select(ta=>ta.ToString())));
+            return string.Format("{0}<{1}>", GenericType.ToString(), string.Join(", ", TypeArguments.Select(ta => ta.ToString())));
         }
     }
 }

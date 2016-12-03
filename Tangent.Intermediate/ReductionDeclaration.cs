@@ -110,7 +110,7 @@ namespace Tangent.Intermediate
                         yield break;
                     }
                 } else {
-                    var rhsInferences = rhsEnum.Current.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : rhsEnum.Current.Parameter.RequiredArgumentType.ContainedGenericReferences(GenericTie.Inference);
+                    var rhsInferences = rhsEnum.Current.IsIdentifier ? Enumerable.Empty<ParameterDeclaration>() : rhsEnum.Current.Parameter.RequiredArgumentType.ContainedGenericReferences();
                     if (rhsEnum.Current.IsIdentifier) {
                         yield return null;
                         yield break;

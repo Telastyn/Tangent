@@ -50,8 +50,7 @@ namespace Tangent.Intermediate
                     if (targetType != null) {
                         if (targetType.ImplementationType == KindOfType.TypeConstant ||
                             targetType.ImplementationType == KindOfType.Kind ||
-                            targetType.ImplementationType == KindOfType.GenericReference ||
-                            targetType.ImplementationType == KindOfType.InferencePoint) {
+                            targetType.ImplementationType == KindOfType.GenericReference) {
                             if (AnyKindBranches != null) {
                                 foreach (var entry in AnyKindBranches.Lookup(phrase.Skip(1))) {
                                     yield return entry;
@@ -159,7 +158,7 @@ namespace Tangent.Intermediate
                             identifierRules[pp.Identifier].Add(rule);
                         } else if (pp.Parameter.RequiredArgumentType == TangentType.Any.Kind) {
                             anyKindRules.Add(rule);
-                        } else if (pp.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Delegate) {
+                        } else if (pp.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Delegate && !pp.Parameter.RequiredArgumentType.ContainedGenericReferences().Any()) {
                             if (!delegateRules.ContainsKey(pp.Parameter.RequiredArgumentType)) {
                                 delegateRules.Add(pp.Parameter.RequiredArgumentType, new List<TransformationRule>());
                             }
@@ -171,7 +170,7 @@ namespace Tangent.Intermediate
                             }
 
                             singleValueRules[pp.Parameter.RequiredArgumentType].Add(rule);
-                        } else if (pp.Parameter.RequiredArgumentType.ContainedGenericReferences(GenericTie.Inference).Any()) {
+                        } else if (pp.Parameter.RequiredArgumentType.ContainedGenericReferences().Any()) {
                             genericExprs.Add(expr);
                         } else {
                             if (!ParameterRules.ContainsKey(pp.Parameter.RequiredArgumentType)) {

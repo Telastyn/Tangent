@@ -25,17 +25,12 @@ namespace Tangent.Intermediate
             return Value.ResolveGenericReferences(mapping).TypeConstant;
         }
 
-        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
-        {
-            return Value.RebindInferences(mapping).TypeConstant;
-        }
-
-        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(HashSet<TangentType> alreadyProcessed)
         {
             if (alreadyProcessed.Contains(this)) { yield break; }
             alreadyProcessed.Add(this);
 
-            foreach (var entry in Value.ContainedGenericReferences(tie, alreadyProcessed)) {
+            foreach (var entry in Value.ContainedGenericReferences(alreadyProcessed)) {
                 yield return entry;
             }
         }

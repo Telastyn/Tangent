@@ -18,7 +18,6 @@ namespace Tangent.Intermediate
             this.ThisParam = thisParam;
             this.CtorParam = ctorParam;
             this.Arguments = arguments;
-            effectiveType = CtorParam.Returns.RebindInferences(pd => GenericArgumentReferenceType.For(pd));
         }
 
         public override ExpressionNodeType NodeType
@@ -26,13 +25,11 @@ namespace Tangent.Intermediate
             get { return ExpressionNodeType.CtorParamAccess; }
         }
 
-        private readonly TangentType effectiveType;
-
         public override TangentType EffectiveType
         {
             get
             {
-                return effectiveType;
+                return CtorParam.Returns;
             }
         }
 

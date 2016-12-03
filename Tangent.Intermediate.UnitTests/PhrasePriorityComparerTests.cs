@@ -57,7 +57,7 @@ namespace Tangent.Intermediate.UnitTests
         public void NonGenericsBeatGenerics()
         {
             var genericParam = new ParameterDeclaration("T", TangentType.Any.Kind);
-            var x = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("x", GenericInferencePlaceholder.For(genericParam))) });
+            var x = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("x", GenericArgumentReferenceType.For(genericParam))) });
             var y = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("y", TangentType.String)) });
 
             Assert.IsTrue(PhrasePriorityComparer.ComparePriority(x, y) > 0);
@@ -71,8 +71,8 @@ namespace Tangent.Intermediate.UnitTests
             // This test does not currently pass because CompatibilityMatches is not yet implemented in GenericInferencePlaceholder.
             var anyGeneric = new ParameterDeclaration("T", TangentType.Any.Kind);
             var stringGeneric = new ParameterDeclaration("R", TangentType.String.Kind);
-            var x = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("x", GenericInferencePlaceholder.For(anyGeneric))) });
-            var y = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("y", GenericInferencePlaceholder.For(stringGeneric))) });
+            var x = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("x", GenericArgumentReferenceType.For(anyGeneric))) });
+            var y = new Phrase(new[] { new PhrasePart(new ParameterDeclaration("y", GenericArgumentReferenceType.For(stringGeneric))) });
 
             Assert.IsTrue(PhrasePriorityComparer.ComparePriority(x, y) > 0);
             Assert.IsTrue(PhrasePriorityComparer.ComparePriority(y, x) < 0);

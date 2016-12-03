@@ -15,15 +15,9 @@ namespace Tangent.Intermediate
         TypeConstant,
         GenericReference,
         BoundGeneric,
-        InferencePoint,
         Placeholder,
         Delegate,
         TypeClass
-    }
-
-    public enum GenericTie{
-        Reference,
-        Inference
     }
 
     public class TangentType
@@ -75,17 +69,12 @@ namespace Tangent.Intermediate
             return this;
         }
 
-        public virtual TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
+        public IEnumerable<ParameterDeclaration> ContainedGenericReferences()
         {
-            return this;
+            return ContainedGenericReferences(new HashSet<TangentType>());
         }
 
-        public IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie)
-        {
-            return ContainedGenericReferences(tie, new HashSet<TangentType>());
-        }
-
-        protected internal virtual IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
+        protected internal virtual IEnumerable<ParameterDeclaration> ContainedGenericReferences(HashSet<TangentType> alreadyProcessed)
         {
             yield break;
         }

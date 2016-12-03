@@ -64,7 +64,7 @@ namespace Tangent.Intermediate.UnitTests
         public void GenericSpecialization()
         {
             var genericParam = new ParameterDeclaration("T", TangentType.Any.Kind);
-            var inference = GenericInferencePlaceholder.For(genericParam);
+            var inference = GenericArgumentReferenceType.For(genericParam);
             var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", TangentType.Int), new Function(TangentType.Void, null));
             var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", inference), new Function(TangentType.Void, null));
 
@@ -77,7 +77,7 @@ namespace Tangent.Intermediate.UnitTests
         public void NestedGenericSpecialization()
         {
             var genericParam = new ParameterDeclaration("T", TangentType.Any.Kind);
-            var inference = GenericInferencePlaceholder.For(genericParam);
+            var inference = GenericArgumentReferenceType.For(genericParam);
             var listTsT = new ParameterDeclaration("T", TangentType.Any.Kind);
             var listT = new TypeDeclaration(new[] { new PhrasePart("List"), new PhrasePart(listTsT) }, new ProductType(new PhrasePart[0], new[] { genericParam }, Enumerable.Empty<Field>()));
             var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericType.For((ProductType)listT.Returns, new[] { TangentType.Int })), new Function(TangentType.Void, null));
@@ -91,11 +91,11 @@ namespace Tangent.Intermediate.UnitTests
         public void NestedGenericPartialSpecialization()
         {
             var genericParam1 = new ParameterDeclaration("K", TangentType.Any.Kind);
-            var inference1 = GenericInferencePlaceholder.For(genericParam1);
+            var inference1 = GenericArgumentReferenceType.For(genericParam1);
             var genericParam2 = new ParameterDeclaration("V", TangentType.Any.Kind);
-            var inference2 = GenericInferencePlaceholder.For(genericParam2);
+            var inference2 = GenericArgumentReferenceType.For(genericParam2);
             var genericParam3 = new ParameterDeclaration("V", TangentType.Any.Kind);
-            var inference3 = GenericInferencePlaceholder.For(genericParam3);
+            var inference3 = GenericArgumentReferenceType.For(genericParam3);
             var dictKV = new TypeDeclaration(new[] { new PhrasePart("Dict"), new PhrasePart(new ParameterDeclaration("K", TangentType.Any.Kind)), new PhrasePart(new ParameterDeclaration("V", TangentType.Any.Kind)) }, new ProductType(new PhrasePart[0], new[] { genericParam1, genericParam2 }, Enumerable.Empty<Field>()));
             var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericType.For((ProductType)dictKV.Returns, new[] { TangentType.Int, inference3 })), new Function(TangentType.Void, null));
             var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericType.For((ProductType)dictKV.Returns, new[] { inference1, inference2 })), new Function(TangentType.Void, null));

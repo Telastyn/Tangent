@@ -84,8 +84,6 @@
     <Compile Include="Function.cs" />
     <Compile Include="FunctionInvocationExpression.cs" />
     <Compile Include="GenericArgumentReferenceType.cs" />
-    <Compile Include="GenericInferenceParameterAccessExpression.cs" />
-    <Compile Include="GenericInferencePlaceholder.cs" />
     <Compile Include="GenericParameterAccessExpression.cs" />
     <Compile Include="Identifier.cs" />
     <Compile Include="IdentifierExpression.cs" />

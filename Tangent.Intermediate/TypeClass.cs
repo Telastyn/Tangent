@@ -47,17 +47,12 @@ namespace Tangent.Intermediate
             return true;
         }
 
-        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(GenericTie tie, HashSet<TangentType> alreadyProcessed)
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(HashSet<TangentType> alreadyProcessed)
         {
             yield break;
         }
 
         public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
-        {
-            return this;
-        }
-
-        public override TangentType RebindInferences(Func<ParameterDeclaration, TangentType> mapping)
         {
             return this;
         }
