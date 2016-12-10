@@ -159,7 +159,6 @@ namespace Tangent.CilGeneration
                 var dotNetGenerics = stub.DefineGenericParameters(fn.GenericParameters.Select(pd => string.Join(" ", pd.Takes)).ToArray());
 
                 // TODO: constraints
-
                 foreach (var entry in fn.GenericParameters.Zip(dotNetGenerics, (pd, g) => Tuple.Create(pd, g))) {
                     var genRef = GenericArgumentReferenceType.For(entry.Item1);
                     if (!typeLookup.ContainsKey(genRef)) { typeLookup.Add(genRef, entry.Item2); }
@@ -416,16 +415,23 @@ namespace Tangent.CilGeneration
                 throw new NotImplementedException("TODO: implement nested closures.");
             }
 
-            if (fn.GenericParameters.Any()) {
-                throw new NotImplementedException("TODO: implement generic closures.");
+            var possiblyGenericClosureType = (parentScope ?? rootType).DefineNestedType("closure" + closureCounter++, TypeAttributes.Sealed | TypeAttributes.NestedPublic);
+            var closureGenericParameters = fn.GenericParameters.Any() ? possiblyGenericClosureType.DefineGenericParameters(fn.GenericParameters.Select(gp => GetNameFor(gp)).ToArray()) : new GenericTypeParameterBuilder[] { };
+            foreach (var pair in closureGenericParameters.Zip(fn.GenericParameters, (a, b) => new { ClosureGeneric = a, TangentGeneric = b })) {
+                // Here we overwrite the generic lookup so that the guts of this thing uses the closure generic reference, not the function generic reference.
+                typeLookup[GenericArgumentReferenceType.For(pair.TangentGeneric)] = pair.ClosureGeneric;
             }
 
-            var closureType = (parentScope ?? rootType).DefineNestedType("closure" + closureCounter++, TypeAttributes.Sealed | TypeAttributes.NestedPublic);
-
-            var scope = gen.DeclareLocal(closureType);
+            var concreteClosureType = fn.GenericParameters.Any() ? possiblyGenericClosureType.MakeGenericType(fn.GenericParameters.Select(gp => Compile(GenericArgumentReferenceType.For(gp))).ToArray()) : possiblyGenericClosureType;
+            var scope = gen.DeclareLocal(concreteClosureType);
             scope.SetLocalSymInfo("__closureScope");
-            var ctor = closureType.DefineDefaultConstructor(MethodAttributes.Public);
-            gen.Emit(OpCodes.Newobj, ctor);
+            var ctor = possiblyGenericClosureType.DefineDefaultConstructor(MethodAttributes.Public);
+            if (fn.GenericParameters.Any()) {
+                gen.Emit(OpCodes.Newobj, TypeBuilder.GetConstructor(concreteClosureType, ctor));
+            } else {
+                gen.Emit(OpCodes.Newobj, ctor);
+            }
+
             gen.Emit(OpCodes.Stloc, scope);
 
             Dictionary<ParameterDeclaration, PropertyCodes> result = new Dictionary<ParameterDeclaration, PropertyCodes>();
@@ -433,7 +439,11 @@ namespace Tangent.CilGeneration
 
             int ix = 0;
             foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) {
-                var paramField = closureType.DefineField(GetNameFor(parameter), Compile(parameter.Returns), FieldAttributes.Public);
+                FieldInfo paramField = possiblyGenericClosureType.DefineField(GetNameFor(parameter), Compile(parameter.Returns), FieldAttributes.Public);
+                if (fn.GenericParameters.Any()) {
+                    paramField = TypeBuilder.GetField(concreteClosureType, paramField);
+                }
+
                 gen.Emit(OpCodes.Ldloc, scope);
                 gen.Emit(OpCodes.Ldarg, ix);
                 gen.Emit(OpCodes.Stfld, paramField);
@@ -450,7 +460,11 @@ namespace Tangent.CilGeneration
             }
 
             foreach (var local in fn.Returns.Implementation.Locals) {
-                var localField = closureType.DefineField(GetNameFor(local), Compile(local.Returns), FieldAttributes.Public);
+                FieldInfo localField = possiblyGenericClosureType.DefineField(GetNameFor(local), Compile(local.Returns), FieldAttributes.Public);
+                if (fn.GenericParameters.Any()) {
+                    localField = TypeBuilder.GetField(concreteClosureType, localField);
+                }
+
                 result.Add(local, new PropertyCodes(
                     g => { g.Emit(OpCodes.Ldloc, scope); g.Emit(OpCodes.Ldfld, localField); },
                     (g, v) => { g.Emit(OpCodes.Ldloc, scope); v(); g.Emit(OpCodes.Stfld, localField); }));
@@ -460,7 +474,7 @@ namespace Tangent.CilGeneration
                     (g, v) => { g.Emit(OpCodes.Ldarg_0); v(); g.Emit(OpCodes.Stfld, localField); }));
             }
 
-            closureInfo = new ClosureInfo(closureType, closureCodes, g => g.Emit(OpCodes.Ldloc, scope), null);
+            closureInfo = new ClosureInfo(possiblyGenericClosureType, closureCodes, g => g.Emit(OpCodes.Ldloc, scope), null);
             return result;
         }
 
@@ -1123,6 +1137,7 @@ namespace Tangent.CilGeneration
                 // Then we have a lambda, but don't need any vars. Just toss it at root level for calling.
                 var closureType = (rootType).DefineNestedType("closure" + closureCounter++, TypeAttributes.Sealed | TypeAttributes.NestedPublic);
                 var cctor = closureType.DefineDefaultConstructor(MethodAttributes.Public);
+                // TODO: if we use generics, do we need those here?
                 closureScope = new ClosureInfo(closureType, new Dictionary<ParameterDeclaration, PropertyCodes>(), g => g.Emit(OpCodes.Newobj, cctor));
                 needsCreating = true;
             }
@@ -1142,6 +1157,7 @@ namespace Tangent.CilGeneration
 
             var closureGen = closureFn.GetILGenerator();
 
+            // TODO: type resolve implementation bits?
             AddFunctionCode(closureGen, lambda.Implementation, nestedCodes, new ClosureInfo(closureScope.ClosureType, closureScope.ClosureCodes, g => g.Emit(OpCodes.Ldarg_0)));
             closureGen.Emit(OpCodes.Ret);
 

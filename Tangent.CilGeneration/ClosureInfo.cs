@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
@@ -13,7 +14,18 @@ namespace Tangent.CilGeneration
         public readonly TypeBuilder ClosureType;
         public readonly Dictionary<ParameterDeclaration, PropertyCodes> ClosureCodes;
         public readonly ClosureInfo Parent;
-        public int ImplementationCounter = 0;
+        public int ImplementationCounter
+        {
+            get
+            {
+                return counters.GetOrAdd(ClosureType, 0);
+            }
+            set
+            {
+                counters.AddOrUpdate(ClosureType, value, (tb, v) => value);
+            }
+        }
+
         public readonly Action<ILGenerator> ClosureAccessor;
 
         public ClosureInfo(TypeBuilder closureType, Dictionary<ParameterDeclaration, PropertyCodes> closureCodes, Action<ILGenerator> closureAccessor, ClosureInfo parent = null)
@@ -23,5 +35,7 @@ namespace Tangent.CilGeneration
             Parent = parent;
             ClosureAccessor = closureAccessor;
         }
+
+        private static readonly ConcurrentDictionary<TypeBuilder, int> counters = new ConcurrentDictionary<TypeBuilder, int>();
     }
 }
