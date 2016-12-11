@@ -89,6 +89,7 @@ namespace Tangent.Intermediate
                         sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
                     } else if (element.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Delegate &&
                          !((DelegateType)element.Parameter.RequiredArgumentType).Takes.Any() &&
+                         inType.ImplementationType != KindOfType.Delegate &&
                          ((DelegateType)element.Parameter.RequiredArgumentType).Returns.CompatibilityMatches(inType, inferenceCollector)) {
 
                         // We have something like ~>int == int

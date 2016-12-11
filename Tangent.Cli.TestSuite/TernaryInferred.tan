@@ -1,0 +1,9 @@
+﻿(conditional : bool) ? (a : ~>(T)) | (b : ~>T) => T {
+  : result : ~> T := b;
+  if conditional result = a;
+  result;
+}
+
+entrypoint => void {
+  print true ? 42 | 0;
+}

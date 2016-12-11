@@ -27,13 +27,15 @@ namespace Tangent.CilGeneration
         }
 
         public readonly Action<ILGenerator> ClosureAccessor;
+        public readonly IEnumerable<ClosureGenericMapping> ClosureGenericScope;
 
-        public ClosureInfo(TypeBuilder closureType, Dictionary<ParameterDeclaration, PropertyCodes> closureCodes, Action<ILGenerator> closureAccessor, ClosureInfo parent = null)
+        public ClosureInfo(TypeBuilder closureType, Dictionary<ParameterDeclaration, PropertyCodes> closureCodes, Action<ILGenerator> closureAccessor, IEnumerable<ClosureGenericMapping> closureGenericScope, ClosureInfo parent = null)
         {
             ClosureType = closureType;
             ClosureCodes = closureCodes;
             Parent = parent;
             ClosureAccessor = closureAccessor;
+            ClosureGenericScope = closureGenericScope;
         }
 
         private static readonly ConcurrentDictionary<TypeBuilder, int> counters = new ConcurrentDictionary<TypeBuilder, int>();
