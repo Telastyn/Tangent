@@ -549,7 +549,7 @@ namespace Tangent.CilGeneration
             var makeGenericMethod = typeof(MethodInfo).GetMethod("MakeGenericMethod");
             var invoke = typeof(MethodInfo).GetMethods().Where(mi => mi.Name == "Invoke" && mi.GetParameters().Count() == 2).First();
             var getGenericArguments = typeof(Type).GetMethod("GetGenericArguments");
-
+            var unboxingNeeded = gen.DeclareLocal(typeof(bool));
             var parameterTypeLocals = new Dictionary<ParameterDeclaration, LocalBuilder>();
 
             // For now, we can't have nested specializations, so just go in order, doing the checks.
@@ -605,6 +605,7 @@ namespace Tangent.CilGeneration
                             // if param.GetType() != specificType
                             //
                             specialCasts.Add(specializationParam.GeneralFunctionParameter, specificTargetType);
+
                             //
                             // RMS: This call would be better as a Constrained opcode, but that requires a ldarga (ptr load) not a ldarg (value load), but we 
                             //       don't know our parameter index at this point. Consider refactoring for perf.
@@ -612,11 +613,21 @@ namespace Tangent.CilGeneration
                             gen.Emit(OpCodes.Box, Compile(specializationParam.GeneralFunctionParameter.RequiredArgumentType));
 
                             if (inferredTypeClass != null) {
+                                Label skipUnboxingVariant = gen.DefineLabel();
+                                
                                 Compile(inferredTypeClass);
+                                gen.Emit(OpCodes.Isinst, Compile(inferredTypeClass));
+                                gen.Emit(OpCodes.Stloc, unboxingNeeded);
+                                parameterCodes[specializationParam.GeneralFunctionParameter].Accessor(gen);
+                                gen.Emit(OpCodes.Box, Compile(specializationParam.GeneralFunctionParameter.RequiredArgumentType));
+                                gen.Emit(OpCodes.Ldloc, unboxingNeeded);
+                                gen.Emit(OpCodes.Brfalse, skipUnboxingVariant);
                                 typeClassAccessor = variantValueLookup[inferredTypeClass];
                                 gen.Emit(OpCodes.Ldfld, typeClassAccessor);
-                            }
 
+                                gen.MarkLabel(skipUnboxingVariant);
+                            }
+                            
                             gen.Emit(OpCodes.Callvirt, objGetType);
                             //gen.EmitWriteLine("Specialization GetType success.");
                             gen.Emit(OpCodes.Ldtoken, specificTargetType);
@@ -684,9 +695,16 @@ namespace Tangent.CilGeneration
                         var gart = (parameter.RequiredArgumentType as GenericArgumentReferenceType);
                         var inferredTypeClass = gart != null ? ((KindType)gart.GenericParameter.Returns).KindOf as TypeClass : null;
                         if (inferredTypeClass != null) {
-                            Compile(inferredTypeClass);
+                            var skipValueAccess = gen.DefineLabel();
+                            gen.Emit(OpCodes.Isinst, Compile(inferredTypeClass));
+                            gen.Emit(OpCodes.Stloc, unboxingNeeded);
+                            parameterCodes[parameter].Accessor(gen);
+                            gen.Emit(OpCodes.Box, Compile(parameter.RequiredArgumentType));
+                            gen.Emit(OpCodes.Ldloc, unboxingNeeded);
+                            gen.Emit(OpCodes.Brfalse, skipValueAccess);
                             var typeClassAccessor = variantValueLookup[inferredTypeClass];
                             gen.Emit(OpCodes.Ldfld, typeClassAccessor);
+                            gen.MarkLabel(skipValueAccess);
                         }
 
                         if (unbox) {

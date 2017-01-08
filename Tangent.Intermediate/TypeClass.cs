@@ -28,8 +28,7 @@ namespace Tangent.Intermediate
             foreach (var fn in RequiredFunctions) {
                 var fnRtn = fn.Returns.EffectiveType.ResolveGenericReferences(pd => pd == ThisBindingInRequiredFunctions ? target : genericBindings(pd));
                 var fnPhrase = fn.Takes.Select(pp => pp.ResolveGenericReferences(pd => pd == ThisBindingInRequiredFunctions ? target : genericBindings(pd))).ToList();
-                if (!functionPool.Any(targetFn =>
-                {
+                if (!functionPool.Any(targetFn => {
                     if (targetFn.Returns.EffectiveType != fnRtn) { return false; }
                     if (fnPhrase.Count != targetFn.Takes.Count) { return false; }
                     foreach (var pair in fnPhrase.Zip(targetFn.Takes, (a, b) => new { required = a, target = b })) {
@@ -59,7 +58,17 @@ namespace Tangent.Intermediate
 
         public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
         {
-            return this == other;
+            if (this == other) {
+                return true;
+            }
+
+            if (other.ImplementationType == KindOfType.GenericReference) {
+                var gart = other as GenericArgumentReferenceType;
+                var constraint = ((KindType)gart.GenericParameter.Returns).KindOf;
+                return this == constraint;
+            }
+
+            return false;
         }
     }
 }
