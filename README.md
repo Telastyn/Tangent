@@ -213,3 +213,37 @@ entrypoint => void {
   if x print "x" else print "y";      // y
 }
 ```
+
+```// Tangent has interfaces.
+
+// You declare them similarly to enums or classes:
+comparable :> interface {
+  (this) < (this) => bool;
+}
+
+// interfaces are implemented using a weird operator that looks like a duck :<
+// They can be implemented inline:
+bushel of apples :> (number of apples : int) apples :< comparable {
+  number of apples in (this) => int { number of apples }
+  (this) < (that : bushel of apples) => bool { number of apples in this < number of apples in that }
+  (this) = (that : bushel of apples) => bool { number of apples in this = number of apples in that }
+}
+
+// or, if you have an existing class
+size :> enum {
+  small,
+  large
+}
+
+// you can implement the interface explicitly:
+size :< comparable { 
+  (this) < (that : size) => bool { this = small and that = large }
+}
+
+// They can then be used as generic constraints
+(a : T : comparable) is less than (b : T) => bool { a < b }
+
+entrypoint => void {
+  print small is less than large;
+  print 4 apples is less than 2 apples;
+}```
