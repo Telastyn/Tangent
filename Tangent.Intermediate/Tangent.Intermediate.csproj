@@ -131,6 +131,7 @@
     <Compile Include="TypeConstant.cs" />
     <Compile Include="TypeDeclaration.cs" />
     <Compile Include="EnumValueAccessExpression.cs" />
+    <Compile Include="UninferredGenericType.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tangent.Common\Tangent.Common.csproj">

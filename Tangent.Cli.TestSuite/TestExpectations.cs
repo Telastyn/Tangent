@@ -427,6 +427,14 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void InteropInterfaceUse()
+        {
+            var result = Test.DebugProgramFile(new[] { "InteropInterfaceUse.tan", "conditional-lib.tan", "looping-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "1", "2", "3" }));
+        }
+
+        [TestMethod]
         [Ignore]
         public void BasicGlobalUse()
         {

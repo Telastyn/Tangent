@@ -1,0 +1,16 @@
+﻿for each (enumerable : .NET System.Collections.Generic.IEnumerable<(T)>) do (process (T) : void) => void {
+  : enumerator : .NET System.Collections.Generic.IEnumerator<T> := enumerable.GetEnumerator;
+
+  while enumerator.MoveNext process enumerator.Current;
+  // Current error is code trying to infer `process enumerator` to the delegate's T rather than constraining to the function's T
+}
+
+entrypoint => void {
+  : list : .NET System.Collections.Generic.List<int> := new .NET System.Collections.Generic.List<int>;
+
+  list.Add 1;
+  list.Add 2;
+  list.Add 3;
+
+  for each list do x => {print x};
+}

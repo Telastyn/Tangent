@@ -34,6 +34,11 @@ namespace Tangent.Intermediate
                 return CompatibilityMatches(othersvt.ValueType, necessaryTypeInferences);
             }
 
+            var otheruigt = other as UninferredGenericType;
+            if(otheruigt != null) {
+                return CompatibilityMatches(otheruigt.GenericReference, necessaryTypeInferences);
+            }
+
             if (necessaryTypeInferences.ContainsKey(GenericParameter)) {
                 if (necessaryTypeInferences[GenericParameter] != other) {
                     // Some inference mismatch. We should probably try to provide better errors.

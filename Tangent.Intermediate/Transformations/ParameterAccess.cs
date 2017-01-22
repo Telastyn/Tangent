@@ -10,7 +10,7 @@ namespace Tangent.Intermediate
     {
         private readonly ParameterDeclaration Parameter;
         public ParameterAccess(ParameterDeclaration parameter)
-            : base(new Phrase(parameter.Takes))
+            : base(new Phrase(parameter.Takes.Select(pp => pp.ResolveGenericReferences(pd => UninferredGenericType.For(pd)))))
         {
             Parameter = parameter;
         }

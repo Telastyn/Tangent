@@ -23,7 +23,11 @@ namespace Tangent.Intermediate
                         Paths.Add(convertFromType, new Dictionary<TangentType, ConversionPath>());
                     }
 
-                    Paths[convertFromType].Add(entry.Returns.EffectiveType, new ConversionPath(entry));
+                    if (Paths[convertFromType].ContainsKey(entry.Returns.EffectiveType)) {
+                        // Nothing for now? This comes up with .NET types and interfaces sometimes.
+                    } else {
+                        Paths[convertFromType].Add(entry.Returns.EffectiveType, new ConversionPath(entry));
+                    }
                 }
             }
         }

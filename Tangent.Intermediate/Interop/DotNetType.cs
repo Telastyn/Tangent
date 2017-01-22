@@ -33,11 +33,6 @@ namespace Tangent.Intermediate.Interop
                 return cache.GetOrAdd(t, x => DotNetEnumType.For(t));
             }
 
-            // TODO: interfaces.
-            if (t.IsInterface) {
-                return null;
-            }
-
             return cache.GetOrAdd(t, x => new DotNetType(t));
         }
 

@@ -389,10 +389,15 @@ namespace Tangent.Intermediate.Interop
             }
 
             // Interfaces
-            // T -> I
-            // T? -> I?
+            var interfaces = t.GetInterfaces();
+            foreach(var i in interfaces) {
+                var interfaceTangentType = DotNetType.For(i);
+                if (interfaceTangentType != null) {
+                    var pd = new ParameterDeclaration("_", tangentType);
+                    yield return new ReductionDeclaration(new PhrasePart(pd), new Function(interfaceTangentType, new Block(new Expression[] { new ParameterAccessExpression(pd, null) }, Enumerable.Empty<ParameterDeclaration>())));
+                }
+            }
             // null -> I?
-            // T -> I?
 
             if (!t.IsValueType) {
                 // TODO: handle null for generics.

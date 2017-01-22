@@ -17,7 +17,8 @@ namespace Tangent.Intermediate
         BoundGeneric,
         Placeholder,
         Delegate,
-        TypeClass
+        TypeClass,
+        UninferredGenericReference
     }
 
     public class TangentType
