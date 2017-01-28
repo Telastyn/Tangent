@@ -95,13 +95,13 @@ namespace Tangent.Intermediate
                         if (Paths.ContainsKey(from)) {
                             if (!Paths[from].ContainsKey(genericTo)) {
                                 Paths[from].Add(genericTo, entry.Value[from][genericTo]);
-                                candidates.Add(genericTo, entry.Value[from][to]);
+                                candidates.Add(genericTo, entry.Value[from][genericTo]);
                             } else {
                                 // nada.
                             }
                         } else {
                             Paths.Add(from, new Dictionary<TangentType, ConversionPath>(entry.Value[from]));
-                            candidates.Add(genericTo, entry.Value[from][to]);
+                            candidates.Add(genericTo, entry.Value[from][genericTo]);
                         }
                     } else {
                         entry.Value.Add(from, null);

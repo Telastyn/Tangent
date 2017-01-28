@@ -33,7 +33,25 @@ namespace Tangent.Intermediate.Interop
                 return cache.GetOrAdd(t, x => DotNetEnumType.For(t));
             }
 
+            if (t.IsConstructedGenericType) {
+                return cache.GetOrAdd(t, x => BuildConstructedGenericType(t));
+            }
+
             return cache.GetOrAdd(t, x => new DotNetType(t));
+        }
+
+        private static TangentType BuildConstructedGenericType(Type t)
+        {
+            var generic = t.GetGenericTypeDefinition();
+            var tangentGeneric = For(generic);
+            if (tangentGeneric == null) { return null; }
+            var hasGenerics = tangentGeneric as HasGenericParameters;
+            if (hasGenerics == null) { throw new ApplicationException("Generic type yielded something without generic parameters?"); }
+
+            var args = t.GetGenericArguments().Select(ga => For(ga)).ToList();
+            if (args.Any(a => a == null)) { return null; }
+
+            return BoundGenericType.For(hasGenerics, args);
         }
 
         public static TypeDeclaration TypeDeclarationFor(Type t)
@@ -61,6 +79,10 @@ namespace Tangent.Intermediate.Interop
 
         public override TangentType ResolveGenericReferences(Func<ParameterDeclaration, TangentType> mapping)
         {
+            if (this.GenericParameters.Any()) {
+                return BoundGenericType.For(this, this.GenericParameters.Select(pd => mapping(pd)));
+            }
+
             return this;
         }
 

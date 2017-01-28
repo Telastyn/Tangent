@@ -50,6 +50,10 @@ namespace Tangent.Intermediate.Interop
 
             foreach (var t in assembly.GetTypes()) {
                 if (t.IsPublic) {
+                    if (t == typeof(IEnumerable<>) || t == typeof(IEnumerator<>) || t == typeof(List<>)) {
+                        Console.Write("");
+                    }
+
                     var typeDecl = DotNetType.TypeDeclarationFor(t);
                     if (typeDecl != null) {
                         var tangentType = typeDecl.Returns;
@@ -390,11 +394,40 @@ namespace Tangent.Intermediate.Interop
 
             // Interfaces
             var interfaces = t.GetInterfaces();
-            foreach(var i in interfaces) {
-                var interfaceTangentType = DotNetType.For(i);
-                if (interfaceTangentType != null) {
-                    var pd = new ParameterDeclaration("_", tangentType);
-                    yield return new ReductionDeclaration(new PhrasePart(pd), new Function(interfaceTangentType, new Block(new Expression[] { new ParameterAccessExpression(pd, null) }, Enumerable.Empty<ParameterDeclaration>())));
+            var genericT = tangentType as HasGenericParameters;
+            foreach (var i in interfaces) {
+
+                if (genericT != null && genericT.GenericParameters.Any()) {
+                    // We need to make generic params for the conversion.
+                    var good = true;
+                    var fnGenerics = genericT.GenericParameters.Select(pd => GenericArgumentReferenceType.For(new ParameterDeclaration(pd.Takes, pd.Returns))).ToList();
+                    var netGenericMapping = t.GetGenericArguments().Where(ga => ga.IsGenericParameter).Zip(fnGenerics, (net, fn) => new { netGenericParameter = net, fnGeneric = fn }).ToDictionary(x => x.netGenericParameter, x => x.fnGeneric);
+                    var tangentGenericMapping = genericT.GenericParameters.Zip(fnGenerics, (type, fn) => new { typeGeneric = type, fnGeneric = fn }).ToDictionary(x => x.typeGeneric, x => x.fnGeneric);
+                    var target = DotNetType.For(i);
+                    var netGenericArgs = i.GetGenericArguments();
+                    if (netGenericArgs.Any()) {
+                        var genericInterface = DotNetType.For(i.GetGenericTypeDefinition()) as HasGenericParameters;
+                        if (genericInterface == null) {
+                            throw new ApplicationException("Non generic interface has generic arguments?");
+                        }
+
+                        if (!netGenericArgs.All(a => netGenericMapping.ContainsKey(a))) {
+                            // Then we have something like Dictionary<K,V> : IEnumerable<KeyValuePair<K,V>> which we can't deal with yet.
+                            good = false;
+                        } else {
+                            target = BoundGenericType.For(genericInterface, netGenericArgs.Select(a => netGenericMapping[a]));
+                        }
+                    }
+
+                    var from = new ParameterDeclaration("_", tangentType.ResolveGenericReferences(pd => tangentGenericMapping[pd]));
+                    yield return new ReductionDeclaration(new[] { new PhrasePart(from) }, new Function(target, new Block(new Expression[] { new ParameterAccessExpression(from, null) }, Enumerable.Empty<ParameterDeclaration>())), fnGenerics.Select(g => g.GenericParameter));
+
+                } else {
+                    var interfaceTangentType = DotNetType.For(i);
+                    if (interfaceTangentType != null) {
+                        var pd = new ParameterDeclaration("_", tangentType);
+                        yield return new ReductionDeclaration(new PhrasePart(pd), new Function(interfaceTangentType, new Block(new Expression[] { new ParameterAccessExpression(pd, null) }, Enumerable.Empty<ParameterDeclaration>())));
+                    }
                 }
             }
             // null -> I?

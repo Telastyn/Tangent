@@ -86,7 +86,7 @@ namespace Tangent.Intermediate.Interop.UnitTests
         public void BulkImport()
         {
             var timer = Stopwatch.StartNew();
-            var result = TangentImport.ImportAssemblies(new[] { typeof(int).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly });
+            var result = TangentImport.ImportAssemblies(new[] { typeof(int).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly, typeof(IEnumerable<>).Assembly, typeof(IEnumerator<>).Assembly }.Distinct());
             timer.Stop();
 
             Console.WriteLine("Import Complete.");
