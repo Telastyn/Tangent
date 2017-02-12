@@ -31,6 +31,7 @@ namespace Tangent.Intermediate
         public override bool CompatibilityMatches(TangentType other, Dictionary<ParameterDeclaration, TangentType> necessaryTypeInferences)
         {
             if(other == this) { return true; }
+            if (other == GenericReference) { return true; }
             var otherUninferred = other as UninferredGenericType;
 
             if(otherUninferred != null && otherUninferred.GenericReference == this.GenericReference) {

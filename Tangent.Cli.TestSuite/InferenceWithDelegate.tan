@@ -1,0 +1,15 @@
+﻿foo (T) :> make foo (x : T) {
+  (this).x => T { x }
+  dump (this) => void {
+    print "foo";
+  }
+}
+
+dump (x : foo(T)) and (fn(T) : void) => void {
+  dump x;
+  fn x.x;
+}
+
+entrypoint => void {
+  dump make foo 42 and x => { print x };
+}

@@ -78,5 +78,14 @@ namespace Tangent.Intermediate
 
             return DelegateAccess.AccessesAnyParameters(parameters, workset) || Arguments.Any(arg => arg.AccessesAnyParameters(parameters, workset));
         }
+
+        internal override void ReplaceTypeResolvedFunctions(Dictionary<Function, Function> replacements, HashSet<Expression> workset)
+        {
+            foreach(var arg in Arguments) {
+                arg.ReplaceTypeResolvedFunctions(replacements, workset);
+            }
+
+            DelegateAccess.ReplaceTypeResolvedFunctions(replacements, workset);
+        }
     }
 }

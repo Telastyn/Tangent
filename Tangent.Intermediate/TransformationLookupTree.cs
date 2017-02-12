@@ -158,7 +158,7 @@ namespace Tangent.Intermediate
                             identifierRules[pp.Identifier].Add(rule);
                         } else if (pp.Parameter.RequiredArgumentType == TangentType.Any.Kind) {
                             anyKindRules.Add(rule);
-                        } else if (pp.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Delegate && !pp.Parameter.RequiredArgumentType.ContainedGenericReferences().Any()) {
+                        } else if (pp.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Delegate /*&& !pp.Parameter.RequiredArgumentType.ContainedGenericReferences().Any()*/) {
                             if (!delegateRules.ContainsKey(pp.Parameter.RequiredArgumentType)) {
                                 delegateRules.Add(pp.Parameter.RequiredArgumentType, new List<TransformationRule>());
                             }

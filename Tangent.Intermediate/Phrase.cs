@@ -28,6 +28,7 @@ namespace Tangent.Intermediate
             var parameterCollector = new List<Expression>();
             var conversionCollector = new List<ConversionPath>();
             var sourceInfoCollector = new List<LineColumnRange>();
+            var lazyLambdaMatches = new List<Tuple<PartialLambdaExpression, TangentType>>();
             var inputEnum = input.GetEnumerator();
             foreach (var element in Pattern) {
                 if (!inputEnum.MoveNext()) { return PhraseMatchResult.Failure; }
@@ -61,14 +62,22 @@ namespace Tangent.Intermediate
                             }
                         }
                     } else if (inputEnum.Current.NodeType == ExpressionNodeType.PartialLambda) {
-                        var lambda = ((PartialLambdaExpression)inputEnum.Current).TryToFitIn(element.Parameter.RequiredArgumentType);
-                        if (lambda == null) {
-                            return PhraseMatchResult.Failure;
-                        }
+                        if (element.Parameter.RequiredArgumentType.ContainedGenericReferences().Any()) {
+                            // Lambdas can't deal with generics. Infer via the rest of the phrase and try at the end.
+                            lazyLambdaMatches.Add(Tuple.Create((PartialLambdaExpression)inputEnum.Current, element.Parameter.RequiredArgumentType));
+                            parameterCollector.Add(inputEnum.Current);
+                            conversionCollector.Add(null);
+                            sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
+                        } else {
+                            var lambda = ((PartialLambdaExpression)inputEnum.Current).TryToFitIn(element.Parameter.RequiredArgumentType);
+                            if (lambda == null) {
+                                return PhraseMatchResult.Failure;
+                            }
 
-                        parameterCollector.Add(lambda);
-                        conversionCollector.Add(null);
-                        sourceInfoCollector.Add(lambda.SourceInfo);
+                            parameterCollector.Add(lambda);
+                            conversionCollector.Add(null);
+                            sourceInfoCollector.Add(lambda.SourceInfo);
+                        }
                     } else if (inType == TangentType.PotentiallyAnything) {
                         var pe = inputEnum.Current as ParenExpression;
                         var resolution = pe.TryResolve(scope, element.Parameter.RequiredArgumentType);
@@ -109,6 +118,34 @@ namespace Tangent.Intermediate
                         parameterCollector.Add(inputEnum.Current);
                         conversionCollector.Add(null);
                         sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
+                    }
+                }
+            }
+
+            foreach(var entry in lazyLambdaMatches) {
+                List<ParameterDeclaration> missingInferences = new List<ParameterDeclaration>();
+                var targetDelegateType = entry.Item2.ResolveGenericReferences(pd => {
+                    if (inferenceCollector.ContainsKey(pd)) {
+                        return inferenceCollector[pd];
+                    }
+
+                    missingInferences.Add(pd);
+                    return TangentType.PotentiallyAnything;
+                });
+
+                if (missingInferences.Any()) {
+                    return PhraseMatchResult.Failure;
+                }
+
+                var lambda = ((PartialLambdaExpression)entry.Item1).TryToFitIn(targetDelegateType);
+                if (lambda == null) {
+                    return PhraseMatchResult.Failure;
+                }
+
+                for(int ix = 0; ix < parameterCollector.Count; ++ix) {
+                    if(parameterCollector[ix] == entry.Item1) {
+                        parameterCollector[ix] = lambda;
+                        sourceInfoCollector[ix] = lambda.SourceInfo;
                     }
                 }
             }

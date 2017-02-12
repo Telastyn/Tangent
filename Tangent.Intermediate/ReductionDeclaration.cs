@@ -115,7 +115,7 @@ namespace Tangent.Intermediate
                         yield return null;
                         yield break;
 
-                    } else if (!rhsEnum.Current.IsIdentifier && rhsInferences.Any()) {
+                    } else if (!rhsEnum.Current.IsIdentifier && rhsInferences.Any() && rhsEnum.Current.Parameter.RequiredArgumentType != thisEnum.Current.Parameter.RequiredArgumentType) {
                         var necessaryInferences = new Dictionary<ParameterDeclaration, TangentType>();
                         if (rhsEnum.Current.Parameter.RequiredArgumentType.CompatibilityMatches(thisEnum.Current.Parameter.RequiredArgumentType, necessaryInferences)) {
                             yield return new SpecializationEntry(rhsEnum.Current.Parameter, thisEnum.Current.Parameter, necessaryInferences);

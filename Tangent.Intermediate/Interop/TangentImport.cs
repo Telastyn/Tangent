@@ -50,9 +50,9 @@ namespace Tangent.Intermediate.Interop
 
             foreach (var t in assembly.GetTypes()) {
                 if (t.IsPublic) {
-                    if (t == typeof(IEnumerable<>) || t == typeof(IEnumerator<>) || t == typeof(List<>)) {
-                        Console.Write("");
-                    }
+                    //if (t == typeof(IEnumerable<>) || t == typeof(IEnumerator<>) || t == typeof(List<>)) {
+                    //    Console.Write("");
+                    //}
 
                     var typeDecl = DotNetType.TypeDeclarationFor(t);
                     if (typeDecl != null) {

@@ -10,13 +10,15 @@ namespace Tangent.Intermediate
     {
         public readonly ParameterDeclaration ThisParam;
         public readonly ParameterDeclaration CtorParam;
+        public readonly ParameterDeclaration EffectiveParam;
         public readonly IEnumerable<Expression> Arguments;
 
-        public CtorParameterAccessExpression(ParameterDeclaration thisParam, ParameterDeclaration ctorParam, IEnumerable<Expression> arguments, LineColumnRange sourceInfo)
+        public CtorParameterAccessExpression(ParameterDeclaration thisParam, ParameterDeclaration ctorParam, ParameterDeclaration effectiveParam, IEnumerable<Expression> arguments, LineColumnRange sourceInfo)
             : base(sourceInfo)
         {
             this.ThisParam = thisParam;
             this.CtorParam = ctorParam;
+            this.EffectiveParam = effectiveParam;
             this.Arguments = arguments;
         }
 
@@ -29,7 +31,7 @@ namespace Tangent.Intermediate
         {
             get
             {
-                return CtorParam.Returns;
+                return EffectiveParam.RequiredArgumentType;
             }
         }
 
@@ -49,7 +51,7 @@ namespace Tangent.Intermediate
                 return this;
             }
 
-            return new CtorParameterAccessExpression(ThisParam, CtorParam, newbs, SourceInfo);
+            return new CtorParameterAccessExpression(ThisParam, CtorParam, EffectiveParam, newbs, SourceInfo);
         }
 
         public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
