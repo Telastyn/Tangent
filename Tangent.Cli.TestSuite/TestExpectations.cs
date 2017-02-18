@@ -435,6 +435,14 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void InteropInterfaceUse2()
+        {
+            var result = Test.DebugProgramFile(new[] { "InteropInterfaceUse2.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "1, 2, 3" }));
+        }
+
+        [TestMethod]
         public void InferenceWithDelegate()
         {
             var result = Test.DebugProgramFile(new[] { "InferenceWithDelegate.tan" });

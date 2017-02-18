@@ -1,8 +1,8 @@
 ﻿for each (enumerable : .NET System.Collections.Generic.IEnumerable<(T)>) do (process (T) : void) => void {
   : enumerator : .NET System.Collections.Generic.IEnumerator<T> := enumerable.GetEnumerator;
 
-  print enumerator.MoveNext;
-  //while enumerator.MoveNext process enumerator.Current;
+  //print enumerator.MoveNext;
+  while enumerator.MoveNext process enumerator.Current;
 }
 
 entrypoint => void {

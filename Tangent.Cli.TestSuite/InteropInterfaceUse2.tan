@@ -1,0 +1,13 @@
+﻿dump (numbers : .NET System.Collections.Generic.IEnumerable<string>) => void {
+  print .NET System.String.Join ", " numbers;
+}
+
+entrypoint => void {
+  : list : .NET System.Collections.Generic.List<string> := new .NET System.Collections.Generic.List<string>;
+
+  list.Add "1";
+  list.Add "2";
+  list.Add "3";
+
+  dump list;
+}
