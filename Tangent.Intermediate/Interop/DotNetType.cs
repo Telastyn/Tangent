@@ -22,7 +22,6 @@ namespace Tangent.Intermediate.Interop
         private static readonly ConcurrentDictionary<Type, TypeDeclaration> declarationCache = new ConcurrentDictionary<Type, TypeDeclaration>();
         public static TangentType For(Type t)
         {
-            // TODO: handle bool as an enum type.
             if (t == typeof(bool)) {
                 // Doing things this way to avoid initialization loops.
                 BoolEnumAdapterType.Common = BoolEnumAdapterType.Common ?? new BoolEnumAdapterType();

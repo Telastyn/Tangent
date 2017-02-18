@@ -1,0 +1,3 @@
+﻿read line from console => string {
+  .NET System.Console.In.ReadLine;
+}

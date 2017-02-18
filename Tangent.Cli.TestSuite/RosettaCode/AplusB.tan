@@ -1,0 +1,14 @@
+﻿entrypoint => void { 
+  : buffer : string := read line from console;
+
+  while !string.IsNullOrWhiteSpace buffer
+  {
+    : tokens : .NET System.Collections.Generic.IEnumerable<string> := buffer.Split  " " 2 StringSplitOptions.RemoveEmptyEntries;
+	: a : int := int.Parse tokens.First;
+	: b : int := int.Parse tokens.Skip 1.First;
+
+	print a + b;
+
+	buffer = read line from console;
+  }
+}

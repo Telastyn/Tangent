@@ -1063,7 +1063,7 @@ namespace Tangent.CilGeneration
                     }
 
                     var thisType = Compile(ctorAccess.ThisParam.Returns);
-                    if (thisType.IsGenericType) {
+                    if (thisType.IsGenericType && !thisType.IsGenericTypeDefinition) {
                         gen.Emit(OpCodes.Ldfld, TypeBuilder.GetField(thisType, ctorParamLookup[ctorAccess.CtorParam]));
                     } else {
                         gen.Emit(OpCodes.Ldfld, ctorParamLookup[ctorAccess.CtorParam]);

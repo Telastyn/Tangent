@@ -204,14 +204,14 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void MultifileIfTrueRealCompiler()
         {
-            var result = Test.ProgramFile(new[] { "IfTrue-NeedsLib.tan", "conditional-lib.tan" });
+            var result = Test.ProgramFile(new[] { "IfTrue-NeedsLib.tan", @"lib\conditional-lib.tan" });
             Assert.AreEqual("w00t.", result.Trim());
         }
 
         [TestMethod]
         public void MultifileIfTrueDebuggingCompiler()
         {
-            var result = Test.DebugProgramFile(new[] { "IfTrue-NeedsLib.tan", "conditional-lib.tan" });
+            var result = Test.DebugProgramFile(new[] { "IfTrue-NeedsLib.tan", @"lib\conditional-lib.tan" });
             Assert.AreEqual("w00t.", result.Trim());
         }
 
@@ -308,7 +308,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void NestedIfElse()
         {
-            var result = Test.DebugProgramFile(new[] { "NestedIfElse.tan", "conditional-lib.tan" });
+            var result = Test.DebugProgramFile(new[] { "NestedIfElse.tan", @"lib\conditional-lib.tan" });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "equals" }));
         }
@@ -316,7 +316,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void LocalClosures()
         {
-            var result = Test.DebugProgramFile(new[] { "LocalClosures.tan", "conditional-lib.tan", "looping-lib.tan" });
+            var result = Test.DebugProgramFile(new[] { "LocalClosures.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan" });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "1", "2", "3" }));
         }
@@ -324,7 +324,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void LoopTermination()
         {
-            var result = Test.ProgramFile(new[] { "LoopTermination.tan", "conditional-lib.tan", "looping-lib.tan" });
+            var result = Test.ProgramFile(new[] { "LoopTermination.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan" });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "0", "1", "2", "3", "4" }));
         }
@@ -365,7 +365,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void ConsBenchmark()
         {
-            var result = Test.ProgramFile(new[] { "cons-benchmark.tan", "conditional-lib.tan", "looping-lib.tan" });
+            var result = Test.ProgramFile(new[] { "cons-benchmark.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan" });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new string[] { }));
         }
@@ -413,7 +413,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void Ternary()
         {
-            var result = Test.DebugProgramFile(new[] { "Ternary.tan", "conditional-lib.tan" });
+            var result = Test.DebugProgramFile(new[] { "Ternary.tan", @"lib\conditional-lib.tan" });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "42" }));
         }
@@ -421,7 +421,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void TernaryInferred()
         {
-            var result = Test.DebugProgramFile(new[] { "TernaryInferred.tan", "conditional-lib.tan" });
+            var result = Test.DebugProgramFile(new[] { "TernaryInferred.tan", @"lib\conditional-lib.tan" });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "42" }));
         }
@@ -429,7 +429,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void InteropInterfaceUse()
         {
-            var result = Test.DebugProgramFile(new[] { "InteropInterfaceUse.tan", "conditional-lib.tan", "looping-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly });
+            var result = Test.DebugProgramFile(new[] { "InteropInterfaceUse.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "1", "2", "3" }));
         }
