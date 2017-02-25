@@ -64,6 +64,13 @@ namespace Tangent.Intermediate
                                     yield return ruleset;
                                 }
                             }
+                            
+                            // generics
+                            foreach (var entry in PrioritizedGenericBranches) {
+                                foreach (var ruleset in entry.Lookup(phrase.Skip(1))) {
+                                    yield return ruleset;
+                                }
+                            }
                         } else if (targetType == TangentType.PotentiallyAnything) {
                             foreach (var entry in PrioritizedPotentiallyAnythingBranches) {
                                 foreach (var ruleset in entry.Lookup(phrase.Skip(1))) {
