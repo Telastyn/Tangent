@@ -20,6 +20,7 @@ namespace Tangent.Intermediate.Interop
 
         private static readonly ConcurrentDictionary<Type, TangentType> cache = new ConcurrentDictionary<Type, TangentType>();
         private static readonly ConcurrentDictionary<Type, TypeDeclaration> declarationCache = new ConcurrentDictionary<Type, TypeDeclaration>();
+        private static readonly ConcurrentDictionary<Type, ParameterDeclaration> genericCache = new ConcurrentDictionary<Type, ParameterDeclaration>();
         public static TangentType For(Type t)
         {
             if (t == typeof(bool)) {
@@ -34,6 +35,11 @@ namespace Tangent.Intermediate.Interop
 
             if (t.IsConstructedGenericType) {
                 return cache.GetOrAdd(t, x => BuildConstructedGenericType(t));
+            }
+
+            if (t.IsGenericParameter) {
+                // TODO: constraints.
+                return cache.GetOrAdd(t, x => GenericArgumentReferenceType.For(genericCache.GetOrAdd(t, y => new ParameterDeclaration(t.Name, TangentType.Any.Kind))));
             }
 
             return cache.GetOrAdd(t, x => new DotNetType(t));
@@ -62,7 +68,7 @@ namespace Tangent.Intermediate.Interop
                 var phrase = Tokenize.ProgramFile(".NET " + Regex.Replace(t.FullName ?? t.Name, "`[0-9]+", ""), "").Select(token => new PhrasePart(token.Value)).ToList();
                 if (t.IsGenericTypeDefinition) {
                     // TODO: constraints.
-                    var genericParameters = t.GetGenericArguments().Select(ga => new ParameterDeclaration(ga.Name, TangentType.Any.Kind)).ToList();
+                    var genericParameters = t.GetGenericArguments().Select(ga => genericCache.GetOrAdd(ga, y => new ParameterDeclaration(ga.Name, TangentType.Any.Kind))).ToList();
                     phrase.AddRange(FormatGenericParameters(genericParameters));
                 }
 

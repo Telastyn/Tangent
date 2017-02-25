@@ -454,7 +454,7 @@ namespace Tangent.CilGeneration
 
             int ix = 0;
             foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier && pp.Parameter.RequiredArgumentType.ImplementationType != KindOfType.Kind).Select(pp => pp.Parameter)) {
-                FieldInfo paramField = possiblyGenericClosureType.DefineField(GetNameFor(parameter), Compile(parameter.Returns), FieldAttributes.Public);
+                FieldInfo paramField = possiblyGenericClosureType.DefineField(GetNameFor(parameter), Compile(parameter.RequiredArgumentType), FieldAttributes.Public);
                 FieldInfo closureParamField = paramField;
                 if (fn.GenericParameters.Any()) {
                     paramField = TypeBuilder.GetField(concreteClosureType, paramField);
