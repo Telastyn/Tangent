@@ -84,23 +84,28 @@ namespace Tangent.Intermediate
             return null;
         }
 
-        private static int? CompareGeneric(ParameterDeclaration x, ParameterDeclaration y)
+        public static int? CompareGeneric(ParameterDeclaration x, ParameterDeclaration y)
+        {
+            return CompareGeneric(x.RequiredArgumentType, y.RequiredArgumentType);
+        }
+
+        public static int? CompareGeneric(TangentType x, TangentType y)
         {
             // Taking this from exising implementation. May be better ways to do it.
 
             // Non-generics preferred.
             // Generics that can infer the other are considered more general, and thus less preferred.
 
-            var isXGeneric = x.RequiredArgumentType.ContainedGenericReferences().Any();
-            var isYGeneric = y.RequiredArgumentType.ContainedGenericReferences().Any();
+            var isXGeneric = x.ContainedGenericReferences().Any();
+            var isYGeneric = y.ContainedGenericReferences().Any();
 
             if (isXGeneric) {
                 if (!isYGeneric) {
                     return 1;
                 }
 
-                var xCanInferY = x.RequiredArgumentType.CompatibilityMatches(y.Returns, new Dictionary<ParameterDeclaration, TangentType>());
-                var yCanInferX = y.RequiredArgumentType.CompatibilityMatches(x.Returns, new Dictionary<ParameterDeclaration, TangentType>());
+                var xCanInferY = x.CompatibilityMatches(y, new Dictionary<ParameterDeclaration, TangentType>());
+                var yCanInferX = y.CompatibilityMatches(x, new Dictionary<ParameterDeclaration, TangentType>());
                 if (xCanInferY) {
                     if (yCanInferX) {
                         return 0;
