@@ -429,7 +429,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void InteropInterfaceUse()
         {
-            var result = Test.DebugProgramFile(new[] { "InteropInterfaceUse.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly });
+            var result = Test.DebugProgramFile(new[] { "InteropInterfaceUse.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "1", "2", "3" }));
         }
@@ -437,7 +437,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void InteropInterfaceUse2()
         {
-            var result = Test.DebugProgramFile(new[] { "InteropInterfaceUse2.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly });
+            var result = Test.DebugProgramFile(new[] { "InteropInterfaceUse2.tan" }, new[] { typeof(IEnumerable<>).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "1, 2, 3" }));
         }
@@ -445,7 +445,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void InteropInterfaceUse3()
         {
-            var result = Test.DebugProgramFile(new[] { "InteropInterfaceUse3.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly });
+            var result = Test.DebugProgramFile(new[] { "InteropInterfaceUse3.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "1", "2", "3" }));
         }

@@ -10,13 +10,25 @@ namespace Tangent.Intermediate
     {
         private readonly Dictionary<TangentType, Dictionary<TangentType, ConversionPath>> Paths = new Dictionary<TangentType, Dictionary<TangentType, ConversionPath>>();
         private readonly List<TangentType> GenericSources = new List<TangentType>();
+        private readonly Dictionary<TangentType, List<TangentType>> PartialGenericSources = new Dictionary<TangentType, List<TangentType>>();
 
         public ConversionGraph(IEnumerable<ReductionDeclaration> conversionOperations)
         {
             conversionOperations = conversionOperations.Where(fn => fn.IsConversion);
             foreach (var entry in conversionOperations) {
                 var convertFromType = entry.Takes.First().Parameter.RequiredArgumentType;
-                if (convertFromType.ContainedGenericReferences().Any()) { GenericSources.Add(convertFromType); }
+                if (convertFromType.ContainedGenericReferences().Any()) {
+                    var bgt = convertFromType as BoundGenericType;
+                    if (bgt != null) {
+                        if (!PartialGenericSources.ContainsKey(bgt.GenericType)) {
+                            PartialGenericSources.Add(bgt.GenericType, new List<TangentType>());
+                        }
+
+                        PartialGenericSources[bgt.GenericType].Add(convertFromType);
+                    } else {
+                        GenericSources.Add(convertFromType);
+                    }
+                }
                 if (!Paths.ContainsKey(convertFromType)) {
                     Paths.Add(convertFromType, new Dictionary<TangentType, ConversionPath>());
                 }
@@ -67,12 +79,25 @@ namespace Tangent.Intermediate
 
             // if still nothing, check generic conversions.
             if (conversion == null) {
+                var fromBgt = from as BoundGenericType;
                 var genericCandidates = new List<Tuple<TangentType, ConversionPath>>();
-                foreach (var generic in GenericSources) {
-                    var inferences = new Dictionary<ParameterDeclaration, TangentType>();
-                    if (generic.CompatibilityMatches(from, inferences)) {
-                        var goodTargets = Paths[generic].Where(kvp => kvp.Key.ResolveGenericReferences(pd => inferences[pd]) == to).Select(kvp => kvp.Value).ToList();
-                        genericCandidates.AddRange(goodTargets.Select(t => Tuple.Create(generic, t)));
+                if (fromBgt != null && PartialGenericSources.ContainsKey(fromBgt.GenericType)) {
+                    foreach(var generic in PartialGenericSources[fromBgt.GenericType]) {
+                        var inferences = new Dictionary<ParameterDeclaration, TangentType>();
+                        if (generic.CompatibilityMatches(from, inferences)) {
+                            var goodTargets = Paths[generic].Where(kvp => kvp.Key.ResolveGenericReferences(pd => inferences[pd]) == to).Select(kvp => kvp.Value).ToList();
+                            genericCandidates.AddRange(goodTargets.Select(t => Tuple.Create(generic, t)));
+                        }
+                    }
+                }
+
+                if (!genericCandidates.Any()) {
+                    foreach (var generic in GenericSources) {
+                        var inferences = new Dictionary<ParameterDeclaration, TangentType>();
+                        if (generic.CompatibilityMatches(from, inferences)) {
+                            var goodTargets = Paths[generic].Where(kvp => kvp.Key.ResolveGenericReferences(pd => inferences[pd]) == to).Select(kvp => kvp.Value).ToList();
+                            genericCandidates.AddRange(goodTargets.Select(t => Tuple.Create(generic, t)));
+                        }
                     }
                 }
 

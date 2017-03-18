@@ -41,6 +41,7 @@ namespace Tangent.Intermediate.Interop
 
         public static ImportBundle ImportAssemblies(IEnumerable<Assembly> assemblies)
         {
+            assemblies = assemblies.Distinct();
             return assemblies.Aggregate(new PartialImportBundle(), (r, a) => PartialImportBundle.Merge(r, ImportAssembly(a)));
         }
 
@@ -419,6 +420,10 @@ namespace Tangent.Intermediate.Interop
 
         public static IEnumerable<ReductionDeclaration> SubTypingConversionsFor(Type t)
         {
+            if (t == typeof(IEnumerable<>) || t == typeof(IEnumerator<>) || t == typeof(List<>)) {
+                Console.Write("");
+            }
+
             var tangentType = DotNetType.For(t);
 
             // Base 

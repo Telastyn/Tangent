@@ -6,8 +6,20 @@ using System.Threading.Tasks;
 
 namespace Tangent.Intermediate
 {
+    public class ExpressionDeclarationPriorityComparer : IComparer<ExpressionDeclaration>
+    {
+        private static PhrasePriorityComparer phraseComparer = new PhrasePriorityComparer();
+
+        public int Compare(ExpressionDeclaration x, ExpressionDeclaration y)
+        {
+            return phraseComparer.Compare(x.DeclaredPhrase, y.DeclaredPhrase);
+        }
+    }
+
     public class PhrasePriorityComparer : IComparer<Phrase>
     {
+        public static readonly PhrasePriorityComparer Common = new PhrasePriorityComparer();
+
         /// <summary>
         /// Compares the two phrases in priority order. "Less" phrases are higher priority. 0 compare is not necessarily equal, but disjoint.
         /// </summary>

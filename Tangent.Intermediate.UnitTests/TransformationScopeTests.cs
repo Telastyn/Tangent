@@ -33,7 +33,7 @@ namespace Tangent.Intermediate.UnitTests
             var rng = new Random();
             rules = rules.OrderBy(x => rng.Next()).ToList();
 
-            var result = TransformationScopeOld.Prioritize(rules);
+            var result = TransformationScopeOld.Prioritize(rules).ToList();
 
             Assert.AreEqual(rules.Count, result.Count());
             Assert.IsTrue(result.All(x => x.Count() == 1));

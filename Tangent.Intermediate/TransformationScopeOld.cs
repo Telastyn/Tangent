@@ -96,6 +96,50 @@ namespace Tangent.Intermediate
 
         public static IEnumerable<IEnumerable<TransformationRule>> Prioritize(IEnumerable<TransformationRule> rules)
         {
+            //var newb = NewPrioritize(rules).ToList();
+            //var old = OldPrioritize(rules).ToList();
+
+            ////Console.WriteLine(newb);
+            ////Console.WriteLine(old);
+
+            //return newb;
+            return NewPrioritize(rules);
+        }
+
+        private static IEnumerable<IEnumerable<TransformationRule>> NewPrioritize(IEnumerable<TransformationRule> rules)
+        {
+            if (!rules.Any()) { yield break; }
+
+            var groups = rules.GroupBy(r => r.Type).OrderBy(g => g.Key);
+            foreach (var group in groups) {
+                var tiers = group.GroupBy(r => r.MaxTakeCount).OrderByDescending(g => g.Key);
+                foreach (var tier in tiers) {
+                    var nonExprs = new List<TransformationRule>();
+                    var exprs = new List<ExpressionDeclaration>();
+                    foreach (var entry in tier) {
+                        var expr = entry as ExpressionDeclaration;
+                        if (expr == null) {
+                            nonExprs.Add(entry);
+                        } else {
+                            exprs.Add(expr);
+                        }
+                    }
+
+                    if (nonExprs.Any()) {
+                        yield return nonExprs;
+                    }
+
+                    if (exprs.Any()) {
+                        foreach (var partition in SortAndPartitionSortedCandidates(exprs)) {
+                            yield return partition;
+                        }
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<IEnumerable<TransformationRule>> OldPrioritize(IEnumerable<TransformationRule> rules)
+        {
             if (!rules.Any()) { yield break; }
 
             var groups = rules.GroupBy(r => r.Type).OrderBy(g => g.Key);
@@ -117,6 +161,21 @@ namespace Tangent.Intermediate
                     }
                 }
             }
+        }
+
+        private static IEnumerable<IEnumerable<ExpressionDeclaration>> SortAndPartitionSortedCandidates(List<ExpressionDeclaration> rules)
+        {
+            rules.Sort(new ExpressionDeclarationPriorityComparer().Reverse());
+
+            int skip = 0;
+            for (int ix = 1; ix < rules.Count; ++ix) {
+                if (0 != PhrasePriorityComparer.Common.Compare(rules[ix - 1].DeclaredPhrase, rules[ix].DeclaredPhrase)) {
+                    yield return rules.GetRange(skip, ix - skip);
+                    skip = ix;
+                }
+            }
+
+            yield return rules.GetRange(skip, rules.Count - skip);
         }
 
         private static List<ExpressionDeclaration> PopBestCandidates(List<ExpressionDeclaration> rules)

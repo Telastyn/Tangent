@@ -15,6 +15,7 @@ namespace Tangent.Intermediate
         private readonly Dictionary<TangentType, TransformationLookupTree> ParameterMatchBranches = new Dictionary<TangentType, TransformationLookupTree>();
         private readonly Dictionary<TangentType, List<TransformationRule>> ParameterRules = new Dictionary<TangentType, List<TransformationRule>>();
         private readonly List<TransformationLookupTree> PrioritizedGenericBranches = new List<TransformationLookupTree>();
+        private readonly Dictionary<TangentType, List<TransformationLookupTree>> PrioritizedPartialGenericBranches = new Dictionary<TangentType, List<TransformationLookupTree>>();
         private readonly Dictionary<TangentType, TransformationLookupTree> DelegateParameterBranches = new Dictionary<TangentType, TransformationLookupTree>();
         private readonly Dictionary<TangentType, List<TransformationLookupTree>> ConversionCache = new Dictionary<TangentType, List<TransformationLookupTree>>();
         private TransformationLookupTree AnyKindBranches = null;
@@ -48,6 +49,9 @@ namespace Tangent.Intermediate
                 } else {
                     var targetType = element.EffectiveType;
                     if (targetType != null) {
+                        var targetBoundType = targetType as BoundGenericType;
+                        var targetGenericType = targetBoundType?.GenericType;
+
                         if (targetType.ImplementationType == KindOfType.TypeConstant ||
                             targetType.ImplementationType == KindOfType.Kind ||
                             targetType.ImplementationType == KindOfType.GenericReference) {
@@ -64,8 +68,16 @@ namespace Tangent.Intermediate
                                     yield return ruleset;
                                 }
                             }
-                            
+
                             // generics
+                            if (targetGenericType != null && PrioritizedPartialGenericBranches.ContainsKey(targetGenericType)) {
+                                foreach (var entry in PrioritizedPartialGenericBranches[targetGenericType]) {
+                                    foreach (var ruleset in entry.Lookup(phrase.Skip(1))) {
+                                        yield return ruleset;
+                                    }
+                                }
+                            }
+
                             foreach (var entry in PrioritizedGenericBranches) {
                                 foreach (var ruleset in entry.Lookup(phrase.Skip(1))) {
                                     yield return ruleset;
@@ -78,7 +90,7 @@ namespace Tangent.Intermediate
                                 }
                             }
 
-                            foreach(var entry in DelegateParameterBranches.Where(kvp => !((DelegateType)kvp.Key).Takes.Any())) {
+                            foreach (var entry in DelegateParameterBranches.Where(kvp => !((DelegateType)kvp.Key).Takes.Any())) {
                                 foreach (var ruleset in entry.Value.Lookup(phrase.Skip(1))) {
                                     yield return ruleset;
                                 }
@@ -119,6 +131,14 @@ namespace Tangent.Intermediate
                             }
 
                             // generics
+                            if(targetGenericType != null && PrioritizedPartialGenericBranches.ContainsKey(targetGenericType)) {
+                                foreach(var entry in PrioritizedPartialGenericBranches[targetGenericType]) {
+                                    foreach (var ruleset in entry.Lookup(phrase.Skip(1))) {
+                                        yield return ruleset;
+                                    }
+                                }
+                            }
+
                             foreach (var entry in PrioritizedGenericBranches) {
                                 foreach (var ruleset in entry.Lookup(phrase.Skip(1))) {
                                     yield return ruleset;
@@ -146,6 +166,7 @@ namespace Tangent.Intermediate
             Dictionary<Identifier, List<TransformationRule>> identifierRules = new Dictionary<Identifier, List<TransformationRule>>();
             Dictionary<TangentType, List<TransformationRule>> delegateRules = new Dictionary<TangentType, List<TransformationRule>>();
             Dictionary<TangentType, List<TransformationRule>> singleValueRules = new Dictionary<TangentType, List<TransformationRule>>();
+            Dictionary<TangentType, List<ExpressionDeclaration>> partialGenericRules = new Dictionary<TangentType, List<ExpressionDeclaration>>();
             List<ExpressionDeclaration> genericExprs = new List<ExpressionDeclaration>();
 
             foreach (var rule in rules) {
@@ -165,7 +186,7 @@ namespace Tangent.Intermediate
                             identifierRules[pp.Identifier].Add(rule);
                         } else if (pp.Parameter.RequiredArgumentType == TangentType.Any.Kind) {
                             anyKindRules.Add(rule);
-                        
+
                             // RMS: the second condition here is necessary for the Ternary tests to work, but seems to break other things. Take care.
                         } else if (pp.Parameter.RequiredArgumentType.ImplementationType == KindOfType.Delegate && !pp.Parameter.RequiredArgumentType.ContainedGenericReferences().Any()) {
                             if (!delegateRules.ContainsKey(pp.Parameter.RequiredArgumentType)) {
@@ -180,7 +201,16 @@ namespace Tangent.Intermediate
 
                             singleValueRules[pp.Parameter.RequiredArgumentType].Add(rule);
                         } else if (pp.Parameter.RequiredArgumentType.ContainedGenericReferences().Any()) {
-                            genericExprs.Add(expr);
+                            var bgt = pp.Parameter.RequiredArgumentType as BoundGenericType;
+                            if (bgt != null) {
+                                if (!partialGenericRules.ContainsKey(bgt.GenericType)) {
+                                    partialGenericRules.Add(bgt.GenericType, new List<ExpressionDeclaration>());
+                                }
+
+                                partialGenericRules[bgt.GenericType].Add(expr);
+                            } else {
+                                genericExprs.Add(expr);
+                            }
                         } else {
                             if (!ParameterRules.ContainsKey(pp.Parameter.RequiredArgumentType)) {
                                 ParameterRules.Add(pp.Parameter.RequiredArgumentType, new List<TransformationRule>());
@@ -224,6 +254,13 @@ namespace Tangent.Intermediate
                 SingleValueBranches.Add(entry.Key, new TransformationLookupTree(entry.Value, Conversions, index + 1));
             }
 
+            foreach (var entry in partialGenericRules) {
+                PrioritizedPartialGenericBranches.Add(entry.Key, new List<TransformationLookupTree>());
+                foreach (var tier in TransformationScopeOld.Prioritize(entry.Value)) {
+                    PrioritizedPartialGenericBranches[entry.Key].Add(new TransformationLookupTree(tier, Conversions, index + 1));
+                }
+            }
+
             foreach (var entry in TransformationScopeOld.Prioritize(genericExprs)) {
                 PrioritizedGenericBranches.Add(new TransformationLookupTree(entry, Conversions, index + 1));
             }
@@ -241,7 +278,7 @@ namespace Tangent.Intermediate
                 if (target != branch.Key) {
                     if (branch.Key.CompatibilityMatches(target, new Dictionary<ParameterDeclaration, TangentType>())) {
                         accumulatedRules.UnionWith(branch.Value);
-                    }else {
+                    } else {
                         var conversion = Conversions.FindConversion(target, branch.Key);
                         if (conversion != null) {
                             accumulatedRules.UnionWith(branch.Value);
@@ -251,7 +288,7 @@ namespace Tangent.Intermediate
             }
 
             List<TransformationLookupTree> coersions = new List<TransformationLookupTree>();
-            foreach(var entry in TransformationScopeOld.Prioritize(accumulatedRules)) {
+            foreach (var entry in TransformationScopeOld.Prioritize(accumulatedRules)) {
                 coersions.Add(new TransformationLookupTree(entry, Conversions, PhraseIndex + 1));
             }
 

@@ -13,7 +13,7 @@ namespace Tangent.Cli.TestSuite.RosettaCode
         [TestMethod]
         public void AplusB()
         {
-            var result = Test.DebugProgramFile(new[] { @"RosettaCode\AplusB.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan", @"lib\console-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly });
+            var result = Test.ProgramFile(new[] { @"RosettaCode\AplusB.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan", @"lib\console-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new string[] { }));
         }
