@@ -36,11 +36,11 @@ namespace Tangent.Intermediate.Interop.UnitTests
         public void ImportSystem()
         {
             var timer = Stopwatch.StartNew();
-            var result = TangentImport.ImportAssembly(typeof(int).Assembly);
+            var result = TangentImport.ImportAssembly(typeof(int).Assembly, x => true);
             timer.Stop();
             Console.WriteLine("Import Complete.");
             Console.WriteLine("Imported Types ({0}):", result.Types.Count);
-            foreach(var entry in result.Types) {
+            foreach (var entry in result.Types) {
                 Console.WriteLine("  {0}", entry.Value);
             }
 
@@ -50,13 +50,13 @@ namespace Tangent.Intermediate.Interop.UnitTests
                 Console.WriteLine("  {0}", entry.Value);
             }
 
-            foreach(var entry in result.StructInits) {
+            foreach (var entry in result.StructInits) {
                 Console.WriteLine("  {0}", entry.Value);
             }
 
             Console.WriteLine();
             Console.WriteLine("Imported Functions ({0}):", result.CommonFunctions.Count);
-            foreach(var entry in result.CommonFunctions) {
+            foreach (var entry in result.CommonFunctions) {
                 Console.WriteLine("  {0}", entry.Value);
             }
 
@@ -74,7 +74,7 @@ namespace Tangent.Intermediate.Interop.UnitTests
 
             Console.WriteLine();
             Console.WriteLine("Imported Interface Bindings ({0}):", result.InterfaceBindings.Count);
-            foreach(var entry in result.InterfaceBindings) {
+            foreach (var entry in result.InterfaceBindings) {
                 Console.WriteLine("  {0}", entry.Value);
             }
 
@@ -86,7 +86,7 @@ namespace Tangent.Intermediate.Interop.UnitTests
         public void BulkImport()
         {
             var timer = Stopwatch.StartNew();
-            var result = TangentImport.ImportAssemblies(new[] { typeof(int).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly, typeof(IEnumerable<>).Assembly, typeof(IEnumerator<>).Assembly }.Distinct());
+            var result = TangentImport.ImportAssemblies(new[] { typeof(int).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly, typeof(IEnumerable<>).Assembly, typeof(IEnumerator<>).Assembly }.Distinct(), x => true);
             timer.Stop();
 
             Console.WriteLine("Import Complete.");

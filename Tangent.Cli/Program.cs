@@ -54,7 +54,8 @@ Tangent.Cli.exe -f <CompilerInputFile>";
                 tokenization = tokenization.Concat(Tokenize.ProgramFile(File.ReadAllText(sourceFile), sourceFile));
             }
 
-            var intermediateProgram = Parse.TangentProgram(tokenization, Tangent.Intermediate.Interop.TangentImport.ImportAssemblies(inputs.DllImports.Select(f => Assembly.Load(f))));
+            HashSet<string> tokenValues = new HashSet<string>(tokenization.Select(t => t.Value).Where(v => v != null));
+            var intermediateProgram = Parse.TangentProgram(tokenization, Tangent.Intermediate.Interop.TangentImport.ImportAssemblies(inputs.DllImports.Select(f => Assembly.Load(f)), s => tokenValues.Contains(s)));
             if (!intermediateProgram.Success) {
                 Console.Error.WriteLine(intermediateProgram.Error); // TODO: make better.
                 return;
@@ -74,7 +75,7 @@ Tangent.Cli.exe -f <CompilerInputFile>";
                 processedIncludes.Add(workset);
                 pendingIncludes.Remove(workset);
                 var contents = JsonConvert.DeserializeObject<CompilerInputs1>(workset);
-                foreach(var include in contents.Includes) {
+                foreach (var include in contents.Includes) {
                     if (!processedIncludes.Contains(include)) {
                         pendingIncludes.Add(include);
                     }

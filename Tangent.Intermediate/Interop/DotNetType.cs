@@ -132,5 +132,15 @@ namespace Tangent.Intermediate.Interop
                 return TypeDeclarationFor(MappedType).Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).ToList();
             }
         }
+
+        protected internal override IEnumerable<ParameterDeclaration> ContainedGenericReferences(HashSet<TangentType> alreadyProcessed)
+        {
+            if (alreadyProcessed.Contains(this)) {
+                return Enumerable.Empty<ParameterDeclaration>();
+            }
+
+            alreadyProcessed.Add(this);
+            return GenericParameters;
+        }
     }
 }

@@ -131,10 +131,33 @@ namespace Tangent.Intermediate
                             }
 
                             // generics
-                            if(targetGenericType != null && PrioritizedPartialGenericBranches.ContainsKey(targetGenericType)) {
-                                foreach(var entry in PrioritizedPartialGenericBranches[targetGenericType]) {
-                                    foreach (var ruleset in entry.Lookup(phrase.Skip(1))) {
-                                        yield return ruleset;
+                            if(targetGenericType != null) {
+                                if (PrioritizedPartialGenericBranches.ContainsKey(targetGenericType)) {
+                                    foreach (var entry in PrioritizedPartialGenericBranches[targetGenericType]) {
+                                        foreach (var ruleset in entry.Lookup(phrase.Skip(1))) {
+                                            yield return ruleset;
+                                        }
+                                    }
+                                }
+
+                                // TODO: cache? optimize?
+                                var conversions = new List<TangentType>();
+                                foreach(var kvp in PrioritizedPartialGenericBranches) {
+                                    if (kvp.Key != targetGenericType) {
+                                        // How to actually test this?
+                                        // LASTWORKED.
+                                    }
+                                }
+
+                                if (conversions.Count > 1) {
+                                    throw new NotImplementedException("Ambiguity in partial generic conversion options. Not yet supported.");
+                                }
+
+                                foreach(var entry in conversions) {
+                                    foreach(var tier in PrioritizedPartialGenericBranches[entry]) {
+                                        foreach(var ruleset in tier.Lookup(phrase.Skip(1))) {
+                                            yield return ruleset;
+                                        }
                                     }
                                 }
                             }

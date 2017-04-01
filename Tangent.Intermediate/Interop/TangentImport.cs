@@ -39,13 +39,13 @@ namespace Tangent.Intermediate.Interop
 
         private static readonly Type GenericConstantExpressionType = typeof(ConstantExpression<>);
 
-        public static ImportBundle ImportAssemblies(IEnumerable<Assembly> assemblies)
+        public static ImportBundle ImportAssemblies(IEnumerable<Assembly> assemblies, Predicate<string> isAllowedIdentifier)
         {
             assemblies = assemblies.Distinct();
-            return assemblies.Aggregate(new PartialImportBundle(), (r, a) => PartialImportBundle.Merge(r, ImportAssembly(a)));
+            return assemblies.Aggregate(new PartialImportBundle(), (r, a) => PartialImportBundle.Merge(r, ImportAssembly(a, isAllowedIdentifier)));
         }
 
-        public static PartialImportBundle ImportAssembly(Assembly assembly)
+        public static PartialImportBundle ImportAssembly(Assembly assembly, Predicate<string> isAllowedIdentifier)
         {
             PartialImportBundle result = new PartialImportBundle();
 
@@ -56,9 +56,11 @@ namespace Tangent.Intermediate.Interop
                     //}
 
                     var typeDecl = DotNetType.TypeDeclarationFor(t);
-                    if (typeDecl != null) {
+                    var isBuiltIn = t == typeof(int) || t == typeof(string) || t == typeof(bool) || t == typeof(double) || t == typeof(void);
+
+                    if (typeDecl != null && typeDecl.Takes.Where(pp => pp.IsIdentifier).All(pp => isBuiltIn || isAllowedIdentifier(pp.Identifier.Value))) {
                         var tangentType = typeDecl.Returns;
-                        if (t != typeof(int) && t != typeof(string) && t != typeof(bool) && t != typeof(double) && t != typeof(void)) {
+                        if (!isBuiltIn) {
                             result.Types.Add(t, typeDecl);
                         }
 
@@ -420,10 +422,6 @@ namespace Tangent.Intermediate.Interop
 
         public static IEnumerable<ReductionDeclaration> SubTypingConversionsFor(Type t)
         {
-            if (t == typeof(IEnumerable<>) || t == typeof(IEnumerator<>) || t == typeof(List<>)) {
-                Console.Write("");
-            }
-
             var tangentType = DotNetType.For(t);
 
             // Base 
