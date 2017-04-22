@@ -110,7 +110,13 @@ namespace Tangent.Intermediate
                         if (implicitConversion == null) {
                             return PhraseMatchResult.Failure;
                         } else {
-                            parameterCollector.Add(implicitConversion.Convert(inputEnum.Current, scope));
+                            var conversionExpr = implicitConversion.Convert(inputEnum.Current, scope);
+                            if (!element.Parameter.RequiredArgumentType.CompatibilityMatches(conversionExpr.EffectiveType, inferenceCollector)) {
+                                // Throw? This probably shouldn't happen, but seems to when a generic infers something different than has already been inferred.
+                                return PhraseMatchResult.Failure;
+                            }
+
+                            parameterCollector.Add(conversionExpr);
                             conversionCollector.Add(implicitConversion);
                             sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
                         }
@@ -122,7 +128,7 @@ namespace Tangent.Intermediate
                 }
             }
 
-            foreach(var entry in lazyLambdaMatches) {
+            foreach (var entry in lazyLambdaMatches) {
                 List<ParameterDeclaration> missingInferences = new List<ParameterDeclaration>();
                 var targetDelegateType = entry.Item2.ResolveGenericReferences(pd => {
                     if (inferenceCollector.ContainsKey(pd)) {
@@ -142,8 +148,8 @@ namespace Tangent.Intermediate
                     return PhraseMatchResult.Failure;
                 }
 
-                for(int ix = 0; ix < parameterCollector.Count; ++ix) {
-                    if(parameterCollector[ix] == entry.Item1) {
+                for (int ix = 0; ix < parameterCollector.Count; ++ix) {
+                    if (parameterCollector[ix] == entry.Item1) {
                         parameterCollector[ix] = lambda;
                         sourceInfoCollector[ix] = lambda.SourceInfo;
                     }

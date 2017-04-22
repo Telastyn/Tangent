@@ -131,7 +131,7 @@ namespace Tangent.Intermediate
                             }
 
                             // generics
-                            if(targetGenericType != null) {
+                            if (targetGenericType != null) {
                                 if (PrioritizedPartialGenericBranches.ContainsKey(targetGenericType)) {
                                     foreach (var entry in PrioritizedPartialGenericBranches[targetGenericType]) {
                                         foreach (var ruleset in entry.Lookup(phrase.Skip(1))) {
@@ -141,21 +141,35 @@ namespace Tangent.Intermediate
                                 }
 
                                 // TODO: cache? optimize?
-                                var conversions = new List<TangentType>();
-                                foreach(var kvp in PrioritizedPartialGenericBranches) {
-                                    if (kvp.Key != targetGenericType) {
-                                        // How to actually test this?
-                                        // LASTWORKED.
+                                var convertableTypes = Conversions.CandidateTypesFor(targetType);
+
+                                List<Tuple<ConversionPath, TransformationLookupTree>> candidates = new List<Tuple<ConversionPath, TransformationLookupTree>>();
+                                foreach (var parameterCandidate in convertableTypes.Where(tt => tt.ImplementationType != KindOfType.BoundGeneric)) {
+                                    if (ParameterMatchBranches.ContainsKey(parameterCandidate)) {
+                                        var conversion = Conversions.FindConversion(targetType, parameterCandidate);
+                                        candidates.Add(Tuple.Create(conversion, ParameterMatchBranches[parameterCandidate]));
                                     }
                                 }
 
-                                if (conversions.Count > 1) {
-                                    throw new NotImplementedException("Ambiguity in partial generic conversion options. Not yet supported.");
+                                foreach (var group in candidates.GroupBy(c => c.Item1.Cost).OrderBy(g => g.Key)) {
+                                    var tier = group.ToList();
+                                    if (tier.Count > 1) {
+                                        throw new NotImplementedException("Ambiguous partial generic conversions not yet supported.");
+                                    }
+
+                                    foreach (var ruleset in tier.First().Item2.Lookup(phrase.Skip(1))) {
+                                        yield return ruleset;
+                                    }
                                 }
 
-                                foreach(var entry in conversions) {
-                                    foreach(var tier in PrioritizedPartialGenericBranches[entry]) {
-                                        foreach(var ruleset in tier.Lookup(phrase.Skip(1))) {
+                                var partialCandidates = convertableTypes.Where(tt => tt.ImplementationType == KindOfType.BoundGeneric).Cast<BoundGenericType>().Where(bgt => PrioritizedPartialGenericBranches.ContainsKey(bgt.GenericType)).Select(bgt => bgt.GenericType).ToList();
+                                if (partialCandidates.Count > 1) {
+                                    throw new NotImplementedException("Ambiguous partial generic conversions not yet supported.");
+                                }
+
+                                foreach (var entry in partialCandidates) {
+                                    foreach (var tier in PrioritizedPartialGenericBranches[entry]) {
+                                        foreach (var ruleset in tier.Lookup(phrase.Skip(1))) {
                                             yield return ruleset;
                                         }
                                     }

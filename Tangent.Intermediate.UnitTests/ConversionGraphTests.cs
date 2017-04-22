@@ -98,5 +98,90 @@ namespace Tangent.Intermediate.UnitTests
 
             Assert.AreEqual(ExpressionNodeType.Ambiguity, result.NodeType);
         }
+
+        [TestMethod]
+        public void GenericSimplePath()
+        {
+            var gd = new ParameterDeclaration("T", TangentType.Any.Kind);
+            var g = GenericArgumentReferenceType.For(gd);
+            var gtos = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("x", g)), new Function(TangentType.String, null));
+
+            var graph = new ConversionGraph(new[] { gtos });
+
+            var conversion = graph.FindConversion(TangentType.Int, TangentType.String);
+            Assert.IsNotNull(conversion);
+        }
+
+        [TestMethod]
+        public void FavorPartialGenerics()
+        {
+            var gd = new ParameterDeclaration("T", TangentType.Any.Kind);
+            var g = GenericArgumentReferenceType.For(gd);
+            var gtos = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("x", g)), new Function(TangentType.String, null));
+
+            var gd2 = new ParameterDeclaration("T", TangentType.Any.Kind);
+            var g2 = GenericArgumentReferenceType.For(gd2);
+            var gpt = new ProductType(new[] { new PhrasePart(new ParameterDeclaration("x", g2)) }, new[] { gd2 }, Enumerable.Empty<Field>());
+            var bgt = BoundGenericType.For(gpt, new[] { g2 });
+            var bgttos = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("x", bgt)), new Function(TangentType.String, null));
+
+            var graph = new ConversionGraph(new[] { gtos, bgttos });
+
+            var bpt = BoundGenericType.For(gpt, new[] { TangentType.Int });
+
+            var conversion = graph.FindConversion(bpt, TangentType.String);
+            Assert.IsNotNull(conversion);
+            var result = conversion.Convert(new ConstantExpression<string>(bpt, null, null), null) as FunctionInvocationExpression;
+            Assert.IsNotNull(result);
+            Assert.AreEqual(bgttos, result.FunctionDefinition);
+        }
+
+        [TestMethod]
+        public void ChainedPartialGenerics()
+        {
+            var gd = new ParameterDeclaration("T", TangentType.Any.Kind);
+            var g = GenericArgumentReferenceType.For(gd);
+            var gpt = new ProductType(new[] { new PhrasePart(new ParameterDeclaration("x", g)) }, new[] { gd }, Enumerable.Empty<Field>());
+            var bgt = BoundGenericType.For(gpt, new[] { g });
+
+
+            var gd2 = new ParameterDeclaration("T", TangentType.Any.Kind);
+            var g2 = GenericArgumentReferenceType.For(gd2);
+            var gpt2 = new ProductType(new[] { new PhrasePart(new ParameterDeclaration("x", g2)) }, new[] { gd2 }, Enumerable.Empty<Field>());
+            var bgt2 = BoundGenericType.For(gpt2, new[] { g2 });
+            var fng = GenericArgumentReferenceType.For(new ParameterDeclaration("fn T", TangentType.Any.Kind));
+            var bgttobgt2 = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("x", bgt.ResolveGenericReferences(pd => fng))), new Function(bgt2.ResolveGenericReferences(pd => fng), null));
+            var bgt2tos = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("x", bgt2)), new Function(TangentType.String, null));
+
+            var graph = new ConversionGraph(new[] { bgttobgt2, bgt2tos });
+
+            var bpt = BoundGenericType.For(gpt, new[] { TangentType.Int });
+
+            var conversion = graph.FindConversion(bpt, TangentType.String);
+            Assert.IsNotNull(conversion);
+        }
+
+        [TestMethod]
+        public void SimplePartialGenericParameterMismatchWorks()
+        {
+            var gd1 = new ParameterDeclaration("T", TangentType.Any.Kind);
+            var gd2 = new ParameterDeclaration("X", TangentType.Any.Kind);
+            var g1 = GenericArgumentReferenceType.For(gd1);
+            var g2 = GenericArgumentReferenceType.For(gd2);
+            var gpt1 = new ProductType(new[] { new PhrasePart(new ParameterDeclaration("x", g1)) }, new[] { gd1 }, Enumerable.Empty<Field>());
+            var gpt2 = new ProductType(new[] { new PhrasePart(new ParameterDeclaration("x", g1)) }, new[] { gd1 }, Enumerable.Empty<Field>());
+            var bgt11 = BoundGenericType.For(gpt1, new[] { g1 });
+            var bgt21 = BoundGenericType.For(gpt2, new[] { g1 });
+            var bgt22 = BoundGenericType.For(gpt2, new[] { g2 });
+
+            var fng = GenericArgumentReferenceType.For(new ParameterDeclaration("fn T", TangentType.Any.Kind));
+            var bgt11tobgt21 = new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("x", bgt11.ResolveGenericReferences(pd => fng))), new Function(bgt21.ResolveGenericReferences(pd => fng), null));
+
+            var graph = new ConversionGraph(new[] { bgt11tobgt21 });
+
+            var conversion = graph.FindConversion(bgt11, bgt22);
+
+            Assert.IsNotNull(conversion);
+        }
     }
 }

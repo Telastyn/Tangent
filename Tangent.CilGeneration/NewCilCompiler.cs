@@ -614,7 +614,7 @@ namespace Tangent.CilGeneration
 
                             if (inferredTypeClass != null) {
                                 Label skipUnboxingVariant = gen.DefineLabel();
-                                
+
                                 Compile(inferredTypeClass);
                                 gen.Emit(OpCodes.Isinst, Compile(inferredTypeClass));
                                 gen.Emit(OpCodes.Stloc, unboxingNeeded);
@@ -627,7 +627,7 @@ namespace Tangent.CilGeneration
 
                                 gen.MarkLabel(skipUnboxingVariant);
                             }
-                            
+
                             gen.Emit(OpCodes.Callvirt, objGetType);
                             //gen.EmitWriteLine("Specialization GetType success.");
                             gen.Emit(OpCodes.Ldtoken, specificTargetType);
@@ -1116,13 +1116,13 @@ namespace Tangent.CilGeneration
 
                     if (directCall.GenericArguments.Skip(thisGenericCount).Any()) {
                         var parameterizedFn = directCall.Target.MakeGenericMethod(directCall.Arguments.Skip(thisGenericCount).Select(a => Compile(a.EffectiveType)).ToArray());
-                        gen.EmitCall(OpCodes.Call, parameterizedFn, null);
+                        gen.EmitCall((parameterizedFn.IsAbstract || parameterizedFn.IsVirtual) ? OpCodes.Callvirt : OpCodes.Call, parameterizedFn, null);
                     } else {
                         if (thisGenericCount > 0) {
                             var directConcreteCall = TypeBuilder.GetMethod(Compile(directCall.Arguments.First().EffectiveType), directCall.Target);
-                            gen.EmitCall(OpCodes.Call, directConcreteCall, null);
+                            gen.EmitCall((directConcreteCall.IsAbstract || directConcreteCall.IsVirtual) ? OpCodes.Callvirt : OpCodes.Call, directConcreteCall, null);
                         } else {
-                            gen.EmitCall(OpCodes.Call, directCall.Target, null);
+                            gen.EmitCall((directCall.Target.IsAbstract || directCall.Target.IsVirtual) ? OpCodes.Callvirt : OpCodes.Call, directCall.Target, null);
                         }
                     }
 
