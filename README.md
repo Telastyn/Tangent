@@ -214,7 +214,8 @@ entrypoint => void {
 }
 ```
 
-```// Tangent has interfaces.
+```
+// Tangent has interfaces.
 
 // You declare them similarly to enums or classes:
 comparable :> interface {
