@@ -247,4 +247,5 @@ size :< comparable {
 entrypoint => void {
   print small is less than large;
   print 4 apples is less than 2 apples;
-}```
+}
+```
