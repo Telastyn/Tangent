@@ -433,6 +433,7 @@ namespace Tangent.CilGeneration
                 }
 
                 foreach (var key in keys) {
+                    typeLookup.Remove(key);
                     typeLookup[key] = Compile(key);
                 }
             }
@@ -503,6 +504,7 @@ namespace Tangent.CilGeneration
                 }
 
                 foreach (var key in keys) {
+                    typeLookup.Remove(key);
                     typeLookup[key] = Compile(key);
                 }
             }
