@@ -1,7 +1,6 @@
-﻿for each (enumerable : .NET System.Collections.Generic.IEnumerable<(T)>) do (process (T) : void) => void {
+﻿for each in (enumerable : .NET System.Collections.Generic.IEnumerable<(T)>) do (process (T) : void) => void {
   : enumerator : .NET System.Collections.Generic.IEnumerator<T> := enumerable.GetEnumerator;
 
-  //print enumerator.MoveNext;
   while enumerator.MoveNext process enumerator.Current;
 }
 
@@ -12,5 +11,5 @@ entrypoint => void {
   list.Add 2;
   list.Add 3;
 
-  for each list do x => {print x};
+  for each in list do x => {print x};
 }
