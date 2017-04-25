@@ -458,6 +458,23 @@ namespace Tangent.Cli.TestSuite
             Assert.IsTrue(results.SequenceEqual(new[] { "foo", "42" }));
         }
 
+
+        [TestMethod]
+        public void ArrayInteropAccess()
+        {
+            var result = Test.DebugProgramFile(new[] { "ArrayInteropAccess.tan" }, new[] { typeof(List<>).Assembly });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "42" }));
+        }
+
+        [TestMethod]
+        public void ArrayInteropAssignment()
+        {
+            var result = Test.DebugProgramFile(new[] { "ArrayInteropAssignment.tan" }, new[] { typeof(List<>).Assembly });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "42", "6" }));
+        }
+
         [TestMethod]
         [Ignore]
         public void BasicGlobalUse()

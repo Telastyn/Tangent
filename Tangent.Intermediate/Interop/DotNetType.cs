@@ -21,6 +21,19 @@ namespace Tangent.Intermediate.Interop
         private static readonly ConcurrentDictionary<Type, TangentType> cache = new ConcurrentDictionary<Type, TangentType>();
         private static readonly ConcurrentDictionary<Type, TypeDeclaration> declarationCache = new ConcurrentDictionary<Type, TypeDeclaration>();
         private static readonly ConcurrentDictionary<Type, ParameterDeclaration> genericCache = new ConcurrentDictionary<Type, ParameterDeclaration>();
+        private static TypeDeclaration arrayTypeDecl = null;
+        internal static TypeDeclaration ArrayTypeDecl
+        {
+            get
+            {
+                if (arrayTypeDecl == null) {
+                    arrayTypeDecl = new TypeDeclaration(new PhrasePart[] { new PhrasePart(DotNetArrayType.TypeParameter), new PhrasePart("["), new PhrasePart("]") }, DotNetArrayType.Common);
+                }
+
+                return arrayTypeDecl;
+            }
+        }
+
         public static TangentType For(Type t)
         {
             if (t == typeof(bool)) {
@@ -31,6 +44,17 @@ namespace Tangent.Intermediate.Interop
 
             if (t.IsEnum) {
                 return cache.GetOrAdd(t, x => DotNetEnumType.For(t));
+            }
+
+            if (t.IsArray) {
+                if (t.GetArrayRank() != 1) {
+                    return null;
+                }
+
+                var arrayType = t.GetElementType();
+                var tanArrayType = DotNetType.For(arrayType);
+                if (tanArrayType == null) { return null; }
+                return BoundGenericType.For(DotNetArrayType.Common, new[] { tanArrayType });
             }
 
             if (t.IsConstructedGenericType) {

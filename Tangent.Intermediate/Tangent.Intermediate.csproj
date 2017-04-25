@@ -49,6 +49,7 @@
     <Compile Include="ConversionGraph.cs" />
     <Compile Include="ConversionPath.cs" />
     <Compile Include="HasGenericParameters.cs" />
+    <Compile Include="Interop\ArrayBundlePlaceholder.cs" />
     <Compile Include="Interop\BoolEnumAdapterType.cs" />
     <Compile Include="Interop\BuiltinFunctions.cs" />
     <Compile Include="ConstantExpression.cs" />
@@ -56,6 +57,8 @@
     <Compile Include="CtorParameterAccessExpression.cs" />
     <Compile Include="DelegateInvocationExpression.cs" />
     <Compile Include="DelegateType.cs" />
+    <Compile Include="Interop\DirectAccessElementExpression.cs" />
+    <Compile Include="Interop\DirectAssignElementExpression.cs" />
     <Compile Include="Interop\DirectBoxingExpression.cs" />
     <Compile Include="Interop\DirectCallExpression.cs" />
     <Compile Include="Interop\DirectCastExpression.cs" />
@@ -69,6 +72,7 @@
     <Compile Include="FieldAccessorExpression.cs" />
     <Compile Include="FieldMutatorExpression.cs" />
     <Compile Include="Interop\DirectStructInitExpression.cs" />
+    <Compile Include="Interop\DotNetArrayType.cs" />
     <Compile Include="Interop\DotNetEnumType.cs" />
     <Compile Include="Interop\DotNetType.cs" />
     <Compile Include="Interop\ImportBundle.cs" />

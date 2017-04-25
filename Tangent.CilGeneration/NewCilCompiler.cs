@@ -325,6 +325,7 @@ namespace Tangent.CilGeneration
 
         private Type InstantiateGeneric(BoundGenericType boundGeneric)
         {
+            if(boundGeneric.GenericType == DotNetArrayType.Common) { return InstantiateArrayType(boundGeneric.TypeArguments.First()); }
             Type genericType = Compile(boundGeneric.GenericType);
             var arguments = boundGeneric.TypeArguments.Select(tt => Compile(tt)).ToArray();
             var instance = genericType.MakeGenericType(arguments);
@@ -336,6 +337,12 @@ namespace Tangent.CilGeneration
 
             typeLookup.Add(boundGeneric, instance);
             return instance;
+        }
+
+        private Type InstantiateArrayType(TangentType type)
+        {
+            Type arg = Compile(type);
+            return arg.MakeArrayType();
         }
 
         private Type BuildDelegateType(DelegateType tangentDelegateType)
@@ -1176,6 +1183,21 @@ namespace Tangent.CilGeneration
                 case ExpressionNodeType.DirectStructInit:
                     var structInit = (DirectStructInitExpression)expr;
                     gen.Emit(OpCodes.Initobj, structInit.TargetStruct);
+                    return;
+
+                case ExpressionNodeType.DirectElementAccess:
+                    var dea = (DirectAccessElementExpression)expr;
+                    AddExpression(dea.ArrayAccess, gen, parameterCodes, closureScope, false);
+                    AddExpression(dea.IndexAccess, gen, parameterCodes, closureScope, false);
+                    gen.Emit(OpCodes.Ldelem, Compile(dea.EffectiveType));
+                    return;
+
+                case ExpressionNodeType.DirectElementAssignment:
+                    var deass = (DirectAssignElementExpression)expr;
+                    AddExpression(deass.ArrayAccess, gen, parameterCodes, closureScope, false);
+                    AddExpression(deass.IndexAccess, gen, parameterCodes, closureScope, false);
+                    AddExpression(deass.Assignment, gen, parameterCodes, closureScope, false);
+                    gen.Emit(OpCodes.Stelem, Compile(deass.ArrayType));
                     return;
 
                 default:

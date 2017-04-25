@@ -48,6 +48,7 @@ namespace Tangent.Intermediate.Interop
         public static PartialImportBundle ImportAssembly(Assembly assembly, Predicate<string> isAllowedIdentifier)
         {
             PartialImportBundle result = new PartialImportBundle();
+            ImportArrays(result);
 
             foreach (var t in assembly.GetTypes()) {
                 if (t.IsPublic) {
@@ -579,6 +580,31 @@ namespace Tangent.Intermediate.Interop
 
             var phrase = op.Select(id => new PhrasePart(id)).Concat(new PhrasePart[] { new PhrasePart(new ParameterDeclaration(firstParam.Name, firstTangentType)) });
             return new ReductionDeclaration(phrase, new Function(returnTangentType, new Block(new Expression[] { new DirectCallExpression(fn, returnTangentType, phrase.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), Enumerable.Empty<TangentType>()) }, Enumerable.Empty<ParameterDeclaration>())));
+        }
+
+        private static void ImportArrays(PartialImportBundle result)
+        {
+            result.Types.Add(typeof(ArrayBundlePlaceholder), DotNetType.ArrayTypeDecl);
+
+            var getGenericDecl = new ParameterDeclaration("T", TangentType.Any.Kind);
+            var getGeneric = GenericArgumentReferenceType.For(getGenericDecl);
+            var getThisParam = new ParameterDeclaration("this", BoundGenericType.For(DotNetType.ArrayTypeDecl.Returns as HasGenericParameters, new[] { getGeneric }));
+            var getIndexParam = new ParameterDeclaration("index", TangentType.Int);
+            result.CommonFunctions.Add(ArrayBundlePlaceholder.GetMI,
+                new ReductionDeclaration(new PhrasePart[] { new PhrasePart(getThisParam), new PhrasePart("["), new PhrasePart(getIndexParam), new PhrasePart("]") },
+                    new Function(getGeneric, new Block(new Expression[] { new DirectAccessElementExpression(new ParameterAccessExpression(getThisParam, null), new ParameterAccessExpression(getIndexParam, null), getGeneric) }, Enumerable.Empty<ParameterDeclaration>())), new[] { getGenericDecl }));
+
+            var setGenericDecl = new ParameterDeclaration("T", TangentType.Any.Kind);
+            var setGeneric = GenericArgumentReferenceType.For(setGenericDecl);
+            var setThisParam = new ParameterDeclaration("this", BoundGenericType.For(DotNetType.ArrayTypeDecl.Returns as HasGenericParameters, new[] { setGeneric }));
+            var setIndexParam = new ParameterDeclaration("index", TangentType.Int);
+            var setAssignmentParam = new ParameterDeclaration("value", setGeneric);
+            result.CommonFunctions.Add(ArrayBundlePlaceholder.SetMI,
+                new ReductionDeclaration(new PhrasePart[] { new PhrasePart(setThisParam), new PhrasePart("["), new PhrasePart(setIndexParam), new PhrasePart("]"), new PhrasePart("="), new PhrasePart(setAssignmentParam) },
+                    new Function(TangentType.Void, new Block(new Expression[] { new DirectAssignElementExpression(new ParameterAccessExpression(setThisParam, null), new ParameterAccessExpression(setIndexParam, null), new ParameterAccessExpression(setAssignmentParam, null), setGeneric) }, Enumerable.Empty<ParameterDeclaration>())), new[] { setGenericDecl }));
+
+            // TODO: .Length?
+            // TODO: convert to IEnumerable?
         }
     }
 }

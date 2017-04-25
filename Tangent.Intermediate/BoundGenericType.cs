@@ -42,6 +42,16 @@ namespace Tangent.Intermediate
             if (boundOther == null) { return false; }
             if (boundOther.GenericType != this.GenericType) { return false; }
             foreach (var pair in this.TypeArguments.Zip(boundOther.TypeArguments, (a, b) => Tuple.Create(a, b))) {
+                var gat = pair.Item1 as GenericArgumentReferenceType;
+                if (gat != null) {
+                    if (!necessaryTypeInferences.ContainsKey(gat.GenericParameter)) {
+                        necessaryTypeInferences[gat.GenericParameter] = pair.Item2;
+                    } else if (necessaryTypeInferences[gat.GenericParameter] != pair.Item2) {
+                        // See GenericArgumentReference type. Something is weird. Return for now.
+                        return false;
+                    }
+                }
+
                 if (!pair.Item1.CompatibilityMatches(pair.Item2, necessaryTypeInferences)) {
                     return false;
                 }
