@@ -1,0 +1,8 @@
+﻿entrypoint => void {
+  : buffer : string := read line from console;
+
+  while buffer != "" {
+    print buffer;
+	buffer = read line from console;
+  }
+}

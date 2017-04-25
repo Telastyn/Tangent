@@ -59,6 +59,7 @@ namespace Tangent.Intermediate.Interop
                     var typeDecl = DotNetType.TypeDeclarationFor(t);
                     var isBuiltIn = t == typeof(int) || t == typeof(string) || t == typeof(bool) || t == typeof(double) || t == typeof(void);
 
+                    // TODO: this filtering needs to be fixed to allow things like System.Console.In.ReadLine (In is a TextReader)
                     if (typeDecl != null && typeDecl.Takes.Where(pp => pp.IsIdentifier).All(pp => isBuiltIn || isAllowedIdentifier(pp.Identifier.Value))) {
                         var tangentType = typeDecl.Returns;
                         if (!isBuiltIn) {

@@ -17,7 +17,7 @@ namespace Tangent.Cli.TestSuite
     [ExcludeFromCodeCoverage]
     public static class Test
     {
-        public static string DebugProgramFile(IEnumerable<string> paths, IEnumerable<Assembly> imports = null)
+        public static string DebugProgramFile(IEnumerable<string> paths, IEnumerable<Assembly> imports = null, string input = null)
         {
             var targetExe = Path.GetFileNameWithoutExtension(paths.First()) + ".exe";
             var args = paths.ToList();
@@ -41,46 +41,46 @@ namespace Tangent.Cli.TestSuite
             NewCilCompiler.Compile(intermediateProgram.Result, Path.GetFileNameWithoutExtension(paths.First()));
 
             var discard = TimeSpan.Zero;
-            return RunCompiledProgram(targetExe, out discard);
+            return RunCompiledProgram(targetExe, out discard, input);
         }
 
-        public static string DebugProgramFile(string path, IEnumerable<Assembly> imports = null)
+        public static string DebugProgramFile(string path, IEnumerable<Assembly> imports = null, string input = null)
         {
-            return DebugProgramFile(new[] { path }, imports);
+            return DebugProgramFile(new[] { path }, imports, input);
         }
 
-        public static string DebugProgramFile(IEnumerable<string> path, out TimeSpan compileDuration, out TimeSpan programDuration, IEnumerable<Assembly> imports = null)
-        {
-            compileDuration = TimeSpan.Zero;
-            programDuration = TimeSpan.Zero;
-            return DebugProgramFile(path, imports);
-        }
-
-        public static string DebugProgramFile(string path, out TimeSpan compileDuration, out TimeSpan programDuration, IEnumerable<Assembly> imports = null)
+        public static string DebugProgramFile(IEnumerable<string> path, out TimeSpan compileDuration, out TimeSpan programDuration, IEnumerable<Assembly> imports = null, string input = null)
         {
             compileDuration = TimeSpan.Zero;
             programDuration = TimeSpan.Zero;
-            return DebugProgramFile(path, imports);
+            return DebugProgramFile(path, imports, input);
         }
 
-        public static string ProgramFile(string path, IEnumerable<Assembly> imports = null)
+        public static string DebugProgramFile(string path, out TimeSpan compileDuration, out TimeSpan programDuration, IEnumerable<Assembly> imports = null, string input = null)
+        {
+            compileDuration = TimeSpan.Zero;
+            programDuration = TimeSpan.Zero;
+            return DebugProgramFile(path, imports, input);
+        }
+
+        public static string ProgramFile(string path, IEnumerable<Assembly> imports = null, string input = null)
         {
             var discard = TimeSpan.Zero;
-            return ProgramFile(path, out discard, out discard, imports);
+            return ProgramFile(path, out discard, out discard, imports, input);
         }
 
-        public static string ProgramFile(IEnumerable<string> paths, IEnumerable<Assembly> imports = null)
+        public static string ProgramFile(IEnumerable<string> paths, IEnumerable<Assembly> imports = null, string input = null)
         {
             TimeSpan discard;
-            return ProgramFile(paths, out discard, out discard, imports);
+            return ProgramFile(paths, out discard, out discard, imports, input);
         }
 
-        public static string ProgramFile(string path, out TimeSpan compileDuration, out TimeSpan programDuration, IEnumerable<Assembly> imports = null)
+        public static string ProgramFile(string path, out TimeSpan compileDuration, out TimeSpan programDuration, IEnumerable<Assembly> imports = null, string input = null)
         {
-            return ProgramFile(new[] { path }, out compileDuration, out programDuration, imports);
+            return ProgramFile(new[] { path }, out compileDuration, out programDuration, imports, input);
         }
 
-        public static string ProgramFile(IEnumerable<string> paths, out TimeSpan compileDuration, out TimeSpan programDuration, IEnumerable<Assembly> imports = null)
+        public static string ProgramFile(IEnumerable<string> paths, out TimeSpan compileDuration, out TimeSpan programDuration, IEnumerable<Assembly> imports = null, string input = null)
         {
             var compileProcess = new Process();
             var targetExe = Path.GetFileNameWithoutExtension(paths.First()) + ".exe";
@@ -118,12 +118,12 @@ namespace Tangent.Cli.TestSuite
                 Assert.Fail(string.Format("Compilation errors: {0}", compileErrors));
             }
 
-            return RunCompiledProgram(targetExe, out programDuration);
+            return RunCompiledProgram(targetExe, out programDuration, input);
         }
 
-        private static string RunCompiledProgram(string targetExe, out TimeSpan programDuration)
+        private static string RunCompiledProgram(string targetExe, out TimeSpan programDuration, string input)
         {
-
+            input = input ?? "";
             Assert.IsTrue(File.Exists(targetExe), "Exe wasn't generated?");
 
             var programProcess = new Process();
@@ -131,12 +131,15 @@ namespace Tangent.Cli.TestSuite
             programProcess.StartInfo.UseShellExecute = false;
             programProcess.StartInfo.RedirectStandardOutput = true;
             programProcess.StartInfo.RedirectStandardError = true;
+            programProcess.StartInfo.RedirectStandardInput = true;
             programProcess.StartInfo.FileName = targetExe;
 
             var programTimer = Stopwatch.StartNew();
             if (!programProcess.Start()) {
                 Assert.Fail("Compiled program would not start.");
             }
+
+            programProcess.StandardInput.Write(input);
 
             if (!programProcess.WaitForExit(5000)) {
                 Assert.Fail("Program execution timed out.");

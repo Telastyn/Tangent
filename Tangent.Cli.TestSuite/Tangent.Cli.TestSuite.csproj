@@ -194,6 +194,9 @@
     <None Include="RosettaCode\AplusB.tan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="RosettaCode\InputLoop.tan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="RuntimeInference.tan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
