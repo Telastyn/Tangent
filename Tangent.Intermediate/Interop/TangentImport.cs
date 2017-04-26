@@ -49,77 +49,87 @@ namespace Tangent.Intermediate.Interop
         {
             PartialImportBundle result = new PartialImportBundle();
             ImportArrays(result);
+            HashSet<Type> alreadyProcessed = new HashSet<Type>();
 
             foreach (var t in assembly.GetTypes()) {
                 if (t.IsPublic) {
-                    //if (t == typeof(IEnumerable<>) || t == typeof(IEnumerator<>) || t == typeof(List<>)) {
-                    //    Console.Write("");
-                    //}
-
-                    var typeDecl = DotNetType.TypeDeclarationFor(t);
-                    var isBuiltIn = t == typeof(int) || t == typeof(string) || t == typeof(bool) || t == typeof(double) || t == typeof(void);
-
-                    // TODO: this filtering needs to be fixed to allow things like System.Console.In.ReadLine (In is a TextReader)
-                    if (typeDecl != null && typeDecl.Takes.Where(pp => pp.IsIdentifier).All(pp => isBuiltIn || isAllowedIdentifier(pp.Identifier.Value))) {
-                        var tangentType = typeDecl.Returns;
-                        if (!isBuiltIn) {
-                            result.Types.Add(t, typeDecl);
-                        }
-
-                        foreach (var fn in t.GetMethods()) {
-                            if (fn.IsPublic) {
-                                var tfn = ReductionDeclarationFor(typeDecl, fn);
-                                if (tfn != null) {
-                                    result.CommonFunctions.Add(fn, tfn);
-                                }
-                            }
-                        }
-
-                        foreach (var property in t.GetProperties()) {
-                            var propFns = ReductionDeclarationsFor(typeDecl, property);
-                            if (propFns != null) {
-                                foreach (var fn in propFns) {
-                                    result.CommonFunctions.Add(fn.Takes.Any(pp => pp.IsIdentifier && pp.Identifier.Value == "=") ? property.GetSetMethod() : property.GetGetMethod(), fn);
-                                }
-                            }
-                        }
-
-                        foreach (var field in t.GetFields()) {
-                            if (field.IsPublic) {
-                                var fieldFns = ReductionDeclarationsFor(typeDecl, field);
-                                if (fieldFns != null) {
-                                    foreach (var fn in fieldFns) {
-                                        if (fn.Takes.Any(pp => pp.IsIdentifier && pp.Identifier.Value == "=")) {
-                                            result.FieldMutators.Add(field, fn);
-                                        } else {
-                                            result.FieldAccessors.Add(field, fn);
-                                        }
-                                    }
-                                }
-
-                            }
-                        }
-
-                        foreach (var ctor in t.GetConstructors()) {
-                            if (ctor.IsPublic) {
-                                var ctorFn = ReductionDeclarationFor(typeDecl, ctor);
-                                if (ctorFn != null) {
-                                    result.Constructors.Add(ctor, ctorFn);
-                                }
-                            }
-                        }
+                    ImportType(t, result, alreadyProcessed, isAllowedIdentifier, false);
 
 
-                        if (t.IsValueType) {
-                            result.StructInits.Add(t, ReductionDeclarationForStructInit(t));
-                        }
-
-                        result.SubtypingConversions.Add(t, new List<ReductionDeclaration>(SubTypingConversionsFor(t)));
-                    }
                 }
             }
 
             return result;
+        }
+
+        public static void ImportType(Type t, PartialImportBundle bundle, HashSet<Type> alreadyProcessed, Predicate<string> isAllowedIdentifier, bool forceCreate)
+        {
+            if (t.IsConstructedGenericType || t.IsPointer || t.IsByRef) { return; }
+            if (alreadyProcessed.Contains(t)) { return; }
+            alreadyProcessed.Add(t);
+            var typeDecl = DotNetType.TypeDeclarationFor(t);
+            var isBuiltIn = t == typeof(int) || t == typeof(string) || t == typeof(bool) || t == typeof(double) || t == typeof(void);
+
+            // TODO: this filtering needs to be fixed to allow things like System.Console.In.ReadLine (In is a TextReader)
+            if (typeDecl != null && typeDecl.Takes.Where(pp => pp.IsIdentifier).All(pp => isBuiltIn || forceCreate || isAllowedIdentifier(pp.Identifier.Value))) {
+                var tangentType = typeDecl.Returns;
+                if (!isBuiltIn) {
+                    bundle.Types.Add(t, typeDecl);
+                }
+
+                foreach (var fn in t.GetMethods()) {
+                    if (fn.IsPublic) {
+                        var tfn = ReductionDeclarationFor(typeDecl, fn);
+                        if (tfn != null && tfn.Takes.All(pp => !pp.IsIdentifier || isAllowedIdentifier(pp.Identifier.Value))) {
+                            ImportType(fn.ReturnType, bundle, alreadyProcessed, isAllowedIdentifier, true);
+                            bundle.CommonFunctions.Add(fn, tfn);
+                        }
+                    }
+                }
+
+                foreach (var property in t.GetProperties()) {
+                    var propFns = ReductionDeclarationsFor(typeDecl, property);
+                    if (propFns != null) {
+                        foreach (var fn in propFns.Where(fn => fn.Takes.All(pp => !pp.IsIdentifier || isAllowedIdentifier(pp.Identifier.Value)))) {
+                            ImportType(property.PropertyType, bundle, alreadyProcessed, isAllowedIdentifier, true);
+                            bundle.CommonFunctions.Add(fn.Takes.Any(pp => pp.IsIdentifier && pp.Identifier.Value == "=") ? property.GetSetMethod() : property.GetGetMethod(), fn);
+                        }
+                    }
+                }
+
+                foreach (var field in t.GetFields()) {
+                    if (field.IsPublic) {
+                        var fieldFns = ReductionDeclarationsFor(typeDecl, field);
+                        if (fieldFns != null) {
+                            foreach (var fn in fieldFns.Where(ff => ff.Takes.All(pp => !pp.IsIdentifier || isAllowedIdentifier(pp.Identifier.Value)))) {
+                                ImportType(field.FieldType, bundle, alreadyProcessed, isAllowedIdentifier, true);
+                                if (fn.Takes.Any(pp => pp.IsIdentifier && pp.Identifier.Value == "=")) {
+                                    bundle.FieldMutators.Add(field, fn);
+                                } else {
+                                    bundle.FieldAccessors.Add(field, fn);
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+                foreach (var ctor in t.GetConstructors()) {
+                    if (ctor.IsPublic) {
+                        var ctorFn = ReductionDeclarationFor(typeDecl, ctor);
+                        if (ctorFn != null) {
+                            bundle.Constructors.Add(ctor, ctorFn);
+                        }
+                    }
+                }
+
+
+                if (t.IsValueType) {
+                    bundle.StructInits.Add(t, ReductionDeclarationForStructInit(t));
+                }
+
+                bundle.SubtypingConversions.Add(t, new List<ReductionDeclaration>(SubTypingConversionsFor(t, bundle, alreadyProcessed, isAllowedIdentifier)));
+            }
         }
 
         public static ReductionDeclaration ReductionDeclarationFor(TypeDeclaration typeDecl, MethodInfo fn)
@@ -422,7 +432,7 @@ namespace Tangent.Intermediate.Interop
             return new ReductionDeclaration(namePart, new Function(tangentType, new Block(new Expression[] { new DirectStructInitExpression(t) }, Enumerable.Empty<ParameterDeclaration>())));
         }
 
-        public static IEnumerable<ReductionDeclaration> SubTypingConversionsFor(Type t)
+        public static IEnumerable<ReductionDeclaration> SubTypingConversionsFor(Type t, PartialImportBundle bundle, HashSet<Type> alreadyProcessed, Predicate<string> isAllowedIdentifier)
         {
             var tangentType = DotNetType.For(t);
 
@@ -476,12 +486,14 @@ namespace Tangent.Intermediate.Interop
                         yield return new ReductionDeclaration(new PhrasePart(pd), new Function(interfaceTangentType, new Block(new Expression[] { new ParameterAccessExpression(pd, null) }, Enumerable.Empty<ParameterDeclaration>())));
                     }
                 }
+
+                ImportType(i, bundle, alreadyProcessed, isAllowedIdentifier, true);
             }
             // null -> I?
 
             if (!t.IsValueType) {
                 // TODO: handle null for generics.
-                if (!t.IsGenericTypeDefinition) {
+                if (!t.IsGenericTypeDefinition && !t.ContainsGenericParameters) {
                     var concreteConstantExpression = Activator.CreateInstance(GenericConstantExpressionType.MakeGenericType(new[] { t }), tangentType, null, null) as ConstantExpression;
                     yield return new ReductionDeclaration("null", new Function(tangentType, new Block(new Expression[] { concreteConstantExpression }, Enumerable.Empty<ParameterDeclaration>())));
                 }

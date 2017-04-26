@@ -869,7 +869,6 @@ namespace Tangent.CilGeneration
         private void AddDebuggingInfo(ILGenerator gen, Expression expr)
         {
             if (expr.SourceInfo != null) {
-                System.Diagnostics.Debug.WriteLine(expr.SourceInfo);
                 gen.MarkSequencePoint(debuggingSymbolLookup[expr.SourceInfo.Label], expr.SourceInfo.StartPosition.Line, expr.SourceInfo.StartPosition.Column, expr.SourceInfo.EndPosition.Line, expr.SourceInfo.EndPosition.Column);
             }
         }
