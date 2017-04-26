@@ -14,7 +14,7 @@ namespace Tangent.Cli.TestSuite.RosettaCode
         [TestMethod]
         public void AplusB()
         {
-            var result = Test.ProgramFile(new[] { @"RosettaCode\AplusB.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan", @"lib\console-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly });
+            var result = Test.ProgramFile(new[] { @"RosettaCode\AplusB.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan", @"lib\console-lib.tan" , @"lib\string-lib.tan", @"lib\enumerable-lib.tan"}, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new string[] { }));
         }
@@ -26,6 +26,15 @@ namespace Tangent.Cli.TestSuite.RosettaCode
                 "42\n How now brown cow\n\n");
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new string[] { "42", "How now brown cow" }));
+        }
+
+        [TestMethod]
+        public void Factorial()
+        {
+            var result = Test.DebugProgramFile(new[] { @"RosettaCode\factorial.tan", @"lib\conditional-lib.tan",  @"lib\console-lib.tan" }, new[] { typeof(Console).Assembly, typeof(TextReader).Assembly },
+                "9");
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new string[] { "362880" }));
         }
     }
 }

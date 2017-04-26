@@ -1,3 +1,5 @@
 ﻿read line from console => string {
   .NET System.Console.In.ReadLine;
 }
+
+read int from console => int { int.Parse read line from console }

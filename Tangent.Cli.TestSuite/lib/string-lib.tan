@@ -1,0 +1,16 @@
+﻿(x : string) is null => bool { x = null }
+(x : string) is not null => bool { not x = null }
+(x : string) is null or whitespace => bool { .NET System.String.IsNullOrWhiteSpace x }
+(x : string) is not null or whitespace => bool { not .NET System.String.IsNullOrWhiteSpace x }
+(x : string) is empty => bool { x = "" }
+(x : string) is blank => bool { x is null or whitespace }
+(x : string) is not blank => bool { not x is blank }
+
+split (buffer : string) on (delimiter : string) => enumerable string {
+  : delimiters : string list := new string list;
+
+  add delimiter to delimiters;
+  buffer.Split
+	delimiters
+	.NET System.StringSplitOptions.RemoveEmptyEntries;
+}
