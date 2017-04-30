@@ -1,8 +1,8 @@
 ﻿(n: int)! => int {
   : r : int := 1;
-  if n > 0 
-    // RMS: bug here. Exception thrown because N isn't found in the closed scope.
-	r = n * {n - 1}!;
+  
+  if n > 1 
+	r = n * {{n - 1}!};
 
   r
 }

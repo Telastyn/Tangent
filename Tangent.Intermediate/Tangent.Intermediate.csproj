@@ -81,6 +81,7 @@
     <Compile Include="ITransformationLookupTree.cs" />
     <Compile Include="LocalAccessExpression.cs" />
     <Compile Include="LocalAssignmentExpression.cs" />
+    <Compile Include="ResolvedParenExpression.cs" />
     <Compile Include="ResultPriorityComparer.cs" />
     <Compile Include="ThrowInvalidProgramExceptionExpression.cs" />
     <Compile Include="Expression.cs" />

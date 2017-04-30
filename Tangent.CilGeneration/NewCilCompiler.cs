@@ -1199,6 +1199,14 @@ namespace Tangent.CilGeneration
                     gen.Emit(OpCodes.Stelem, Compile(deass.ArrayType));
                     return;
 
+                case ExpressionNodeType.ResolvedParenExpr:
+                    var pexpr = (ResolvedParenExpression)expr;
+                    foreach(var stmt in pexpr.Contents.Statements) {
+                        AddExpression(stmt, gen, parameterCodes, closureScope, false);
+                    }
+
+                    return;
+
                 default:
                     throw new NotImplementedException();
             }

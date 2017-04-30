@@ -32,7 +32,7 @@ namespace Tangent.Cli.TestSuite.RosettaCode
         public void Factorial()
         {
             var result = Test.DebugProgramFile(new[] { @"RosettaCode\factorial.tan", @"lib\conditional-lib.tan", @"lib\console-lib.tan" }, new[] { typeof(Console).Assembly, typeof(TextReader).Assembly },
-                "9");
+                "9\n");
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new string[] { "362880" }));
         }

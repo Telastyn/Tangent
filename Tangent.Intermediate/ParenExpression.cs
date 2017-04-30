@@ -43,7 +43,7 @@ namespace Tangent.Intermediate
         public IEnumerable<Expression> TryResolve(TransformationScope scope, TangentType towardsType)
         {
             var scopedCache = resolutionCache.GetOrAdd(scope, s => new ConcurrentDictionary<TangentType, IEnumerable<Expression>>());
-            
+
             // If we're looking to fit into a lazy type, assume the parens are the lazy part.
             if (towardsType.ImplementationType == KindOfType.Delegate && !((DelegateType)towardsType).Takes.Any()) {
                 return scopedCache.GetOrAdd(towardsType, t =>
@@ -59,16 +59,7 @@ namespace Tangent.Intermediate
             return scopedCache.GetOrAdd(towardsType, t =>
                 // Remember, void statements are invariant to the return type. They are already compiled.
                 scope.InterpretTowards(towardsType, LastStatement).Select(interpretation =>
-                    new FunctionInvocationExpression(
-                        new ReductionDeclaration(
-                            Enumerable.Empty<PhrasePart>(),
-                            new Function(
-                                towardsType,
-                                new Block(VoidStatements.Statements.Concat(new[] { interpretation }), Enumerable.Empty<ParameterDeclaration>()))),
-                        Enumerable.Empty<Expression>(),
-                        Enumerable.Empty<TangentType>(),
-                        SourceInfo))
-            );
+                    new ResolvedParenExpression(new Block(VoidStatements.Statements.Concat(new[] { interpretation }), Enumerable.Empty<ParameterDeclaration>()), towardsType, SourceInfo)));
         }
 
         public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
