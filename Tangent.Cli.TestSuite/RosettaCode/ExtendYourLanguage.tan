@@ -1,0 +1,17 @@
+﻿branch (a: ~>bool), (b: ~>bool) on both (both: ~>void) on first (first: ~>void) on second (second: ~>void) on neither (neither: ~>void) => void {
+  : a is true : bool := a;
+  : b is true : bool := b;
+
+  if a is true and b is true both
+  else if a is true and not b is true first
+  else if not a is true and b is true second
+  else neither
+}
+
+entrypoint => void {
+
+	branch true, true on both print "good" on first print "bad" on second print "bad" on neither print "bad";
+	branch true, false on both print "bad" on first print "good" on second print "bad" on neither print "bad";
+	branch false, true on both print "bad" on first print "bad" on second print "good" on neither print "bad";
+	branch false, false on both print "bad" on first print "bad" on second print "bad" on neither print "good";
+}
