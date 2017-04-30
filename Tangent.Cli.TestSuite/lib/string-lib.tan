@@ -6,15 +6,13 @@
 (x : string) is blank => bool { x is null or whitespace }
 (x : string) is not blank => bool { not x is blank }
 
-// Generic alias issue, see AplusB
+split (buffer : string) on (delimiter : string) => string[] {
+  : delimiters : .NET System.Collections.Generic.List<string> := new .NET System.Collections.Generic.List<string>;
 
-//split (buffer : string) on (delimiter : string) => enumerable string {
-//  : delimiters : string list := new string list;
-
-//  add delimiter to delimiters;
-//  buffer.Split
-//	delimiters
-//	.NET System.StringSplitOptions.RemoveEmptyEntries;
-//}
+  delimiters.Add delimiter;
+  buffer.Split
+	delimiters.ToArray
+	.NET System.StringSplitOptions.RemoveEmptyEntries;
+}
 
 (a : string) + (b : string) => string { .NET System.String.Concat a b }

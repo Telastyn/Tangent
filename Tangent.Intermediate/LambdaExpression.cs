@@ -75,5 +75,11 @@ namespace Tangent.Intermediate
                 statement.ReplaceTypeResolvedFunctions(replacements, workset);
             }
         }
+
+        public override IEnumerable<ParameterDeclaration> CollectLocals(HashSet<Expression> workset)
+        {
+            // Lambdas have their own locals and cannot declare ones externally.
+            yield break;
+        }
     }
 }

@@ -51,6 +51,8 @@ namespace Tangent.Intermediate.Interop
             AddInt,
             SubInt,
             MulInt,
+            DivInt,
+            ModInt,
             //EqInt,
             GtInt,
             LtInt,

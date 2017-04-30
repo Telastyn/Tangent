@@ -52,14 +52,14 @@ namespace Tangent.Intermediate
                     new LambdaExpression(
                         Enumerable.Empty<ParameterDeclaration>(),
                         ((DelegateType)towardsType).Returns,
-                        new Block(VoidStatements.Statements.Concat(new[] { interpretation }), Enumerable.Empty<ParameterDeclaration>()),
+                        new Block(VoidStatements.Statements.Concat(new[] { interpretation }), VoidStatements.Locals),
                         SourceInfo)));
             }
 
             return scopedCache.GetOrAdd(towardsType, t =>
                 // Remember, void statements are invariant to the return type. They are already compiled.
                 scope.InterpretTowards(towardsType, LastStatement).Select(interpretation =>
-                    new ResolvedParenExpression(new Block(VoidStatements.Statements.Concat(new[] { interpretation }), Enumerable.Empty<ParameterDeclaration>()), towardsType, SourceInfo)));
+                    new ResolvedParenExpression(new Block(VoidStatements.Statements.Concat(new[] { interpretation }), VoidStatements.Locals), towardsType, SourceInfo)));
         }
 
         public override Expression ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
@@ -82,6 +82,11 @@ namespace Tangent.Intermediate
         public override bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
         {
             return false;
+        }
+
+        public override IEnumerable<ParameterDeclaration> CollectLocals(HashSet<Expression> workset)
+        {
+            yield break;
         }
     }
 }

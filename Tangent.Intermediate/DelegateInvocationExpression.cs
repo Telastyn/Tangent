@@ -87,5 +87,19 @@ namespace Tangent.Intermediate
 
             DelegateAccess.ReplaceTypeResolvedFunctions(replacements, workset);
         }
+
+        public override IEnumerable<ParameterDeclaration> CollectLocals(HashSet<Expression> workset)
+        {
+            if (workset.Contains(this)) { yield break; }
+            workset.Add(this);
+
+            foreach (var arg in Arguments.SelectMany(arg => arg.CollectLocals(workset))) {
+                yield return arg;
+            }
+
+            foreach(var arg in DelegateAccess.CollectLocals(workset)) {
+                yield return arg;
+            }
+        }
     }
 }

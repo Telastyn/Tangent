@@ -1,6 +1,5 @@
-﻿// RMS: not sure any of this works yet. See AplusB.tan.
-enumerable (T) :> .NET System.Collections.Generic.IEnumerable<T>;
-(T) list :> .NET System.Collections.Generic.List<T>;
+﻿//enumerable (T) :> .NET System.Collections.Generic.IEnumerable<T>;
+//(T) list :> .NET System.Collections.Generic.List<T>;
 
-new (T) list => T list { new .NET System.Collections.Generic.List<T> }
-add (value : (T)) to (list : T list) => void { list.Add value }
+//new (T) list => T list { new .NET System.Collections.Generic.List<T> }
+//add (value : (T)) to (list : T list) => void { list.Add value }

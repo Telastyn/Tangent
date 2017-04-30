@@ -5,19 +5,17 @@
   while x < 101 {
     s = "";
 
-	if x % 3 = 0 {
-		s = s + "Fizz";
-	}
+	if x % 3 = 0 
+	  s = s + "Fizz";
 	
-	if x % 5 = 0 {
-		s = s + "Buzz";
-	}
+	if x % 5 = 0 
+	  s = s + "Buzz";
 
-	if s is blank {
-		print x;
-	} else {
-		print s;
-	}
+	if s is blank 
+	  print x
+	else 
+	  print s;
+	
 
     x = x + 1;
   }

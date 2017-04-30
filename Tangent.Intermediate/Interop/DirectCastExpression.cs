@@ -50,5 +50,15 @@ namespace Tangent.Intermediate.Interop
         {
             return Argument.AccessesAnyParameters(parameters, workset);
         }
+
+        public override IEnumerable<ParameterDeclaration> CollectLocals(HashSet<Expression> workset)
+        {
+            if (workset.Contains(this)) { yield break; }
+            workset.Add(this);
+
+            foreach (var arg in Argument.CollectLocals(workset)) {
+                yield return arg;
+            }
+        }
     }
 }

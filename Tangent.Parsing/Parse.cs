@@ -335,9 +335,6 @@ namespace Tangent.Parsing
                     var concrete = (LambdaElement)element;
                     return new PartialLambdaExpression(concrete.Takes.Select(vde => VarDeclToParameterDeclaration(scope, vde, types, errors)).ToList(), scope, (newScope, returnType) => {
                         var lambdaErrors = new List<ParseError>();
-                        if (concrete.Body.Block.Locals.Any()) {
-                            throw new NotImplementedException("TODO: make locals in lambdas work.");
-                        }
                         var implementation = BuildBlock(newScope, types, fnGenerics, returnType, concrete.Body.Block, Enumerable.Empty<ParameterDeclaration>(), lambdaErrors);
                         if (lambdaErrors.Where(e => !(e is AmbiguousStatementError)).Any()) {
                             return null;

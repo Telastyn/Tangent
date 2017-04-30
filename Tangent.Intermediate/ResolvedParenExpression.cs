@@ -63,5 +63,15 @@ namespace Tangent.Intermediate
                 stmt.ReplaceTypeResolvedFunctions(replacements, workset);
             }
         }
+
+        public override IEnumerable<ParameterDeclaration> CollectLocals(HashSet<Expression> workset)
+        {
+            if (workset.Contains(this)) { yield break; }
+            workset.Add(this);
+
+            foreach(var local in Contents.Locals) {
+                yield return local;
+            }
+        }
     }
 }

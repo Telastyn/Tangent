@@ -69,6 +69,20 @@ namespace Tangent.Intermediate.Interop
             return ArrayAccess.RequiresClosureAround(parameters, workset) || IndexAccess.RequiresClosureAround(parameters, workset);
         }
 
+        public override IEnumerable<ParameterDeclaration> CollectLocals(HashSet<Expression> workset)
+        {
+            if (workset.Contains(this)) { yield break; }
+            workset.Add(this);
+
+            foreach (var arg in ArrayAccess.CollectLocals(workset)) {
+                yield return arg;
+            }
+
+            foreach(var arg in IndexAccess.CollectLocals(workset)) {
+                yield return arg;
+            }
+        }
+
         public override string ToString()
         {
             return $"{ArrayAccess}[{IndexAccess}]";

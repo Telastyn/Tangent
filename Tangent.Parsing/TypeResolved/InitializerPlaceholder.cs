@@ -47,5 +47,10 @@ namespace Tangent.Parsing
         {
             return false;
         }
+
+        public override IEnumerable<ParameterDeclaration> CollectLocals(HashSet<Expression> workset)
+        {
+            yield break;
+        }
     }
 }

@@ -3,9 +3,9 @@
 
   while buffer is not blank
   {
-    : tokens : .NET System.Collections.Generic.IEnumerable<string> := buffer.Split  " " 2 StringSplitOptions.RemoveEmptyEntries;
-	: a : int := int.Parse tokens.First;
-	: b : int := int.Parse tokens.Skip 1.First;
+    : tokens : string[] := split buffer on " ";
+	: a : int := int.Parse tokens[0];
+	: b : int := int.Parse tokens[1];
 
 	print a + b;
 

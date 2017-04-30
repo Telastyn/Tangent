@@ -8,12 +8,21 @@ namespace Tangent.Intermediate
     public class Block
     {
         public readonly IEnumerable<Expression> Statements;
-        public readonly IEnumerable<ParameterDeclaration> Locals;
+        private readonly IEnumerable<ParameterDeclaration> locals;
+
+        public IEnumerable<ParameterDeclaration> Locals
+        {
+            get
+            {
+                HashSet<Expression> workset = new HashSet<Expression>();
+                return locals.Concat(Statements.SelectMany(expr => expr.CollectLocals(workset)));
+            }
+        }
 
         public Block(IEnumerable<Expression> statements, IEnumerable<ParameterDeclaration> locals)
         {
             Statements = statements;
-            Locals = locals;
+            this.locals = locals;
         }
 
         public Block ReplaceParameterAccesses(Dictionary<ParameterDeclaration, Expression> mapping)
@@ -23,7 +32,7 @@ namespace Tangent.Intermediate
                 return this;
             }
 
-            return new Block(newbs, Locals);
+            return new Block(newbs, locals);
         }
     }
 }

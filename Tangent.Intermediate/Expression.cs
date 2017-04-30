@@ -65,5 +65,6 @@ namespace Tangent.Intermediate
         public abstract bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset);
 
         public abstract bool AccessesAnyParameters(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset);
+        public abstract IEnumerable<ParameterDeclaration> CollectLocals(HashSet<Expression> workset);
     }
 }

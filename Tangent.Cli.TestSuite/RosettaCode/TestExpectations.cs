@@ -14,9 +14,14 @@ namespace Tangent.Cli.TestSuite.RosettaCode
         [TestMethod]
         public void AplusB()
         {
-            var result = Test.ProgramFile(new[] { @"RosettaCode\AplusB.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan", @"lib\console-lib.tan", @"lib\string-lib.tan", @"lib\enumerable-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly });
+            var result = Test.DebugProgramFile(new[] { @"RosettaCode\AplusB.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan", @"lib\console-lib.tan", @"lib\string-lib.tan", @"lib\enumerable-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly },
+@"1 3
+6 -4
+42 0
+
+");
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
-            Assert.IsTrue(results.SequenceEqual(new string[] { }));
+            Assert.IsTrue(results.SequenceEqual(new string[] { "4", "2", "42"}));
         }
 
         [TestMethod]
@@ -37,7 +42,7 @@ namespace Tangent.Cli.TestSuite.RosettaCode
             Assert.IsTrue(results.SequenceEqual(new string[] { "362880" }));
         }
 
-        [Ignore] // RMS: compilation takes minutes... TODO.
+        //[Ignore] // RMS: compilation takes minutes... TODO.
         [TestMethod]
         public void FizzBuzz()
         {

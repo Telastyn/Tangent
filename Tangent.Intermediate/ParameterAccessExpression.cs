@@ -51,5 +51,10 @@ namespace Tangent.Intermediate
         {
             return parameters.Contains(Parameter);
         }
+
+        public override IEnumerable<ParameterDeclaration> CollectLocals(HashSet<Expression> workset)
+        {
+            yield break;
+        }
     }
 }

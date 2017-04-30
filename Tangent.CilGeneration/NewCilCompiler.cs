@@ -1265,6 +1265,14 @@ namespace Tangent.CilGeneration
             }
 
             var closureGen = closureFn.GetILGenerator();
+            int localix = 0;
+            foreach (var local in lambda.Implementation.Locals) {
+                var lb = gen.DeclareLocal(Compile(local.Returns));
+                lb.SetLocalSymInfo(GetNameFor(local));
+                var closureIx = localix;
+                nestedCodes.Add(local, new PropertyCodes(g => g.Emit(OpCodes.Ldloc, closureIx), (g, v) => { v(); g.Emit(OpCodes.Stloc, closureIx); }));
+                localix++;
+            }
 
             // TODO: type resolve implementation bits?
             AddFunctionCode(closureGen, lambda.Implementation, nestedCodes, new ClosureInfo(closureScope.ClosureType, closureScope.ClosureCodes, g => g.Emit(OpCodes.Ldarg_0), closureScope.ClosureGenericScope));

@@ -50,6 +50,11 @@ namespace Tangent.Intermediate
         {
             return false;
         }
+
+        public override IEnumerable<ParameterDeclaration> CollectLocals(HashSet<Expression> workset)
+        {
+            yield break;
+        }
     }
 
     public class ConstantExpression<T> : ConstantExpression
