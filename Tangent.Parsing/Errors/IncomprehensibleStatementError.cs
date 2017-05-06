@@ -16,7 +16,7 @@ namespace Tangent.Parsing.Errors
 
         public override string ToString()
         {
-            return string.Format("Unable to interpret statement: {0}", string.Join(" ", base.ErrorLocation));
+            return string.Format("Unable to interpret statement: {0} at {1}", string.Join(" ", base.ErrorLocation), LineColumnRange.CombineAll(base.ErrorLocation.Select(expr=>expr.SourceInfo)));
         }
     }
 }

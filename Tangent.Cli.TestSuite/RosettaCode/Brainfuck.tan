@@ -1,0 +1,93 @@
+﻿brainfuck command :> enum {
+  incptr,
+  decptr,
+  incval,
+  decval,
+  readval,
+  writeval,
+  startloop,
+  endloop
+}
+
+> => brainfuck command { incptr }
+< => brainfuck command { decptr }
++ => brainfuck command { incval }
+- => brainfuck command { decval }
+. => brainfuck command { writeval }
+, => brainfuck command { readval }
+[ => brainfuck command { startloop }
+] => brainfuck command { endloop }
+
+brainfuck environment :> brainf*ck {
+  (this).pointer : int := 0;
+  (this).buffer : int[] := .NET System.Linq.Enumerable.Repeat(0, 32768).ToArray;
+
+  (this).readchar => void { buffer[pointer] = .NET System.Console.In.Read }
+  (this).writechar => void { .NET System.Console.Out.Write .NET System.Convert.ToChar buffer[pointer] }
+}
+
+brainfuck program :> (environment : brainfuck environment) (commands : brainfuck command accumulator) {
+  (this) => void {
+    : execution pointer : int := 0;
+
+	while execution pointer < commands.Count {
+	  : current command : brainfuck command := commands[execution pointer];
+	  
+	  if current command = incptr {
+	    environment.pointer = environment.pointer + 1;
+		execution pointer = execution pointer + 1;
+	  } else if current command = decptr {
+	    environment.pointer = environment.pointer - 1;
+		execution pointer = execution pointer + 1;
+	  } else if current command = incval {
+	    environment.value = environment.value + 1;
+		execution pointer = execution pointer + 1;
+	  } else if current command = decval {
+	    environment.value = environment.value - 1;
+		execution pointer = execution pointer + 1;
+	  } else if current command = readval {
+	    environment.readchar;
+		execution pointer = execution pointer + 1;
+	  } else if current command = writeval {
+	    environemnt.writechar;
+		execution pointer = execution pointer + 1;
+	  } else if current command = startloop {
+	    if environment.value = 0 {
+		  while {not commands[execution pointer] = endloop} and {execution pointer < commands.Count} {
+		    execution pointer = execution pointer + 1;
+		  }
+		} 
+		
+		execution pointer = execution pointer + 1;
+		
+	  } else if current command = endloop {
+	    if not environment.value = 0 {
+		  while {execution pointer > 0 or execution pointer = 0} and {not commands[execution pointer] = startloop} {
+		    execution pointer = execution pointer - 1;
+		  }
+		}
+
+		execution pointer = execution pointer + 1;
+	  }
+	}
+  }
+}
+
+brainfuck command accumulator :> (cmd : brainfuck command) {
+  (this).commands : .NET System.Collections.Generic.List<brainfuck command> := {
+    : cmds : .NET System.Collections.Generic.List<brainfuck command> := new .NET System.Collections.Generic.List<brainfuck command>;
+	cmds.Add cmd;
+	cmds
+  };
+
+  (this) => .NET System.Collections.Generic.List<brainfuck command> { (this).commands }
+
+  (this) (cmd : brainfuck command) => brainfuck command accumulator {
+    commands.Add cmd;
+	this;
+  }
+}
+
+entrypoint => void {
+  brainf*ck ++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
+}

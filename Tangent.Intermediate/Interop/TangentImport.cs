@@ -67,9 +67,7 @@ namespace Tangent.Intermediate.Interop
             if (t.IsConstructedGenericType || t.IsPointer || t.IsByRef) { return; }
             if (alreadyProcessed.Contains(t)) { return; }
             alreadyProcessed.Add(t);
-            if (t == typeof(StringSplitOptions)) {
-                Console.Error.WriteLine("sso");
-            }
+
             var typeDecl = DotNetType.TypeDeclarationFor(t);
             var isBuiltIn = t == typeof(int) || t == typeof(string) || t == typeof(bool) || t == typeof(double) || t == typeof(void);
 

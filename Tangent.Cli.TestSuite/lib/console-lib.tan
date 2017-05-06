@@ -3,3 +3,4 @@
 }
 
 read int from console => int { int.Parse read line from console }
+read char from console => .NET System.Char {  .NET System.Convert.ToChar .NET System.Console.In.Read }

@@ -72,5 +72,12 @@ namespace Tangent.Cli.TestSuite.RosettaCode
             Assert.IsTrue(results.SequenceEqual(new string[] { "good", "good", "good", "good" }));
         }
 
+        [TestMethod]
+        public void Brainfuck1()
+        {
+            var result = Test.DebugProgramFile(new[] { @"RosettaCode\Brainfuck.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan"}, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly, typeof(TextReader).Assembly });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new string[] { "Hello World!" }));
+        }
     }
 }

@@ -200,6 +200,9 @@
     <None Include="RosettaCode\AplusB.tan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="RosettaCode\Brainfuck.tan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="RosettaCode\ExtendYourLanguage.tan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
