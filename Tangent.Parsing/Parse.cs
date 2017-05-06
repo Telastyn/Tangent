@@ -318,7 +318,7 @@ namespace Tangent.Parsing
                     return new IdentifierExpression(((IdentifierElement)element).Identifier, element.SourceInfo);
                 case ElementType.Block:
                     var stmts = ((BlockElement)element).Block.Statements.ToList();
-                    var locals = BuildLocals(((BlockElement)element).Block.Locals, types, fnGenerics, errors);
+                    var locals = BuildLocals(((BlockElement)element).Block.Locals, types, fnGenerics, errors).ToList();
                     if (locals.Any()) {
                         scope = scope.CreateNestedLocalScope(locals);
                     }

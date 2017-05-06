@@ -67,6 +67,9 @@ namespace Tangent.Intermediate.Interop
             if (t.IsConstructedGenericType || t.IsPointer || t.IsByRef) { return; }
             if (alreadyProcessed.Contains(t)) { return; }
             alreadyProcessed.Add(t);
+            if (t == typeof(StringSplitOptions)) {
+                Console.Error.WriteLine("sso");
+            }
             var typeDecl = DotNetType.TypeDeclarationFor(t);
             var isBuiltIn = t == typeof(int) || t == typeof(string) || t == typeof(bool) || t == typeof(double) || t == typeof(void);
 
@@ -98,7 +101,7 @@ namespace Tangent.Intermediate.Interop
                 }
 
                 foreach (var field in t.GetFields()) {
-                    if (field.IsPublic) {
+                    if (field.IsPublic && !field.IsSpecialName) {
                         var fieldFns = ReductionDeclarationsFor(typeDecl, field);
                         if (fieldFns != null) {
                             foreach (var fn in fieldFns.Where(ff => ff.Takes.All(pp => !pp.IsIdentifier || isAllowedIdentifier(pp.Identifier.Value)))) {
@@ -110,7 +113,6 @@ namespace Tangent.Intermediate.Interop
                                 }
                             }
                         }
-
                     }
                 }
 
@@ -275,10 +277,15 @@ namespace Tangent.Intermediate.Interop
                     propertyType = propertyType.ResolveGenericReferences(ga => GenericArgumentReferenceType.For(genericParamMapping[ga]));
                 }
 
-                result.Add(new ReductionDeclaration(namePart.Concat(genericPart).Concat(fieldPart), new Function(propertyType, new Block(new Expression[] { new DirectFieldAccessExpression(field, Enumerable.Empty<Expression>()) }, Enumerable.Empty<ParameterDeclaration>())), genericParamMapping.Values));
-                if (!(field.IsInitOnly || field.IsLiteral)) {
-                    var assignmentPart = new List<PhrasePart>() { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) };
-                    result.Add(new ReductionDeclaration(namePart.Concat(genericPart).Concat(fieldPart).Concat(assignmentPart), new Function(TangentType.Void, new Block(new Expression[] { new DirectFieldAssignmentExpression(field, new Expression[] { new ParameterAccessExpression(assignmentPart[1].Parameter, null) }) }, Enumerable.Empty<ParameterDeclaration>())), genericParamMapping.Values));
+                if (field.IsLiteral) {
+                    var value = field.GetRawConstantValue();
+                    result.Add(new ReductionDeclaration(namePart.Concat(genericPart).Concat(fieldPart), new Function(propertyType, new Block(new Expression[] { new ConstantExpression<object>(propertyType, value, null) }, Enumerable.Empty<ParameterDeclaration>())), genericParamMapping.Values));
+                } else {
+                    result.Add(new ReductionDeclaration(namePart.Concat(genericPart).Concat(fieldPart), new Function(propertyType, new Block(new Expression[] { new DirectFieldAccessExpression(field, Enumerable.Empty<Expression>()) }, Enumerable.Empty<ParameterDeclaration>())), genericParamMapping.Values));
+                    if (!(field.IsInitOnly)) {
+                        var assignmentPart = new List<PhrasePart>() { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) };
+                        result.Add(new ReductionDeclaration(namePart.Concat(genericPart).Concat(fieldPart).Concat(assignmentPart), new Function(TangentType.Void, new Block(new Expression[] { new DirectFieldAssignmentExpression(field, new Expression[] { new ParameterAccessExpression(assignmentPart[1].Parameter, null) }) }, Enumerable.Empty<ParameterDeclaration>())), genericParamMapping.Values));
+                    }
                 }
             } else {
                 var typeGenerics = typeDecl.Takes.Where(t => !t.IsIdentifier).Select(pp => pp.Parameter).ToList();
@@ -288,10 +295,15 @@ namespace Tangent.Intermediate.Interop
                     propertyType = propertyType.ResolveGenericReferences(ga => GenericArgumentReferenceType.For(genericParamMapping[ga]));
                 }
 
-                result.Add(new ReductionDeclaration(thisPart.Concat(fieldPart), new Function(propertyType, new Block(new Expression[] { new DirectFieldAccessExpression(field, new Expression[] { new ParameterAccessExpression(thisPart[0].Parameter, null) }) }, Enumerable.Empty<ParameterDeclaration>())), genericParamMapping.Values));
-                if (!(field.IsInitOnly || field.IsLiteral)) {
-                    var assignmentPart = new List<PhrasePart>() { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) };
-                    result.Add(new ReductionDeclaration(thisPart.Concat(fieldPart).Concat(assignmentPart), new Function(TangentType.Void, new Block(new Expression[] { new DirectFieldAssignmentExpression(field, new Expression[] { new ParameterAccessExpression(thisPart[0].Parameter, null), new ParameterAccessExpression(assignmentPart[1].Parameter, null) }) }, Enumerable.Empty<ParameterDeclaration>())), genericParamMapping.Values));
+                if (field.IsLiteral) {
+                    var value = field.GetRawConstantValue();
+                    result.Add(new ReductionDeclaration(thisPart.Concat(fieldPart), new Function(propertyType, new Block(new Expression[] { new ConstantExpression<object>(propertyType, value, null) }, Enumerable.Empty<ParameterDeclaration>())), genericParamMapping.Values));
+                } else {
+                    result.Add(new ReductionDeclaration(thisPart.Concat(fieldPart), new Function(propertyType, new Block(new Expression[] { new DirectFieldAccessExpression(field, new Expression[] { new ParameterAccessExpression(thisPart[0].Parameter, null) }) }, Enumerable.Empty<ParameterDeclaration>())), genericParamMapping.Values));
+                    if (!(field.IsInitOnly)) {
+                        var assignmentPart = new List<PhrasePart>() { new PhrasePart("="), new PhrasePart(new ParameterDeclaration("value", propertyType)) };
+                        result.Add(new ReductionDeclaration(thisPart.Concat(fieldPart).Concat(assignmentPart), new Function(TangentType.Void, new Block(new Expression[] { new DirectFieldAssignmentExpression(field, new Expression[] { new ParameterAccessExpression(thisPart[0].Parameter, null), new ParameterAccessExpression(assignmentPart[1].Parameter, null) }) }, Enumerable.Empty<ParameterDeclaration>())), genericParamMapping.Values));
+                    }
                 }
             }
 

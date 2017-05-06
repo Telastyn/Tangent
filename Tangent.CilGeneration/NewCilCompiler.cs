@@ -325,7 +325,7 @@ namespace Tangent.CilGeneration
 
         private Type InstantiateGeneric(BoundGenericType boundGeneric)
         {
-            if(boundGeneric.GenericType == DotNetArrayType.Common) { return InstantiateArrayType(boundGeneric.TypeArguments.First()); }
+            if (boundGeneric.GenericType == DotNetArrayType.Common) { return InstantiateArrayType(boundGeneric.TypeArguments.First()); }
             Type genericType = Compile(boundGeneric.GenericType);
             var arguments = boundGeneric.TypeArguments.Select(tt => Compile(tt)).ToArray();
             var instance = genericType.MakeGenericType(arguments);
@@ -1047,6 +1047,15 @@ namespace Tangent.CilGeneration
                     } else if (constant.EffectiveType == TangentType.Int) {
                         gen.Emit(OpCodes.Ldc_I4, (int)constant.Value);
                         return;
+                    } else if (constant.EffectiveType is DotNetEnumType) {
+                        var dnet = constant.EffectiveType as DotNetEnumType;
+                        var valueType = dnet.DotNetType.GetEnumUnderlyingType();
+                        if (valueType == typeof(int)) {
+                            gen.Emit(OpCodes.Ldc_I4, Convert.ToInt32(constant.Value));
+                            return;
+                        } else {
+                            throw new NotImplementedException();
+                        }
                     } else {
                         throw new NotImplementedException();
                     }
@@ -1201,7 +1210,7 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.ResolvedParenExpr:
                     var pexpr = (ResolvedParenExpression)expr;
-                    foreach(var stmt in pexpr.Contents.Statements) {
+                    foreach (var stmt in pexpr.Contents.Statements) {
                         AddExpression(stmt, gen, parameterCodes, closureScope, false);
                     }
 
@@ -1267,7 +1276,7 @@ namespace Tangent.CilGeneration
             var closureGen = closureFn.GetILGenerator();
             int localix = 0;
             foreach (var local in lambda.Implementation.Locals) {
-                var lb = gen.DeclareLocal(Compile(local.Returns));
+                var lb = closureGen.DeclareLocal(Compile(local.Returns));
                 lb.SetLocalSymInfo(GetNameFor(local));
                 var closureIx = localix;
                 nestedCodes.Add(local, new PropertyCodes(g => g.Emit(OpCodes.Ldloc, closureIx), (g, v) => { v(); g.Emit(OpCodes.Stloc, closureIx); }));
