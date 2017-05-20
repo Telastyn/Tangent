@@ -45,7 +45,7 @@ namespace Tangent.Cli.TestSuite.RosettaCode
         [TestMethod]
         public void FizzBuzz()
         {
-            var result = Test.DebugProgramFile(new[] { @"RosettaCode\fizzbuzz.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan", @"lib\console-lib.tan", @"lib\string-lib.tan" }, new[] { typeof(string).Assembly });
+            var result = Test.DebugProgramFile(new[] { @"RosettaCode\fizzbuzz.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan", @"lib\console-lib.tan", @"lib\string-lib.tan", @"lib\enumerable-lib.tan" }, new[] { typeof(string).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(FizzBuzzResult));
         }

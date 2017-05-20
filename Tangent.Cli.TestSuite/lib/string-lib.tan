@@ -7,7 +7,7 @@
 (x : string) is not blank => bool { not x is blank }
 
 split (buffer : string) on (delimiter : string) => string[] {
-  : delimiters : .NET System.Collections.Generic.List<string> := new .NET System.Collections.Generic.List<string>;
+  : delimiters : string list := new .NET System.Collections.Generic.List<string>;
 
   delimiters.Add delimiter;
   buffer.Split
