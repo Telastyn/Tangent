@@ -60,6 +60,9 @@
     <Compile Include="TestExpectations.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="alias-generic.tan">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="alias.tan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

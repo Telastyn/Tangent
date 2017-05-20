@@ -110,6 +110,7 @@ namespace Tangent.Parsing
             Dictionary<TangentType, TangentType> inNeedOfPopulation = new Dictionary<TangentType, TangentType>();
             List<Tuple<TangentType, TangentType>> bindings = new List<Tuple<TangentType, TangentType>>();
             List<ReductionDeclaration> delegateInvokers = new List<ReductionDeclaration>();
+
             Func<TangentType, TangentType> selector = t => t;
             selector = t => {
                 if (t is PartialProductType) {
@@ -196,7 +197,42 @@ namespace Tangent.Parsing
                 return new ResultOrParseError<IEnumerable<TypeDeclaration>>(errors);
             }
 
-            newLookup = newLookup.Select(td => new TypeDeclaration(td.Takes, selector(td.Returns))).ToList();
+            Dictionary<TypeDeclaration, Func<TypeDeclaration>> lazyAliasRebindings = new Dictionary<TypeDeclaration, Func<TypeDeclaration>>();
+            Func<PhrasePart, Dictionary<ParameterDeclaration, ParameterDeclaration>, PhrasePart> replaceDecls = null;
+            replaceDecls = (pp, mapping) => {
+                if (pp.IsIdentifier) { return pp; }
+                if (mapping.ContainsKey(pp.Parameter)) { return mapping[pp.Parameter]; }
+                return new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(pp2 => replaceDecls(pp2, mapping)), pp.Parameter.Returns));
+            };
+
+            newLookup = newLookup.Select(td => {
+                var ptr = td.Returns as PartialTypeReference;
+                var genericTypeRef = ptr?.ResolvedType as BoundGenericType;
+                var result = new TypeDeclaration(td.Takes, selector(td.Returns));
+                var pt = result.Returns as ProductType;
+                if (pt != null && !pt.GenericParameters.Any()) {
+                    var genericParameters = td.Takes.Aggregate(new List<ParameterDeclaration>(), (pds, pp) => {
+                        if (!pp.IsIdentifier) {
+                            pds.Add(pp.Parameter);
+                        }
+
+                        return pds;
+                    });
+
+                    pt.GenericParameters.AddRange(genericParameters);
+                }
+
+                if (genericTypeRef != null) {
+                    lazyAliasRebindings.Add(result, () => {
+                        // We need to reverse resolve the generic so that the type gets the things it expects where it expects them.
+                        var lazyTypeRef = ((td.Returns as PartialTypeReference).ResolvedType as BoundGenericType);
+                        var mapping = (lazyTypeRef.GenericType as HasGenericParameters).GenericParameters.Zip(lazyTypeRef.TypeArguments, (param, arg) => new { Parameter = param, Argument = arg }).Where(pa => pa.Argument is GenericArgumentReferenceType).ToDictionary(pa => (pa.Argument as GenericArgumentReferenceType).GenericParameter, pa => pa.Parameter);
+                        return new TypeDeclaration(td.Takes.Select(pp => replaceDecls(pp, mapping)), lazyTypeRef.GenericType);
+                    });
+                }
+
+                return result;
+            }).ToList();
 
             var newBindings = new List<InterfaceBinding>(bindings.Count);
             foreach (var entry in bindings) {
@@ -217,20 +253,7 @@ namespace Tangent.Parsing
 
             interfaceToImplementerBindings.AddRange(newBindings);
 
-            foreach (var entry in newLookup) {
-                var pt = entry.Returns as ProductType;
-                if (pt != null && !pt.GenericParameters.Any()) {
-                    var genericParameters = entry.Takes.Aggregate(new List<ParameterDeclaration>(), (pds, pp) => {
-                        if (!pp.IsIdentifier) {
-                            pds.Add(pp.Parameter);
-                        }
-
-                        return pds;
-                    });
-
-                    pt.GenericParameters.AddRange(genericParameters);
-                }
-            }
+            newLookup = newLookup.Select(td => lazyAliasRebindings.ContainsKey(td) ? lazyAliasRebindings[td]() : td).ToList();
 
             return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);
         }

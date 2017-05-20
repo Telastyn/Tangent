@@ -1,0 +1,10 @@
+﻿foo (T) :> new foo (value : T) {}
+[(T)] :> foo T;
+
+fn (x : [int]) => void {
+  print "in fn";
+}
+
+entrypoint => void {
+  fn new foo 42;
+}

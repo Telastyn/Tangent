@@ -24,8 +24,8 @@ namespace Tangent.Intermediate
         public static BoundGenericType For(HasGenericParameters generic, IEnumerable<TangentType> arguments)
         {
             if (generic == null) { throw new ArgumentNullException("generic"); }
-            if (arguments.Count() != generic.GenericParameters.Count()) { throw new InvalidOperationException(); }
-
+            //if (arguments.Count() != generic.GenericParameters.Count()) { throw new InvalidOperationException(); }
+            arguments = arguments.ToList();
             var result = concreteTypes.FirstOrDefault(t => t.GenericType == generic && t.TypeArguments.SequenceEqual(arguments));
             if (result != null) {
                 return result;

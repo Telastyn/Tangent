@@ -20,7 +20,7 @@ namespace Tangent.Intermediate
             if (Declaration.IsGeneric) {
                 var generic = Declaration.Returns as HasGenericParameters;
                 if (generic != null) {
-                    var genericBinding = BoundGenericType.For(generic, generic.GenericParameters.Select(gp => input.GenericArguments[gp]).ToList());
+                    var genericBinding = BoundGenericType.For(generic, Declaration.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter).Select(gp => input.GenericArguments[gp]).ToList());
                     return new TypeAccessExpression(genericBinding.TypeConstant, input.MatchLocation);
                 } else {
                     var genericBinding = Declaration.Returns.ResolveGenericReferences(pd => input.GenericArguments[pd]);

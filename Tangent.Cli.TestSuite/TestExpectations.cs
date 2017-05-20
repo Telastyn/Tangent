@@ -84,6 +84,13 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void AliasingGenericTypesWorks()
+        {
+            var result = Test.DebugProgramFile("alias-generic.tan");
+            Assert.AreEqual("in fn", result.Trim());
+        }
+
+        [TestMethod]
         public void BasicPartialSpecialization()
         {
             TimeSpan compileDuration;
