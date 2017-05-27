@@ -1,0 +1,21 @@
+﻿(conditional : bool) ? (when true : ~>int) | (when false : ~>int) => int {
+  : result : int := 0;
+  if conditional result = when true else result = when false;
+  result;
+}
+
+(a : int) <= (b : int) => bool {
+  a < b or a = b
+}
+
+fn (k : int) (x : ~>int) (xx : ~>int) (xxx : ~>int) (xxxx : ~>int) (xxxxx : ~>int) => int {
+  //print k;
+  : kk : int := k;
+  : b : ~>int := 0;
+  b = { kk = kk - 1; fn kk b x xx xxx xxxx;};
+  kk <= 0 ? xxxx + xxxxx | b;
+}
+
+entrypoint => void {
+  print fn 10 1 0-1 0-1 1 0
+}

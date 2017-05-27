@@ -1,0 +1,13 @@
+﻿A (m:int), (n:int) => int {
+  : result : int := 0;
+
+  if m = 0 result = n+1;
+  if n = 0 result = A m-1, 1
+  else result = A m-1, A m, n-1;
+
+  result;
+}
+
+entrypoint => void {
+	print A 3,2 //29
+}

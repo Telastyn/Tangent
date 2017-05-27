@@ -67,7 +67,7 @@ namespace Tangent.Cli.TestSuite.RosettaCode
         [TestMethod]
         public void ExtendYourLanguage()
         {
-            var result = Test.DebugProgramFile(new[] { @"RosettaCode\ExtendYourLanguage.tan", @"lib\conditional-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly, typeof(TextReader).Assembly });
+            var result = Test.ProgramFile(new[] { @"RosettaCode\ExtendYourLanguage.tan", @"lib\conditional-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly, typeof(TextReader).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new string[] { "good", "good", "good", "good" }));
         }
@@ -79,6 +79,23 @@ namespace Tangent.Cli.TestSuite.RosettaCode
             var result = Test.DebugProgramFile(new[] { @"RosettaCode\Brainfuck.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan"}, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly, typeof(TextReader).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new string[] { "Hello World!" }));
+        }
+
+        [Ignore] // RMS: runtime timeout.
+        [TestMethod]
+        public void Ackermann()
+        {
+            var result = Test.DebugProgramFile(new[] { @"RosettaCode\Ackermann.tan", @"lib\conditional-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly, typeof(TextReader).Assembly });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new string[] { "29" }));
+        }
+
+        [TestMethod]
+        public void ManOrBoy()
+        {
+            var result = Test.DebugProgramFile(new[] { @"RosettaCode\ManOrBoy.tan", @"lib\conditional-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly, typeof(TextReader).Assembly });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new string[] { "-67" }));
         }
     }
 }
