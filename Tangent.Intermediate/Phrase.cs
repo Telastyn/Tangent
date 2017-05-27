@@ -52,6 +52,15 @@ namespace Tangent.Intermediate
                             } else {
                                 inferenceCollector.Add(element.Parameter, ((TypeConstant)inType).Value);
                             }
+                        } else if (inType.ImplementationType == KindOfType.Kind) {
+                            // Some generic access
+                            if (inferenceCollector.ContainsKey(element.Parameter)) {
+                                if (inferenceCollector[element.Parameter] != ((KindType)inType).KindOf) {
+                                    return PhraseMatchResult.Failure;
+                                }
+                            } else {
+                                inferenceCollector.Add(element.Parameter, ((KindType)inType).KindOf);
+                            }
                         } else {
                             if (inferenceCollector.ContainsKey(element.Parameter)) {
                                 if (inferenceCollector[element.Parameter] != inType) {

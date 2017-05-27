@@ -25,6 +25,10 @@ namespace Tangent.Intermediate
             if (input.IncomingArguments.Any()) {
                 return new DelegateInvocationExpression(paramAccess, input.IncomingArguments, input.MatchLocation);
             } else {
+                if (Parameter.Returns.ImplementationType == KindOfType.Kind) {
+                    return new GenericParameterAccessExpression(Parameter, input.MatchLocation);
+                }
+
                 return paramAccess;
             }
         }

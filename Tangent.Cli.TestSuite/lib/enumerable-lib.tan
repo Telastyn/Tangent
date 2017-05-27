@@ -2,5 +2,5 @@
 (T) list :> .NET System.Collections.Generic.List<T>;
 
 // RMS: Issue here where T in the body is a kind type so the expr doesn't match return type.
-//new (T) list => T list { new .NET System.Collections.Generic.List<T> }
+new (T) list => T list { new .NET System.Collections.Generic.List<T> }
 add (value : (T)) to (list : T list) => void { list.Add value }
