@@ -15,4 +15,17 @@ split (buffer : string) on (delimiter : string) => string[] {
 	.NET System.StringSplitOptions.RemoveEmptyEntries;
 }
 
+join (elements : enumerable string) with (delimiter : string) => string {
+  .NET System.String.Join delimiter elements
+}
+
 (a : string) + (b : string) => string { .NET System.String.Concat a b }
+
+// RMS: causes timeouts in the compiler?
+//first non-whitespace in (s : string) after (ix : int) => int {
+//  : ptr : int := ix;
+//  while ptr < s.Length and .NET System.Char.IsWhitespace s[ptr]
+//    ptr = ptr + 1;
+//
+//  ptr;
+//}

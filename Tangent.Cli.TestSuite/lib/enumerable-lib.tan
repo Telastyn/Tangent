@@ -4,3 +4,8 @@
 // RMS: Issue here where T in the body is a kind type so the expr doesn't match return type.
 new (T) list => T list { new .NET System.Collections.Generic.List<T> }
 add (value : (T)) to (list : T list) => void { list.Add value }
+
+// RMS: Select unknown
+//map (collection : enumerable (T)) to (R) with (fn(T):R) => enumerable R {
+//  collection.Select x => {fn x}
+//}

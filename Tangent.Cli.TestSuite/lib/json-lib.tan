@@ -1,0 +1,151 @@
+﻿json parse result :> interface {
+  (this) was successful => bool;
+}
+
+null json parse result :> null :< json parse result {
+  (this) was successful => bool { false }
+}
+
+json parse failure code :> enum {
+  unexpected end of file,
+  unexpected token
+
+}
+
+line/column :> line (line : int) col (col : int) {
+  (this) line => int { line }
+  (this) column => int { col }
+}
+
+line/column for index (ix : int) in (s : string) => line/column {
+  // TODO: counts?
+  line 1 col ix
+}
+
+default message for (code : json parse failure code) => string { "Unknown" }
+
+json parse failure :> json parse failure (code : json parse failure code) at (failure location : line/column) from (start location : line/column) :< json parse result {
+  (this) was successful => bool { false }
+  default message for (this) => string {
+    "ERROR - Line: " + failure location line + " Column: " + failure location column + " - " + default message for code
+  }
+
+  (this) code => json parse failure code { code }
+  (this) failure location => line/column { failure location }
+  (this) start location => line/column { start location }
+}
+
+json parse success :> json parsed (value : json value) to index (ix : int) {
+  (this) was successful => bool { true }
+  (this) => json value { value }
+  index after (this) => int { ix }
+}
+
+json value :> interface {
+  (this) => string;
+}
+
+(members : enumerable json member) => enumerable string {
+  map members to string with x => x
+}
+
+json object :> new json object (members : enumerable json member) :< json value {
+  (this).members => enumerable json member { members } 
+  (this) => string {
+    // TODO: newline escapes.
+    "{" + join members with ",
+" + "}"
+  }
+}
+
+json member :> new json member (name : string), (value : json value) {
+  (this).name => { name }
+  (this).value => { value }
+  (this) => string { "\"" + name + "\" : " + value }
+}
+
+json array :> new json array (values : enumerable json value) :< json value {
+  (this).values => enumerable json value { values }
+  (this) => string {
+    "[ " + join values with ", " + " ]"
+  }
+}
+
+json string value :> new json string value (value : string) :< json value {
+  (this).value => string { value }
+  (this) => string {
+    "\"" + escape json string content for value + "\""
+  }
+}
+
+escape json string content for (s : string) => string {
+  // TODO:
+  s
+}
+
+json null :> json null :< json value {
+  (this) => string { "null" }
+}
+
+json bool :> new json bool (value : bool) :< json value {
+  (this) => bool { value }
+  (this) => string { 
+    : result : string := "false";
+
+	if value result = "true";
+
+	result;
+  }
+}
+
+json number :> new json number (int part : string).(frac part : string) e (exp part : string) :< json value {
+  (this) => string {
+    : result : string := int part;
+    
+	if frac part is not blank result = result + "." + frac part;
+	if exp part is not blank result = result + "e" + exp part;
+
+	result;
+  }
+}
+
+json parse (json : string) => json parse result {
+}
+
+json parse value at index (ix : int) in (json : string) => json parse result {
+  : result : json parse result := null;
+
+  if ix >= json.Length result = json parse failure unexpected end of file at line/column for index ix in json from line/column for index ix in json
+  else {
+    : peek : string := json[ix];
+
+	if peek = "\"" result = json parse string at index ix in json
+	else if peek = "{" result = json parse object at index ix in json
+	else if peek = "[" result = json parse array at index ix in json
+	else if peek = "0" or peek = "1" or peek = "2" or peek = "3" or peek = "4" or peek = "5" or peek = "6" or peek = "7" or peek = "8" or peek = "9" or peek = "-" result = json parse number at index ix in json
+	else result = json parse result := parse json constant at index ix in json;
+  }
+
+  result;
+}
+
+json parse string at index (ix : int) in (json : string) => json parse result {
+  : ptr : int := first non-whitespace in json after ix;
+  : result : json parse result := null;
+
+  if ptr >= json.Length result = json parse failure unexpected end of file at line/column for index ptr in json from line/column for index ix in json
+  else {
+    : peek : string := json[ptr];
+
+	if peek = "\"" {
+	  ptr = ptr + 1;
+	  peek = json[ptr];
+	  // check quote, escape, control char.
+	} else {
+	  result = json parse failure unexpected token at line/column for index ptr in json from line/column for index ix in json;
+	}
+  }
+
+  result;
+}
+

@@ -175,6 +175,7 @@
     <None Include="lib\enumerable-lib.tan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="lib\json-lib.tan" />
     <None Include="lib\string-lib.tan">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
