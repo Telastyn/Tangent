@@ -1,0 +1,4 @@
+﻿entrypoint => void {
+  print "\"";
+  print "\\";
+}

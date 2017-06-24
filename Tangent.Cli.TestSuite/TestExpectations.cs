@@ -476,6 +476,14 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void StringEscapes()
+        {
+            var result = Test.DebugProgramFile(new[] { "StringEscapes.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "\"", "\\" }));
+        }
+
+        [TestMethod]
         [Ignore]
         public void BasicGlobalUse()
         {

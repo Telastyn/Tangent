@@ -92,13 +92,20 @@ namespace Tangent.Tokenization
             if (index >= input.Length) { return null; }
             if (input[index] == '\"') {
                 int endIx;
-                for (endIx = index + 1; endIx < input.Length && input[endIx] != '\"'; ++endIx) { }
-                if (endIx == input.Length) {
+                bool end = false;
+                for (endIx = index + 1; endIx < input.Length && !end; ++endIx) {
+                    if(input[endIx] == '\\') {
+                        endIx++;
+                    }else if(input[endIx] == '\"') {
+                        end = true;
+                    }
+                }
+                if (!end) {
                     // TODO: pleasant error.
                     return null;
                 }
 
-                return new Token(TokenIdentifier.StringConstant, input, index, endIx + 1, inputLabel);
+                return new Token(TokenIdentifier.StringConstant, input, index, endIx, inputLabel);
             } else {
                 return null;
             }

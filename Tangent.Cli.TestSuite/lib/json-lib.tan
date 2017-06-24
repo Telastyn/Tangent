@@ -143,9 +143,26 @@ json parse string at index (ix : int) in (json : string) => json parse result {
 	  // check quote, escape, control char.
 	} else {
 	  result = json parse failure unexpected token at line/column for index ptr in json from line/column for index ix in json;
-	}
-  }
+	};
+  };
 
   result;
+}
+
+
+json parse object at index (ix : int) in (json : string) => json parse result { 
+  : ptr : int := first non-whitespace in json after ix;
+  : result : json parse result := null;
+
+  if ptr >= json.Length result = json parse failure unexpected end of file at line/column for index ptr in json from line/column for index ix in json
+  else {
+    : peek : string := json[ptr];
+
+	if peek = "{" {
+	  ptr = ptr + 1;
+	  : members : json member list := new json member list;
+
+	  // bleh, tryparse stuff needed. Working on other things for now.
+	}
 }
 

@@ -10,7 +10,7 @@ using Tangent.Tokenization;
 
 namespace Tangent.Parsing
 {
-    public class StringConstantParser:Parser<ConstantElement<string>>
+    public class StringConstantParser : Parser<ConstantElement<string>>
     {
         public override ResultOrParseError<ConstantElement<string>> Parse(IEnumerable<Token> tokens, out int consumed)
         {
@@ -21,7 +21,12 @@ namespace Tangent.Parsing
             }
 
             consumed = 1;
-            return new ConstantElement<string>(new ConstantExpression<string>(TangentType.String, first.Value.Substring(1, first.Value.Length - 2), first.SourceInfo));
+            return new ConstantElement<string>(new ConstantExpression<string>(TangentType.String, ProcessStringEscapes(first.Value.Substring(1, first.Value.Length - 2)), first.SourceInfo));
+        }
+
+        public static string ProcessStringEscapes(string input)
+        {
+            return input.Replace("\\\"", "\"").Replace("\\\\", "\\");
         }
     }
 }
