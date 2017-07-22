@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Tangent.CilGeneration;
@@ -37,8 +38,8 @@ namespace Tangent.Cli.TestSuite
 
             //var compiler = new CilCompiler();
             //compiler.Compile(intermediateProgram.Result, Path.GetFileNameWithoutExtension(paths.First()));
-
-            NewCilCompiler.Compile(intermediateProgram.Result, Path.GetFileNameWithoutExtension(paths.First()));
+            var compilation = Task.Run(() => NewCilCompiler.Compile(intermediateProgram.Result, Path.GetFileNameWithoutExtension(paths.First())));
+            if (compilation.Wait(TimeSpan.FromSeconds(30))) { } else { Assert.Fail("Compilation timeout."); }
 
             var discard = TimeSpan.Zero;
             return RunCompiledProgram(targetExe, out discard, input);

@@ -105,6 +105,13 @@ namespace Tangent.Intermediate
                                 }
                             }
 
+                            if (DelegateParameterBranches.ContainsKey(targetType)) {
+                                // A firm match, but for some reason I treated these special...
+                                foreach(var entry in DelegateParameterBranches[targetType].Lookup(phrase.Skip(1))) {
+                                    yield return entry;
+                                }
+                            }
+
                             if (DelegateParameterBranches.ContainsKey(targetType.Lazy)) {
                                 // Find things that match  ~>target
                                 foreach (var entry in DelegateParameterBranches[targetType.Lazy].Lookup(phrase.Skip(1))) {
@@ -305,6 +312,11 @@ namespace Tangent.Intermediate
             foreach (var entry in TransformationScopeOld.Prioritize(ParameterRules.SelectMany(kvp => kvp.Value))) {
                 PrioritizedPotentiallyAnythingBranches.Add(new TransformationLookupTree(entry, Conversions, index + 1));
             }
+
+            // RMS: 7/22/17 - Had this here to make sure that the conversion graph was being used for lazy things, but seems unnecessary...
+            //foreach (var entry in delegateRules) {
+            //    ParameterRules.Add(entry.Key, entry.Value);
+            //}
         }
 
         private void PopulateConversionCacheFor(TangentType target)

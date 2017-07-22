@@ -324,7 +324,7 @@ namespace Tangent.Cli.TestSuite
         [TestMethod]
         public void LoopTermination()
         {
-            var result = Test.ProgramFile(new[] { "LoopTermination.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan" });
+            var result = Test.DebugProgramFile(new[] { "LoopTermination.tan", @"lib\conditional-lib.tan", @"lib\looping-lib.tan" });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new[] { "0", "1", "2", "3", "4" }));
         }

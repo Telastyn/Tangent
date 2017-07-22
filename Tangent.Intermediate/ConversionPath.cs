@@ -82,5 +82,10 @@ namespace Tangent.Intermediate
         {
             return new ConversionPath(1, (expr, scope) => new LambdaExpression(Enumerable.Empty<ParameterDeclaration>(), t, new Block(new[] { expr }, Enumerable.Empty<ParameterDeclaration>()), expr.SourceInfo), false);
         }
+
+        public static ConversionPath Delazy(TangentType t)
+        {
+            return new ConversionPath(1, (expr, scope) => new DelegateInvocationExpression(expr, Enumerable.Empty<Expression>(), expr.SourceInfo), false);
+        }
     }
 }

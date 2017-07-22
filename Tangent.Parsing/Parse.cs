@@ -175,7 +175,7 @@ namespace Tangent.Parsing
                             .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
                             .Concat((partialFunction.Scope as ProductType) != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, (partialFunction.Scope as ProductType).DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
                             .Concat(invocationRules)
-                            .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }), conversionGraph)
+                            .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common/*, Delazy.Common*/ }), conversionGraph)
                             .CreateNestedLocalScope(locals);
 
                         Function newb = BuildBlock(scope, types, fn.GenericParameters, partialFunction.EffectiveType, partialFunction.Implementation, locals, errors);
@@ -192,14 +192,14 @@ namespace Tangent.Parsing
                 if (productType == null) {
                     scope = new TransformationScopeNew(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
                             .Concat(invocationRules)
-                            .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }), conversionGraph);
+                            .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common/*, Delazy.Common*/ }), conversionGraph);
                 } else {
                     // Initializers can't use locals (directly), and don't have parameters.
                     scope = new TransformationScopeNew(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
                             .Concat(field.Declaration.Returns is DelegateType ? (IEnumerable<TransformationRule>)new[] { new TypeAccess(new TypeDeclaration("this", productType)) } : Enumerable.Empty<TransformationRule>())
                             .Concat(invocationRules)
                             .Concat(ConstructorParameterAccess.For(field.Declaration.Takes.First(pp => !pp.IsIdentifier).Parameter, productType.DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)))
-                            .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common, Delazy.Common }), conversionGraph);
+                            .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common/*, Delazy.Common*/ }), conversionGraph);
                 }
 
                 var expr = castPlaceholder.UnresolvedInitializer.FlatTokens.Select(pe => ElementToExpression(scope, types, Enumerable.Empty<ParameterDeclaration>(), pe, errors)).ToList();

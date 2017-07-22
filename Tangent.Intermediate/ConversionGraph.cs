@@ -78,16 +78,37 @@ namespace Tangent.Intermediate
 
             ConversionPath conversion = null;
             // Check if we're doing something like int -> ~>int
-            if (to.ImplementationType == KindOfType.Delegate) {
-                var delegateType = (DelegateType)to;
+
+            // RMS: 7/22/17 - commenting because I believe the Lookup tree (and others) already check this path. No need to duplicate.
+
+            //if (to.ImplementationType == KindOfType.Delegate) {
+            //    var delegateType = (DelegateType)to;
+            //    if (!delegateType.Takes.Any()) {
+            //        // Some lazy type.
+            //        if (delegateType.Returns == from) {
+            //            conversion = ConversionPath.Lazify(from);
+            //        } else {
+            //            var almostConversion = FindConversion(from, delegateType.Returns);
+            //            if (almostConversion != null) {
+            //                conversion = ConversionPath.Lazify(almostConversion);
+            //            }
+            //        }
+            //    }
+            //}
+
+            // RMS: 7/22/17 - but I think the opposite needs done more efficiently...
+
+            // Check if we're doing something like ~>int -> int
+            if (from.ImplementationType == KindOfType.Delegate) {
+                var delegateType = (DelegateType)from;
                 if (!delegateType.Takes.Any()) {
                     // Some lazy type.
-                    if (delegateType.Returns == from) {
-                        conversion = ConversionPath.Lazify(from);
+                    if (delegateType.Returns == to) {
+                        conversion = ConversionPath.Delazy(from);
                     } else {
-                        var almostConversion = FindConversion(from, delegateType.Returns);
+                        var almostConversion = FindConversion(delegateType.Returns, to);
                         if (almostConversion != null) {
-                            conversion = ConversionPath.Lazify(almostConversion);
+                            conversion = new ConversionPath(ConversionPath.Delazy(from), almostConversion);
                         }
                     }
                 }
@@ -140,22 +161,23 @@ namespace Tangent.Intermediate
                         }
                     }
                 }
-
-                if (fromGeneric.Any() || toGeneric.Any()) {
-                    return conversion;
-                }
-
-                if (!Paths.ContainsKey(from)) {
-                    Paths.Add(from, new Dictionary<TangentType, ConversionPath>());
-                }
-
-                if (!Paths[from].ContainsKey(to)) {
-                    Paths[from].Add(to, conversion);
-                } else {
-                    // TODO: do we need this? If we get here it's probably a bug?
-                    Paths[from][to] = conversion;
-                }
             }
+
+            if (fromGeneric.Any() || toGeneric.Any()) {
+                return conversion;
+            }
+
+            if (!Paths.ContainsKey(from)) {
+                Paths.Add(from, new Dictionary<TangentType, ConversionPath>());
+            }
+
+            if (!Paths[from].ContainsKey(to)) {
+                Paths[from].Add(to, conversion);
+            } else {
+                // TODO: do we need this? If we get here it's probably a bug?
+                Paths[from][to] = conversion;
+            }
+
 
             return Paths[from][to];
         }
