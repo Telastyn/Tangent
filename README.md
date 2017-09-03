@@ -150,14 +150,9 @@ point :> (x : int), (y : int) {
   (this).y => int { y }       
 }
 
-// Functions don't need to be declared in the class
-(a : point) = (b : point) => bool {
-  a.x = b.x and a.y = b.y
-}
-
 entrypoint => void {
-  print 2,4 = 2,4;
-  print 2,4 = 4,2;
+  : pt : point := 4,2;
+  print pt.x;
 }
 ```
 
