@@ -11,85 +11,89 @@ namespace Tangent.Parsing
 {
     public static class TypeResolve
     {
-        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllPartialTypeDeclarations(IEnumerable<PartialTypeDeclaration> partialTypes, IEnumerable<TypeDeclaration> builtInTypes, out Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping)
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllPartialTypeDeclarations(IEnumerable<PartialTypeDeclaration> partialTypes, IEnumerable<TypeDeclaration> builtInTypes, ICompilerTimings profiler, out Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping)
         {
-            List<TypeDeclaration> types = new List<TypeDeclaration>(builtInTypes);
-            var simpleTypes = partialTypes.Where(ptd => ptd.Takes.All(pp => pp.IsIdentifier));
-            types.AddRange(simpleTypes.Select(ptd => new TypeDeclaration(ptd.Takes.Select(ppp => new PhrasePart(ppp.Identifier.Identifier)), ptd.Returns)));
-            var leftToProcess = partialTypes.Except(simpleTypes).ToList();
-            genericArgumentMapping = new Dictionary<PartialParameterDeclaration, ParameterDeclaration>();
+            using (profiler.Stopwatch(nameof(TypeResolve), null, partialTypes.Count())) {
+                List<TypeDeclaration> types = new List<TypeDeclaration>(builtInTypes);
+                var simpleTypes = partialTypes.Where(ptd => ptd.Takes.All(pp => pp.IsIdentifier));
+                types.AddRange(simpleTypes.Select(ptd => new TypeDeclaration(ptd.Takes.Select(ppp => new PhrasePart(ppp.Identifier.Identifier)), ptd.Returns)));
+                var leftToProcess = partialTypes.Except(simpleTypes).ToList();
+                genericArgumentMapping = new Dictionary<PartialParameterDeclaration, ParameterDeclaration>();
 
-            while (leftToProcess.Any()) {
-                List<PartialTypeDeclaration> removals = new List<PartialTypeDeclaration>();
+                while (leftToProcess.Any()) {
+                    List<PartialTypeDeclaration> removals = new List<PartialTypeDeclaration>();
 
-                foreach (var entry in leftToProcess) {
-                    var resolution = TryPartialTypeDeclaration(entry, types, false);
-                    if (resolution != null) {
-                        if (!resolution.Success) {
-                            return new ResultOrParseError<IEnumerable<TypeDeclaration>>(resolution.Error);
+                    foreach (var entry in leftToProcess) {
+                        var resolution = TryPartialTypeDeclaration(entry, types, false, profiler);
+                        if (resolution != null) {
+                            if (!resolution.Success) {
+                                return new ResultOrParseError<IEnumerable<TypeDeclaration>>(resolution.Error);
+                            }
+
+                            removals.Add(entry);
+                            types.Add(resolution.Result);
+                            foreach (var genericMapping in entry.Takes.Where(ppp => !ppp.IsIdentifier).Select(ppp => ppp.Parameter).Zip(resolution.Result.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), (ppp, pp) => new KeyValuePair<PartialParameterDeclaration, ParameterDeclaration>(ppp, pp))) {
+                                genericArgumentMapping.Add(genericMapping.Key, genericMapping.Value);
+                            }
                         }
+                    }
 
-                        removals.Add(entry);
-                        types.Add(resolution.Result);
-                        foreach (var genericMapping in entry.Takes.Where(ppp => !ppp.IsIdentifier).Select(ppp => ppp.Parameter).Zip(resolution.Result.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter), (ppp, pp) => new KeyValuePair<PartialParameterDeclaration, ParameterDeclaration>(ppp, pp))) {
-                            genericArgumentMapping.Add(genericMapping.Key, genericMapping.Value);
-                        }
+                    if (removals.Any()) {
+                        leftToProcess = leftToProcess.Except(removals).ToList();
+                    } else {
+                        return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new AggregateParseError(leftToProcess.SelectMany(ptd => ptd.Takes.Where(ppp => !ppp.IsIdentifier).Select(ppp => new IncomprehensibleStatementError(ppp.Parameter.Returns)))));
                     }
                 }
 
-                if (removals.Any()) {
-                    leftToProcess = leftToProcess.Except(removals).ToList();
-                } else {
-                    return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new AggregateParseError(leftToProcess.SelectMany(ptd => ptd.Takes.Where(ppp => !ppp.IsIdentifier).Select(ppp => new IncomprehensibleStatementError(ppp.Parameter.Returns)))));
+                // Unfortunately, what we resolved mid-way into building types might not be the same thing we resolve now that we have all the types.
+                // Even though it is costly, we will double check and toss if things no longer parse unambiguously.
+                var genericTypes = partialTypes.Except(simpleTypes).Select(pt => Tuple.Create(pt, TryPartialTypeDeclaration(pt, types, true, profiler))).ToList();
+                var issues = genericTypes.Where(i => !i.Item2.Success).Select(i => i.Item2).ToList();
+                if (issues.Any()) {
+                    return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new AggregateParseError(issues.Select(i => i.Error)));
                 }
-            }
 
-            // Unfortunately, what we resolved mid-way into building types might not be the same thing we resolve now that we have all the types.
-            // Even though it is costly, we will double check and toss if things no longer parse unambiguously.
-            var genericTypes = partialTypes.Except(simpleTypes).Select(pt => Tuple.Create(pt, TryPartialTypeDeclaration(pt, types, true))).ToList();
-            var issues = genericTypes.Where(i => !i.Item2.Success).Select(i => i.Item2).ToList();
-            if (issues.Any()) {
-                return new ResultOrParseError<IEnumerable<TypeDeclaration>>(new AggregateParseError(issues.Select(i => i.Error)));
+                return types;
             }
-
-            return types;
         }
 
-        public static ResultOrParseError<TypeDeclaration> TryPartialTypeDeclaration(PartialTypeDeclaration partial, IEnumerable<TypeDeclaration> types, bool hardError)
+        public static ResultOrParseError<TypeDeclaration> TryPartialTypeDeclaration(PartialTypeDeclaration partial, IEnumerable<TypeDeclaration> types, bool hardError, ICompilerTimings profiler)
         {
-            var scope = new TransformationScopeNew(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => new TypeAccess(td))), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>()));
-            List<PhrasePart> takes = new List<PhrasePart>();
-            foreach (var t in partial.Takes) {
-                if (t.IsIdentifier) {
-                    takes.Add(new PhrasePart(t.Identifier.Identifier));
-                } else {
-                    if (!t.Parameter.Takes.All(ppp => ppp.IsIdentifier)) {
-                        throw new NotImplementedException("Delegate parameter in type declaration not yet supported.");
-                    }
+            using (profiler.Stopwatch(nameof(TypeResolve), partial.ToString(), partial.Takes.Count)) {
+                var scope = new TransformationScopeNew(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => new TypeAccess(td))), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>()));
+                List<PhrasePart> takes = new List<PhrasePart>();
+                foreach (var t in partial.Takes) {
+                    if (t.IsIdentifier) {
+                        takes.Add(new PhrasePart(t.Identifier.Identifier));
+                    } else {
+                        if (!t.Parameter.Takes.All(ppp => ppp.IsIdentifier)) {
+                            throw new NotImplementedException("Delegate parameter in type declaration not yet supported.");
+                        }
 
-                    var constraintResult = ResolveGenericConstraint(t.Parameter.Returns, scope, hardError);
-                    if (constraintResult == null) {
-                        return null;
-                    }
+                        var constraintResult = ResolveGenericConstraint(t.Parameter.Returns, scope, hardError);
+                        if (constraintResult == null) {
+                            return null;
+                        }
 
-                    if (!constraintResult.Success) {
-                        return new ResultOrParseError<TypeDeclaration>(constraintResult.Error);
-                    }
+                        if (!constraintResult.Success) {
+                            return new ResultOrParseError<TypeDeclaration>(constraintResult.Error);
+                        }
 
-                    takes.Add(new PhrasePart(new ParameterDeclaration(t.Parameter.Takes.Select(ppp => ppp.Identifier.Identifier), constraintResult.Result)));
+                        takes.Add(new PhrasePart(new ParameterDeclaration(t.Parameter.Takes.Select(ppp => ppp.Identifier.Identifier), constraintResult.Result)));
+                    }
                 }
-            }
 
-            return new TypeDeclaration(takes, partial.Returns);
+                return new TypeDeclaration(takes, partial.Returns);
+            }
         }
 
-        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types, Dictionary<TangentType, TangentType> conversions)
+        public static ResultOrParseError<IEnumerable<ReductionDeclaration>> AllPartialFunctionDeclarations(IEnumerable<PartialReductionDeclaration> partialFunctions, IEnumerable<TypeDeclaration> types, Dictionary<TangentType, TangentType> conversions, ICompilerTimings profiler)
         {
             var errors = new AggregateParseError(Enumerable.Empty<ParseError>());
             var results = new List<ReductionDeclaration>();
 
             foreach (var fn in partialFunctions) {
-                var resolutionResult = PartialFunctionDeclaration(fn, types, conversions);
+                var resolutionResult = PartialFunctionDeclaration(fn, types, conversions, profiler);
                 if (resolutionResult.Success) {
                     results.Add(resolutionResult.Result);
                 } else {
@@ -104,7 +108,7 @@ namespace Tangent.Parsing
             return results;
         }
 
-        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping, List<InterfaceBinding> interfaceToImplementerBindings, List<PartialInterfaceBinding> standaloneInterfaceBindings, out Dictionary<TangentType, TangentType> placeholderConversions, out IEnumerable<ReductionDeclaration> additionalRules)
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping, List<InterfaceBinding> interfaceToImplementerBindings, List<PartialInterfaceBinding> standaloneInterfaceBindings, ICompilerTimings profiler, out Dictionary<TangentType, TangentType> placeholderConversions, out IEnumerable<ReductionDeclaration> additionalRules)
         {
             AggregateParseError errors = new AggregateParseError(Enumerable.Empty<ParseError>());
             Dictionary<TangentType, TangentType> inNeedOfPopulation = new Dictionary<TangentType, TangentType>();
@@ -138,124 +142,127 @@ namespace Tangent.Parsing
                 }
             };
 
-            var newLookup = typeDecls.Select(td => new TypeDeclaration(td.Takes, selector(td.Returns))).ToList();
-            var references = new HashSet<PartialTypeReference>();
-            foreach (var interfaceDecl in standaloneInterfaceBindings) {
-                foreach (var generic in interfaceDecl.TypePhrase.Where(ppp => !ppp.IsIdentifier)) {
-                    // TODO: resolve these partial generics back to the generic in the real type during ResolveType.
-                    throw new NotImplementedException("Sorry, standalone generic interface bindings don't currently work.");
+            using (profiler.Stopwatch(nameof(TypeResolve), null, typeDecls.Count())) {
+
+                var newLookup = typeDecls.Select(td => new TypeDeclaration(td.Takes, selector(td.Returns))).ToList();
+                var references = new HashSet<PartialTypeReference>();
+                foreach (var interfaceDecl in standaloneInterfaceBindings) {
+                    foreach (var generic in interfaceDecl.TypePhrase.Where(ppp => !ppp.IsIdentifier)) {
+                        // TODO: resolve these partial generics back to the generic in the real type during ResolveType.
+                        throw new NotImplementedException("Sorry, standalone generic interface bindings don't currently work.");
+                    }
+
+                    var resolvedType = ResolveType(interfaceDecl.TypePhrase.Select(ppp => new IdentifierExpression(ppp.Identifier.Identifier, ppp.Identifier.SourceInfo)), newLookup, Enumerable.Empty<ParameterDeclaration>());
+                    if (resolvedType.Success) {
+                        inNeedOfPopulation.Add(interfaceDecl, resolvedType.Result);
+                        foreach (var referencedInterface in interfaceDecl.InterfaceReferences) {
+                            if (referencedInterface is PartialTypeReference) {
+                                var resolvedInterface = selector(referencedInterface);
+                                bindings.Add(Tuple.Create(resolvedInterface, resolvedType.Result));
+                            } else {
+                                throw new ApplicationException("Shouldn't get here.");
+                            }
+                        }
+                    } else {
+                        errors = errors.Concat(resolvedType.Error);
+                    }
                 }
 
-                var resolvedType = ResolveType(interfaceDecl.TypePhrase.Select(ppp => new IdentifierExpression(ppp.Identifier.Identifier, ppp.Identifier.SourceInfo)), newLookup, Enumerable.Empty<ParameterDeclaration>());
-                if (resolvedType.Success) {
-                    inNeedOfPopulation.Add(interfaceDecl, resolvedType.Result);
-                    foreach (var referencedInterface in interfaceDecl.InterfaceReferences) {
-                        if (referencedInterface is PartialTypeReference) {
-                            var resolvedInterface = selector(referencedInterface);
-                            bindings.Add(Tuple.Create(resolvedInterface, resolvedType.Result));
+
+                foreach (var entry in inNeedOfPopulation) {
+                    if (entry.Key is PartialProductType) {
+                        var ppt = (PartialProductType)entry.Key;
+                        var resolvedType = PartialProductType(ppt, (ProductType)entry.Value, newLookup, ppt.GenericArguments.Select(ppd => genericArgumentMapping[ppd]), profiler);
+                        if (!resolvedType.Success) {
+                            errors = errors.Concat(resolvedType.Error);
                         } else {
-                            throw new ApplicationException("Shouldn't get here.");
+                            delegateInvokers.AddRange(resolvedType.Result.Item2);
+                        }
+                    } else if (entry.Key is PartialTypeReference) {
+                        var reference = (PartialTypeReference)entry.Key;
+                        references.Add(reference);
+                        var resolvedType = ResolveType(reference.Identifiers, newLookup, reference.GenericArgumentPlaceholders.Select(ppd => genericArgumentMapping[ppd]));
+                        if (resolvedType.Success) {
+                            reference.ResolvedType = resolvedType.Result;
+                        } else {
+                            errors = errors.Concat(resolvedType.Error);
+                        }
+                    } else if (entry.Key is PartialInterface) {
+                        // Nothing, just need it in placeholder lists so that anything that found it earlier gets fixed.
+                    } else if (entry.Key is PartialInterfaceBinding) {
+                        // Nothing. Just need the mapping here so that scopes get sent to the right location.
+                    } else {
+                        throw new NotImplementedException();
+                    }
+                }
+
+                placeholderConversions = inNeedOfPopulation;
+                additionalRules = delegateInvokers;
+
+                if (errors.Errors.Any()) {
+                    return new ResultOrParseError<IEnumerable<TypeDeclaration>>(errors);
+                }
+
+                Dictionary<TypeDeclaration, Func<TypeDeclaration>> lazyAliasRebindings = new Dictionary<TypeDeclaration, Func<TypeDeclaration>>();
+                Func<PhrasePart, Dictionary<ParameterDeclaration, ParameterDeclaration>, PhrasePart> replaceDecls = null;
+                replaceDecls = (pp, mapping) => {
+                    if (pp.IsIdentifier) { return pp; }
+                    if (mapping.ContainsKey(pp.Parameter)) { return mapping[pp.Parameter]; }
+                    return new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(pp2 => replaceDecls(pp2, mapping)), pp.Parameter.Returns));
+                };
+
+                newLookup = newLookup.Select(td => {
+                    var ptr = td.Returns as PartialTypeReference;
+                    var genericTypeRef = ptr?.ResolvedType as BoundGenericType;
+                    var result = new TypeDeclaration(td.Takes, selector(td.Returns));
+                    var pt = result.Returns as ProductType;
+                    if (pt != null && !pt.GenericParameters.Any()) {
+                        var genericParameters = td.Takes.Aggregate(new List<ParameterDeclaration>(), (pds, pp) => {
+                            if (!pp.IsIdentifier) {
+                                pds.Add(pp.Parameter);
+                            }
+
+                            return pds;
+                        });
+
+                        pt.GenericParameters.AddRange(genericParameters);
+                    }
+
+                    if (genericTypeRef != null) {
+                        lazyAliasRebindings.Add(result, () => {
+                            // We need to reverse resolve the generic so that the type gets the things it expects where it expects them.
+                            var lazyTypeRef = ((td.Returns as PartialTypeReference).ResolvedType as BoundGenericType);
+                            var mapping = (lazyTypeRef.GenericType as HasGenericParameters).GenericParameters.Zip(lazyTypeRef.TypeArguments, (param, arg) => new { Parameter = param, Argument = arg }).Where(pa => pa.Argument is GenericArgumentReferenceType).ToDictionary(pa => (pa.Argument as GenericArgumentReferenceType).GenericParameter, pa => pa.Parameter);
+                            return new TypeDeclaration(td.Takes.Select(pp => replaceDecls(pp, mapping)), lazyTypeRef.GenericType);
+                        });
+                    }
+
+                    return result;
+                }).ToList();
+
+                var newBindings = new List<InterfaceBinding>(bindings.Count);
+                foreach (var entry in bindings) {
+                    var iface = entry.Item1;
+                    if (entry.Item1 is PartialTypeReference) {
+                        var reference = (PartialTypeReference)entry.Item1;
+                        var resolvedType = ResolveType(reference.Identifiers, newLookup, reference.GenericArgumentPlaceholders.Select(ppd => genericArgumentMapping[ppd]));
+                        if (resolvedType.Success) {
+                            iface = resolvedType.Result;
+                        } else {
+                            errors = errors.Concat(resolvedType.Error);
                         }
                     }
-                } else {
-                    errors = errors.Concat(resolvedType.Error);
+
+                    // TODO: impl?
+                    newBindings.Add(new InterfaceBinding((TypeClass)iface, entry.Item2));
                 }
+
+                interfaceToImplementerBindings.AddRange(newBindings);
+
+                newLookup = newLookup.Select(td => lazyAliasRebindings.ContainsKey(td) ? lazyAliasRebindings[td]() : td).ToList();
+
+                return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);
             }
-
-
-            foreach (var entry in inNeedOfPopulation) {
-                if (entry.Key is PartialProductType) {
-                    var ppt = (PartialProductType)entry.Key;
-                    var resolvedType = PartialProductType(ppt, (ProductType)entry.Value, newLookup, ppt.GenericArguments.Select(ppd => genericArgumentMapping[ppd]));
-                    if (!resolvedType.Success) {
-                        errors = errors.Concat(resolvedType.Error);
-                    } else {
-                        delegateInvokers.AddRange(resolvedType.Result.Item2);
-                    }
-                } else if (entry.Key is PartialTypeReference) {
-                    var reference = (PartialTypeReference)entry.Key;
-                    references.Add(reference);
-                    var resolvedType = ResolveType(reference.Identifiers, newLookup, reference.GenericArgumentPlaceholders.Select(ppd => genericArgumentMapping[ppd]));
-                    if (resolvedType.Success) {
-                        reference.ResolvedType = resolvedType.Result;
-                    } else {
-                        errors = errors.Concat(resolvedType.Error);
-                    }
-                } else if (entry.Key is PartialInterface) {
-                    // Nothing, just need it in placeholder lists so that anything that found it earlier gets fixed.
-                } else if (entry.Key is PartialInterfaceBinding) {
-                    // Nothing. Just need the mapping here so that scopes get sent to the right location.
-                } else {
-                    throw new NotImplementedException();
-                }
-            }
-
-            placeholderConversions = inNeedOfPopulation;
-            additionalRules = delegateInvokers;
-
-            if (errors.Errors.Any()) {
-                return new ResultOrParseError<IEnumerable<TypeDeclaration>>(errors);
-            }
-
-            Dictionary<TypeDeclaration, Func<TypeDeclaration>> lazyAliasRebindings = new Dictionary<TypeDeclaration, Func<TypeDeclaration>>();
-            Func<PhrasePart, Dictionary<ParameterDeclaration, ParameterDeclaration>, PhrasePart> replaceDecls = null;
-            replaceDecls = (pp, mapping) => {
-                if (pp.IsIdentifier) { return pp; }
-                if (mapping.ContainsKey(pp.Parameter)) { return mapping[pp.Parameter]; }
-                return new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(pp2 => replaceDecls(pp2, mapping)), pp.Parameter.Returns));
-            };
-
-            newLookup = newLookup.Select(td => {
-                var ptr = td.Returns as PartialTypeReference;
-                var genericTypeRef = ptr?.ResolvedType as BoundGenericType;
-                var result = new TypeDeclaration(td.Takes, selector(td.Returns));
-                var pt = result.Returns as ProductType;
-                if (pt != null && !pt.GenericParameters.Any()) {
-                    var genericParameters = td.Takes.Aggregate(new List<ParameterDeclaration>(), (pds, pp) => {
-                        if (!pp.IsIdentifier) {
-                            pds.Add(pp.Parameter);
-                        }
-
-                        return pds;
-                    });
-
-                    pt.GenericParameters.AddRange(genericParameters);
-                }
-
-                if (genericTypeRef != null) {
-                    lazyAliasRebindings.Add(result, () => {
-                        // We need to reverse resolve the generic so that the type gets the things it expects where it expects them.
-                        var lazyTypeRef = ((td.Returns as PartialTypeReference).ResolvedType as BoundGenericType);
-                        var mapping = (lazyTypeRef.GenericType as HasGenericParameters).GenericParameters.Zip(lazyTypeRef.TypeArguments, (param, arg) => new { Parameter = param, Argument = arg }).Where(pa => pa.Argument is GenericArgumentReferenceType).ToDictionary(pa => (pa.Argument as GenericArgumentReferenceType).GenericParameter, pa => pa.Parameter);
-                        return new TypeDeclaration(td.Takes.Select(pp => replaceDecls(pp, mapping)), lazyTypeRef.GenericType);
-                    });
-                }
-
-                return result;
-            }).ToList();
-
-            var newBindings = new List<InterfaceBinding>(bindings.Count);
-            foreach (var entry in bindings) {
-                var iface = entry.Item1;
-                if (entry.Item1 is PartialTypeReference) {
-                    var reference = (PartialTypeReference)entry.Item1;
-                    var resolvedType = ResolveType(reference.Identifiers, newLookup, reference.GenericArgumentPlaceholders.Select(ppd => genericArgumentMapping[ppd]));
-                    if (resolvedType.Success) {
-                        iface = resolvedType.Result;
-                    } else {
-                        errors = errors.Concat(resolvedType.Error);
-                    }
-                }
-
-                // TODO: impl?
-                newBindings.Add(new InterfaceBinding((TypeClass)iface, entry.Item2));
-            }
-
-            interfaceToImplementerBindings.AddRange(newBindings);
-
-            newLookup = newLookup.Select(td => lazyAliasRebindings.ContainsKey(td) ? lazyAliasRebindings[td]() : td).ToList();
-
-            return new ResultOrParseError<IEnumerable<TypeDeclaration>>(newLookup);
         }
 
         public static ResultOrParseError<IEnumerable<Field>> AllGlobalFields(IEnumerable<VarDeclElement> partialFields, IEnumerable<TypeDeclaration> types)
@@ -278,167 +285,173 @@ namespace Tangent.Parsing
             return results;
         }
 
-        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types, Dictionary<TangentType, TangentType> conversions)
+        internal static ResultOrParseError<ReductionDeclaration> PartialFunctionDeclaration(PartialReductionDeclaration partialFunction, IEnumerable<TypeDeclaration> types, Dictionary<TangentType, TangentType> conversions, ICompilerTimings profiler)
         {
             var errors = new AggregateParseError(Enumerable.Empty<ParseError>());
             var phrase = new List<PhrasePart>();
             bool thisFound = false;
 
-            TangentType scope = null;
-            if (partialFunction.Returns.Scope != null) {
-                scope = conversions[partialFunction.Returns.Scope];
-            }
+            using (profiler.Stopwatch(nameof(TypeResolve), partialFunction.ToString(), partialFunction.Takes.Count, types.Count())) {
 
-            var inferredTypes = ExtractAndCompileInferredTypes(partialFunction, types, scope == null ? Enumerable.Empty<ParameterDeclaration>() : scope == null ? Enumerable.Empty<ParameterDeclaration>() : scope.ContainedGenericReferences());
-            if (!inferredTypes.Success) {
-                return new ResultOrParseError<ReductionDeclaration>(inferredTypes.Error);
-            }
-
-            var thisGenericInferenceMapping = new Dictionary<ParameterDeclaration, GenericArgumentReferenceType>();
-            bool genericProductType = false;
-            var genericScope = scope as HasGenericParameters;
-            if (genericScope != null) {
-                genericProductType = genericScope.GenericParameters.Any();
-            }
-
-            var genericFnParams = inferredTypes.Result.Select(kvp => kvp.Value.GenericParameter);
-
-            if (genericProductType) {
-                foreach (var entry in genericScope.GenericParameters) {
-                    var fnGeneric = new ParameterDeclaration(entry.Takes, entry.Returns);
-                    var fnGenericReference = GenericArgumentReferenceType.For(fnGeneric);
-                    thisGenericInferenceMapping.Add(entry, fnGenericReference);
-                    genericFnParams = genericFnParams.Concat(new[] { fnGeneric });
-                }
-            }
-
-            // Now check for explicit type parameters.
-            var explicitTypeParameterLookup = new Dictionary<PartialPhrasePart, ParameterDeclaration>();
-            TransformationScope genericTransformationScope = null;
-            foreach (var explicitTypeParameter in partialFunction.Takes.Where(ppp => !ppp.IsIdentifier && ppp.Parameter.IsTypeParameter)) {
-                if (!explicitTypeParameter.Parameter.Takes.All(ppp => ppp.IsIdentifier)) {
-                    throw new NotImplementedException("Delegate parameter in type declaration not yet supported.");
+                TangentType scope = null;
+                if (partialFunction.Returns.Scope != null) {
+                    scope = conversions[partialFunction.Returns.Scope];
                 }
 
-                genericTransformationScope = genericTransformationScope ?? new TransformationScopeNew(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => new TypeAccess(td))), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>()));
-                var interpretResults = ResolveGenericConstraint(explicitTypeParameter.Parameter.Returns, genericTransformationScope, true);
-                if (!interpretResults.Success) {
-                    return new ResultOrParseError<ReductionDeclaration>(interpretResults.Error);
+                var inferredTypes = ExtractAndCompileInferredTypes(partialFunction, types, scope == null ? Enumerable.Empty<ParameterDeclaration>() : scope == null ? Enumerable.Empty<ParameterDeclaration>() : scope.ContainedGenericReferences());
+                if (!inferredTypes.Success) {
+                    return new ResultOrParseError<ReductionDeclaration>(inferredTypes.Error);
                 }
 
-                var genericRef = new ParameterDeclaration(explicitTypeParameter.Parameter.Takes.Select(ppp => ppp.Identifier.Identifier), interpretResults.Result);
-                genericFnParams = genericFnParams.Concat(new[] { genericRef });
-                explicitTypeParameterLookup.Add(explicitTypeParameter, genericRef);
-            }
+                var thisGenericInferenceMapping = new Dictionary<ParameterDeclaration, GenericArgumentReferenceType>();
+                bool genericProductType = false;
+                var genericScope = scope as HasGenericParameters;
+                if (genericScope != null) {
+                    genericProductType = genericScope.GenericParameters.Any();
+                }
 
-            foreach (var part in partialFunction.Takes) {
-                if (!part.IsIdentifier && part.Parameter.IsThisParam) {
+                var genericFnParams = inferredTypes.Result.Select(kvp => kvp.Value.GenericParameter);
 
-                    if (scope is TypeClass) {
-                        var thisGeneric = (scope as TypeClass).ThisBindingInRequiredFunctions;
-                        // first this, generic inference.
-                        // Other thises, generic reference.
-                        if (!thisFound) {
-                            genericFnParams = genericFnParams.Concat(new[] { thisGeneric });
-                        }
+                if (genericProductType) {
+                    foreach (var entry in genericScope.GenericParameters) {
+                        var fnGeneric = new ParameterDeclaration(entry.Takes, entry.Returns);
+                        var fnGenericReference = GenericArgumentReferenceType.For(fnGeneric);
+                        thisGenericInferenceMapping.Add(entry, fnGenericReference);
+                        genericFnParams = genericFnParams.Concat(new[] { fnGeneric });
+                    }
+                }
 
-                        phrase.Add(new PhrasePart(new ParameterDeclaration("this", GenericArgumentReferenceType.For(thisGeneric))));
-                    } else {
-                        if (thisFound) { // TODO: nicer error.
-                            throw new ApplicationException("Multiple this parameters declared in function.");
-                        }
-
-                        // We need to replace generics in this so they can be inferred by the function.
-                        phrase.Add(new PhrasePart(new ParameterDeclaration("this", scope.ResolveGenericReferences(pd => thisGenericInferenceMapping[pd]))));
+                // Now check for explicit type parameters.
+                var explicitTypeParameterLookup = new Dictionary<PartialPhrasePart, ParameterDeclaration>();
+                TransformationScope genericTransformationScope = null;
+                foreach (var explicitTypeParameter in partialFunction.Takes.Where(ppp => !ppp.IsIdentifier && ppp.Parameter.IsTypeParameter)) {
+                    if (!explicitTypeParameter.Parameter.Takes.All(ppp => ppp.IsIdentifier)) {
+                        throw new NotImplementedException("Delegate parameter in type declaration not yet supported.");
                     }
 
-                    thisFound = true;
-                } else {
-                    if (explicitTypeParameterLookup.ContainsKey(part)) {
-                        phrase.Add(explicitTypeParameterLookup[part]);
-                    } else {
-                        var resolved = Resolve(FixInferences(part, inferredTypes.Result), types, genericFnParams.Any() ? genericFnParams : null);
-                        if (resolved.Success) {
-                            phrase.Add(resolved.Result);
+                    genericTransformationScope = genericTransformationScope ?? new TransformationScopeNew(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common }.Concat(types.Select(td => new TypeAccess(td))), new ConversionGraph(Enumerable.Empty<ReductionDeclaration>()));
+                    var interpretResults = ResolveGenericConstraint(explicitTypeParameter.Parameter.Returns, genericTransformationScope, true);
+                    if (!interpretResults.Success) {
+                        return new ResultOrParseError<ReductionDeclaration>(interpretResults.Error);
+                    }
+
+                    var genericRef = new ParameterDeclaration(explicitTypeParameter.Parameter.Takes.Select(ppp => ppp.Identifier.Identifier), interpretResults.Result);
+                    genericFnParams = genericFnParams.Concat(new[] { genericRef });
+                    explicitTypeParameterLookup.Add(explicitTypeParameter, genericRef);
+                }
+
+                foreach (var part in partialFunction.Takes) {
+                    if (!part.IsIdentifier && part.Parameter.IsThisParam) {
+
+                        if (scope is TypeClass) {
+                            var thisGeneric = (scope as TypeClass).ThisBindingInRequiredFunctions;
+                            // first this, generic inference.
+                            // Other thises, generic reference.
+                            if (!thisFound) {
+                                genericFnParams = genericFnParams.Concat(new[] { thisGeneric });
+                            }
+
+                            phrase.Add(new PhrasePart(new ParameterDeclaration("this", GenericArgumentReferenceType.For(thisGeneric))));
                         } else {
-                            errors = errors.Concat(resolved.Error);
+                            if (thisFound) { // TODO: nicer error.
+                                throw new ApplicationException("Multiple this parameters declared in function.");
+                            }
+
+                            // We need to replace generics in this so they can be inferred by the function.
+                            phrase.Add(new PhrasePart(new ParameterDeclaration("this", scope.ResolveGenericReferences(pd => thisGenericInferenceMapping[pd]))));
+                        }
+
+                        thisFound = true;
+                    } else {
+                        if (explicitTypeParameterLookup.ContainsKey(part)) {
+                            phrase.Add(explicitTypeParameterLookup[part]);
+                        } else {
+                            var resolved = Resolve(FixInferences(part, inferredTypes.Result), types, genericFnParams.Any() ? genericFnParams : null);
+                            if (resolved.Success) {
+                                phrase.Add(resolved.Result);
+                            } else {
+                                errors = errors.Concat(resolved.Error);
+                            }
                         }
                     }
                 }
-            }
 
-            var fn = partialFunction.Returns;
-            var effectiveType = ResolveType(fn.EffectiveType, types, genericFnParams);
-            if (!effectiveType.Success) {
-                errors = errors.Concat(effectiveType.Error);
-            }
+                var fn = partialFunction.Returns;
+                var effectiveType = ResolveType(fn.EffectiveType, types, genericFnParams);
+                if (!effectiveType.Success) {
+                    errors = errors.Concat(effectiveType.Error);
+                }
 
-            if (errors.Errors.Any()) {
-                return new ResultOrParseError<ReductionDeclaration>(errors);
-            }
+                if (errors.Errors.Any()) {
+                    return new ResultOrParseError<ReductionDeclaration>(errors);
+                }
 
-            return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType.Result, fn.Implementation, scope), genericFnParams));
+                return new ResultOrParseError<ReductionDeclaration>(new ReductionDeclaration(phrase, new TypeResolvedFunction(effectiveType.Result, fn.Implementation, scope), genericFnParams));
+            }
         }
 
-        internal static ResultOrParseError<Tuple<ProductType, IEnumerable<ReductionDeclaration>>> PartialProductType(PartialProductType partialType, ProductType target, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments)
+        internal static ResultOrParseError<Tuple<ProductType, IEnumerable<ReductionDeclaration>>> PartialProductType(PartialProductType partialType, ProductType target, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> genericArguments, ICompilerTimings profiler)
         {
             var errors = new AggregateParseError(Enumerable.Empty<ParseError>());
             var delegateBindings = new List<ReductionDeclaration>();
             types = types.Concat(new[] { new TypeDeclaration("this", target) });
 
-            foreach (var part in partialType.DataConstructorParts) {
-                var resolved = Resolve(part, types, genericArguments);
-                if (resolved.Success) {
-                    target.DataConstructorParts.Add(resolved.Result);
-                } else {
-                    errors = errors.Concat(resolved.Error);
-                }
-            }
+            using (profiler.Stopwatch(nameof(TypeResolve))) {
 
-            foreach (var field in partialType.Fields) {
-                var resolved = ResolveField(field, types, target, genericArguments);
-                if (resolved.Success) {
-                    target.Fields.Add(resolved.Result);
-                } else {
-                    errors = errors.Concat(resolved.Error);
-                }
-            }
-
-            foreach (var delegateEntry in partialType.Delegates) {
-                var fn = PartialFunctionDeclaration(new PartialReductionDeclaration(delegateEntry.FunctionPart, delegateEntry.DefaultImplementation), types, new Dictionary<TangentType, TangentType>() { { partialType, target } });
-                if (!fn.Success) {
-                    errors = errors.Concat(fn.Error);
-                } else {
-                    var delegateType = DelegateType.For(fn.Result.Takes.Where(pp => !pp.IsIdentifier && !pp.Parameter.IsThisParam).Select(pp => pp.Parameter.RequiredArgumentType), fn.Result.Returns.EffectiveType);
-                    var fieldName = ResolveFieldName(delegateEntry.FieldPart, target);
-                    if (!fieldName.Success) {
-                        errors = errors.Concat(fieldName.Error);
+                foreach (var part in partialType.DataConstructorParts) {
+                    var resolved = Resolve(part, types, genericArguments);
+                    if (resolved.Success) {
+                        target.DataConstructorParts.Add(resolved.Result);
                     } else {
-                        var delegateField = new Field(new ParameterDeclaration(fieldName.Result, delegateType), new InitializerPlaceholder(new PartialStatement(new PartialElement[] {
+                        errors = errors.Concat(resolved.Error);
+                    }
+                }
+
+                foreach (var field in partialType.Fields) {
+                    var resolved = ResolveField(field, types, target, genericArguments);
+                    if (resolved.Success) {
+                        target.Fields.Add(resolved.Result);
+                    } else {
+                        errors = errors.Concat(resolved.Error);
+                    }
+                }
+
+                foreach (var delegateEntry in partialType.Delegates) {
+                    var fn = PartialFunctionDeclaration(new PartialReductionDeclaration(delegateEntry.FunctionPart, delegateEntry.DefaultImplementation), types, new Dictionary<TangentType, TangentType>() { { partialType, target } }, profiler);
+                    if (!fn.Success) {
+                        errors = errors.Concat(fn.Error);
+                    } else {
+                        var delegateType = DelegateType.For(fn.Result.Takes.Where(pp => !pp.IsIdentifier && !pp.Parameter.IsThisParam).Select(pp => pp.Parameter.RequiredArgumentType), fn.Result.Returns.EffectiveType);
+                        var fieldName = ResolveFieldName(delegateEntry.FieldPart, target);
+                        if (!fieldName.Success) {
+                            errors = errors.Concat(fieldName.Error);
+                        } else {
+                            var delegateField = new Field(new ParameterDeclaration(fieldName.Result, delegateType), new InitializerPlaceholder(new PartialStatement(new PartialElement[] {
                                         new LambdaElement(delegateEntry.FunctionPart.Where(ppp=>!ppp.IsIdentifier && !ppp.Parameter.IsThisParam).Select(ppp=>new VarDeclElement( ppp.Parameter/*new PartialParameterDeclaration( ppp.Parameter.Takes, null)*/, null, null)).ToList(), new BlockElement( delegateEntry.DefaultImplementation.Implementation)) })));
 
-                        target.Fields.Add(delegateField);
-                        delegateBindings.Add(
-                            new ReductionDeclaration(
-                                fn.Result.Takes,
-                                new Function(
-                                    fn.Result.Returns.EffectiveType,
-                                    new Block(
-                                        new Expression[] {
+                            target.Fields.Add(delegateField);
+                            delegateBindings.Add(
+                                new ReductionDeclaration(
+                                    fn.Result.Takes,
+                                    new Function(
+                                        fn.Result.Returns.EffectiveType,
+                                        new Block(
+                                            new Expression[] {
                                                         new DelegateInvocationExpression(
                                                             new FieldAccessorExpression(target, delegateField),
                                                             fn.Result.Takes.Where(pp=>!pp.IsIdentifier && !pp.Parameter.IsThisParam).Select(pp=>new ParameterAccessExpression(pp.Parameter, null)),
                                                             null)},
-                                        Enumerable.Empty<ParameterDeclaration>()))));
+                                            Enumerable.Empty<ParameterDeclaration>()))));
+                        }
                     }
                 }
-            }
 
-            if (errors.Errors.Any()) {
-                return new ResultOrParseError<Tuple<ProductType, IEnumerable<ReductionDeclaration>>>(errors);
-            }
+                if (errors.Errors.Any()) {
+                    return new ResultOrParseError<Tuple<ProductType, IEnumerable<ReductionDeclaration>>>(errors);
+                }
 
-            return new Tuple<ProductType, IEnumerable<ReductionDeclaration>>(target, delegateBindings);
+                return new Tuple<ProductType, IEnumerable<ReductionDeclaration>>(target, delegateBindings);
+            }
         }
 
 

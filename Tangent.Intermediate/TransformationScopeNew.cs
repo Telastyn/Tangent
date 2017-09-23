@@ -9,18 +9,21 @@ namespace Tangent.Intermediate
     public class TransformationScopeNew : TransformationScope
     {
         public ConversionGraph Conversions { get; private set; }
+        public int ApproximateRulesetSize { get; private set; }
         private readonly ITransformationLookupTree LookupTree;
 
         public TransformationScopeNew(IEnumerable<TransformationRule> rules, ConversionGraph conversions)
         {
             Conversions = conversions;
             LookupTree = new TransformationLookupTree(rules, conversions);
+            ApproximateRulesetSize = LookupTree.ApproximateRulesetSize + conversions.ApproximateRulesetSize;
         }
 
         private TransformationScopeNew(ITransformationLookupTree tree, ConversionGraph conversions)
         {
             LookupTree = tree;
             Conversions = conversions;
+            ApproximateRulesetSize = tree.ApproximateRulesetSize + conversions.ApproximateRulesetSize;
         }
 
         public List<Expression> InterpretTowards(TangentType target, List<Expression> input)

@@ -15,6 +15,14 @@ namespace Tangent.Intermediate
             this.trees = trees;
         }
 
+        public int ApproximateRulesetSize
+        {
+            get
+            {
+                return trees.Aggregate(0, (x, t) => x + t.ApproximateRulesetSize);
+            }
+        }
+
         public IEnumerable<IEnumerable<TransformationRule>> Lookup(IEnumerable<Expression> phrase)
         {
             foreach (var tree in trees) {

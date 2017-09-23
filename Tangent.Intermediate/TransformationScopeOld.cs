@@ -10,17 +10,20 @@ namespace Tangent.Intermediate
     {
         public readonly IEnumerable<IEnumerable<TransformationRule>> Rules;
         public ConversionGraph Conversions { get; private set; }
+        public int ApproximateRulesetSize { get; private set; }
 
         public TransformationScopeOld(IEnumerable<TransformationRule> rules, ConversionGraph conversionGraph)
         {
             Rules = Prioritize(rules).ToList();
             Conversions = conversionGraph;
+            ApproximateRulesetSize = rules.Count() + conversionGraph.ApproximateRulesetSize;
         }
 
         private TransformationScopeOld(TransformationScopeOld parent, IEnumerable<ParameterDeclaration> nestedLocals)
         {
             Rules = new[] { nestedLocals.SelectMany(l => LocalAccess.RulesForLocal(l)).ToList() }.Concat(parent.Rules);
             Conversions = parent.Conversions;
+            ApproximateRulesetSize = Rules.Count() + Conversions.ApproximateRulesetSize;
         }
 
         public List<Expression> InterpretTowards(TangentType target, List<Expression> input)

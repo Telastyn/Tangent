@@ -7,36 +7,38 @@ namespace Tangent.Tokenization
 {
     public static class Tokenize
     {
-        public static IEnumerable<Token> ProgramFile(string input, string inputLabel)
+        public static IEnumerable<Token> ProgramFile(string input, string inputLabel, ICompilerTimings profiler = null)
         {
+            profiler = profiler ?? new NoopCompilerTimings();
             int ix = 0;
+            using (profiler.Stopwatch(nameof(Tokenize), inputLabel, input.Length)) {
+                while (ix < input.Length) {
+                    ix = Skip(input, ix);
+                    if (ix == input.Length) {
+                        yield break;
+                    }
 
-            while (ix < input.Length) {
-                ix = Skip(input, ix);
-                if (ix == input.Length) {
-                    yield break;
+                    var token = Match("=>", TokenIdentifier.FunctionArrow, input, ix, inputLabel) ??
+                        Match(":>", TokenIdentifier.TypeArrow, input, ix, inputLabel) ??
+                        Match(":=", TokenIdentifier.InitializerEquals, input, ix, inputLabel) ??
+                        Match("~>", TokenIdentifier.LazyOperator, input, ix, inputLabel) ??
+                        Match(":<", TokenIdentifier.InterfaceBindingOperator, input, ix, inputLabel) ??
+                        Match(":", TokenIdentifier.Colon, input, ix, inputLabel) ??
+                        Match("(", TokenIdentifier.OpenParen, input, ix, inputLabel) ??
+                        Match(")", TokenIdentifier.CloseParen, input, ix, inputLabel) ??
+                        Match("{", TokenIdentifier.OpenCurly, input, ix, inputLabel) ??
+                        Match("}", TokenIdentifier.CloseCurly, input, ix, inputLabel) ??
+                        Match(";", TokenIdentifier.SemiColon, input, ix, inputLabel) ??
+                        Identifier(inputLabel, input, ix) ??
+                        String(inputLabel, input, ix) ??
+                        IntegerConstant(inputLabel, input, ix) ??
+                        Symbol(inputLabel, input, ix);
+
+                    yield return token;
+
+                    // For now, token cannot mismatch.
+                    ix = token.EndIndex;
                 }
-
-                var token = Match("=>", TokenIdentifier.FunctionArrow, input, ix, inputLabel) ??
-                    Match(":>", TokenIdentifier.TypeArrow, input, ix, inputLabel) ??
-                    Match(":=", TokenIdentifier.InitializerEquals, input, ix, inputLabel) ??
-                    Match("~>", TokenIdentifier.LazyOperator, input, ix, inputLabel) ??
-                    Match(":<", TokenIdentifier.InterfaceBindingOperator, input, ix, inputLabel) ??
-                    Match(":", TokenIdentifier.Colon, input, ix, inputLabel) ??
-                    Match("(", TokenIdentifier.OpenParen, input, ix, inputLabel) ??
-                    Match(")", TokenIdentifier.CloseParen, input, ix, inputLabel) ??
-                    Match("{", TokenIdentifier.OpenCurly, input, ix, inputLabel) ??
-                    Match("}", TokenIdentifier.CloseCurly, input, ix, inputLabel) ??
-                    Match(";", TokenIdentifier.SemiColon, input, ix, inputLabel) ??
-                    Identifier(inputLabel, input, ix) ??
-                    String(inputLabel, input, ix) ??
-                    IntegerConstant(inputLabel, input, ix) ??
-                    Symbol(inputLabel, input, ix);
-
-                yield return token;
-
-                // For now, token cannot mismatch.
-                ix = token.EndIndex;
             }
         }
 

@@ -40,9 +40,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Combine.cs" />
+    <Compile Include="CompilerTimingDatapoint.cs" />
+    <Compile Include="CompilerTimings.cs" />
+    <Compile Include="ICompilerTimings.cs" />
     <Compile Include="LineColumnPosition.cs" />
     <Compile Include="LineColumnRange.cs" />
     <Compile Include="EnumerableExtensions.cs" />
+    <Compile Include="NoopCompilerTimings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReversingComparer.cs" />
   </ItemGroup>

@@ -58,6 +58,10 @@
       <Project>{7d611411-13a3-4ae2-b382-5b91db6db07a}</Project>
       <Name>Tangent.CilGeneration</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Tangent.Common\Tangent.Common.csproj">
+      <Project>{a446fc42-b937-44ff-9d21-8a1552dd86df}</Project>
+      <Name>Tangent.Common</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Tangent.Intermediate\Tangent.Intermediate.csproj">
       <Project>{91b94f1e-2f60-4392-bb46-ec5f65a44b59}</Project>
       <Name>Tangent.Intermediate</Name>

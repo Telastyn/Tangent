@@ -23,10 +23,13 @@ namespace Tangent.Intermediate
         private readonly int PhraseIndex;
         private readonly ConversionGraph Conversions;
 
+        public int ApproximateRulesetSize { get; private set; }
+
         public TransformationLookupTree(IEnumerable<TransformationRule> rules, ConversionGraph conversions) : this(rules, conversions, 0) { }
 
         private TransformationLookupTree(IEnumerable<TransformationRule> rules, ConversionGraph conversions, int depth)
         {
+            ApproximateRulesetSize = rules.Count();
             Conversions = conversions;
             PhraseIndex = depth;
             if (rules.Any()) {

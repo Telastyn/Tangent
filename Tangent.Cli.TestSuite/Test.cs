@@ -26,20 +26,24 @@ namespace Tangent.Cli.TestSuite
             // Copy Pastey from Cli.Program
             IEnumerable<Token> tokenization = Enumerable.Empty<Token>();
 
+            var profiler = new CompilerTimings();
+
             for (int x = 0; x == 0 || x < args.Count; ++x) {
-                tokenization = tokenization.Concat(Tokenize.ProgramFile(File.ReadAllText(args[x]), args[x]));
+                tokenization = tokenization.Concat(Tokenize.ProgramFile(File.ReadAllText(args[x]), args[x], profiler).ToList());
             }
 
             HashSet<string> tokenValues = new HashSet<string>(tokenization.Select(t => t.Value).Where(v => v != null));
-            var intermediateProgram = Parse.TangentProgram(tokenization, TangentImport.ImportAssemblies(imports ?? Enumerable.Empty<Assembly>(), s => tokenValues.Contains(s)));
+            var intermediateProgram = Parse.TangentProgram(tokenization, TangentImport.ImportAssemblies(imports ?? Enumerable.Empty<Assembly>(), s => tokenValues.Contains(s), profiler), profiler);
             if (!intermediateProgram.Success) {
                 Assert.Fail(string.Format("Errors during compilation: {0}", intermediateProgram.Error));
             }
 
             //var compiler = new CilCompiler();
             //compiler.Compile(intermediateProgram.Result, Path.GetFileNameWithoutExtension(paths.First()));
-            var compilation = Task.Run(() => NewCilCompiler.Compile(intermediateProgram.Result, Path.GetFileNameWithoutExtension(paths.First())));
+            var compilation = Task.Run(() => NewCilCompiler.Compile(intermediateProgram.Result, Path.GetFileNameWithoutExtension(paths.First()), profiler));
             if (compilation.Wait(TimeSpan.FromSeconds(30))) { } else { Assert.Fail("Compilation timeout."); }
+
+            File.WriteAllText(targetExe + ".times", profiler.ToCSV());
 
             var discard = TimeSpan.Zero;
             return RunCompiledProgram(targetExe, out discard, input);

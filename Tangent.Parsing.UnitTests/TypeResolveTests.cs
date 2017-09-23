@@ -129,7 +129,7 @@ namespace Tangent.Parsing.UnitTests
                 new PartialPhrasePart(new PartialParameterDeclaration(new IdentifierExpression("x", null), new List<Expression>() { new IdentifierExpression("foo", null), new IdentifierExpression("bar", null) })),
                 new PartialFunction(Fix(new Identifier[] { "foo", "bar" }), new PartialBlock(Enumerable.Empty<PartialStatement>(), Enumerable.Empty<VarDeclElement>()), null));
 
-            var result = TypeResolve.PartialFunctionDeclaration(partial, new[] { typeDecl }, new Dictionary<TangentType, TangentType>());
+            var result = TypeResolve.PartialFunctionDeclaration(partial, new[] { typeDecl }, new Dictionary<TangentType, TangentType>(), new NoopCompilerTimings());
 
             Assert.IsTrue(result.Success);
             Assert.IsFalse(result.Result.Takes.First().IsIdentifier);

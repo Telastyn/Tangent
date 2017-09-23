@@ -28,7 +28,7 @@ namespace Tangent.CilGeneration
         private readonly Dictionary<TangentType, FieldInfo> variantValueLookup = new Dictionary<TangentType, FieldInfo>();
         private readonly Dictionary<TangentType, FieldInfo> variantModeLookup = new Dictionary<TangentType, FieldInfo>();
 
-
+        private readonly ICompilerTimings profiler;
         private Dictionary<string, ISymbolDocumentWriter> debuggingSymbolLookup;
         private ModuleBuilder targetModule;
         private TypeBuilder rootType;
@@ -38,17 +38,19 @@ namespace Tangent.CilGeneration
         private int anonymousTypeIndex = 0;
         private int closureCounter = 0;
 
-        private NewCilCompiler(TangentProgram program)
+        private NewCilCompiler(TangentProgram program, ICompilerTimings profiler)
         {
             this.program = program;
             this.compilationDomain = AppDomain.CurrentDomain;
             // TODO: is this still necessary?
             this.compilationDomain.TypeResolve += OnTypeResolution;
+            this.profiler = profiler;
         }
 
-        public static void Compile(TangentProgram program, string targetPath)
+        public static void Compile(TangentProgram program, string targetPath, ICompilerTimings profiler)
         {
-            using (var compiler = new NewCilCompiler(program)) {
+            using (var compiler = new NewCilCompiler(program, profiler))
+            using (profiler.Stopwatch("CodeGen", targetPath, program.TypeDeclarations.Count() + program.Functions.Count(), null, "CompileProgram")) {
                 compiler.Compile(targetPath);
             }
         }
@@ -153,94 +155,101 @@ namespace Tangent.CilGeneration
                 return functionLookup[fn];
             }
 
-            var stub = rootType.DefineMethod(GetNameFor(fn), MethodAttributes.Public | MethodAttributes.Static);
+            var stmts = fn?.Returns?.Implementation?.Statements;
+            using (profiler.Stopwatch("CodeGen", fn.ToString(), stmts == null ? (int?)null : stmts.Count(), null, "CompileFunction")) {
+                var stub = rootType.DefineMethod(GetNameFor(fn), MethodAttributes.Public | MethodAttributes.Static);
 
-            if (fn.GenericParameters.Any()) {
-                var dotNetGenerics = stub.DefineGenericParameters(fn.GenericParameters.Select(pd => string.Join(" ", pd.Takes)).ToArray());
+                if (fn.GenericParameters.Any()) {
+                    var dotNetGenerics = stub.DefineGenericParameters(fn.GenericParameters.Select(pd => string.Join(" ", pd.Takes)).ToArray());
 
-                // TODO: constraints
-                foreach (var entry in fn.GenericParameters.Zip(dotNetGenerics, (pd, g) => Tuple.Create(pd, g))) {
-                    var genRef = GenericArgumentReferenceType.For(entry.Item1);
-                    if (!typeLookup.ContainsKey(genRef)) { typeLookup.Add(genRef, entry.Item2); }
+                    // TODO: constraints
+                    foreach (var entry in fn.GenericParameters.Zip(dotNetGenerics, (pd, g) => Tuple.Create(pd, g))) {
+                        var genRef = GenericArgumentReferenceType.For(entry.Item1);
+                        if (!typeLookup.ContainsKey(genRef)) { typeLookup.Add(genRef, entry.Item2); }
+                    }
                 }
+
+                stub.SetReturnType(Compile(fn.Returns.EffectiveType));
+                stub.SetParameters(
+                    fn.Takes.Where(t => !t.IsIdentifier && t.Parameter.RequiredArgumentType.ImplementationType != KindOfType.Kind).Select(t =>
+                        t.Parameter.RequiredArgumentType.ImplementationType == KindOfType.SingleValue ?
+                        Compile(((SingleValueType)t.Parameter.RequiredArgumentType).ValueType) :
+                        Compile(t.Parameter.RequiredArgumentType)).ToArray());
+
+                functionLookup.Add(fn, stub);
+
+                BuildImplementation(fn, stub);
+
+                return stub;
             }
-
-            stub.SetReturnType(Compile(fn.Returns.EffectiveType));
-            stub.SetParameters(
-                fn.Takes.Where(t => !t.IsIdentifier && t.Parameter.RequiredArgumentType.ImplementationType != KindOfType.Kind).Select(t =>
-                    t.Parameter.RequiredArgumentType.ImplementationType == KindOfType.SingleValue ?
-                    Compile(((SingleValueType)t.Parameter.RequiredArgumentType).ValueType) :
-                    Compile(t.Parameter.RequiredArgumentType)).ToArray());
-
-            functionLookup.Add(fn, stub);
-
-            BuildImplementation(fn, stub);
-
-            return stub;
         }
 
         private Type BuildEnum(TypeDeclaration decl)
         {
-            var typeName = GetNameFor(decl);
-            var enumBuilder = targetModule.DefineEnum(typeName, System.Reflection.TypeAttributes.Public, typeof(int));
-            typeLookup.Add(decl.Returns, enumBuilder);
-            int x = 1;
-            foreach (var value in (decl.Returns as EnumType).Values) {
-                enumBuilder.DefineLiteral(value.Value, x++);
-            }
+            using (profiler.Stopwatch("CodeGen", decl.ToString())) {
+                var typeName = GetNameFor(decl);
+                var enumBuilder = targetModule.DefineEnum(typeName, System.Reflection.TypeAttributes.Public, typeof(int));
+                typeLookup.Add(decl.Returns, enumBuilder);
+                int x = 1;
+                foreach (var value in (decl.Returns as EnumType).Values) {
+                    enumBuilder.DefineLiteral(value.Value, x++);
+                }
 
-            return enumBuilder.CreateType();
+                return enumBuilder.CreateType();
+            }
         }
 
         private Type BuildClass(TypeDeclaration decl)
         {
-            var typeName = GetNameFor(decl);
-            if (typeName.Contains(".")) {
-                throw new NotImplementedException("TODO: fix dots in typenames causing CIL to namespace things.");
-            }
-
-            var productType = (ProductType)decl.Returns;
-
-            var classBuilder = targetModule.DefineType(typeName, System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Public);
-            typeLookup.Add(decl.Returns, classBuilder);
-
-            if (decl.IsGeneric) {
-                var genericRefs = decl.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter);
-                var genericBuilders = classBuilder.DefineGenericParameters(genericRefs.Select(pd => GetNameFor(pd)).ToArray());
-                foreach (var entry in genericRefs.Zip(genericBuilders, (pd, gb) => Tuple.Create(pd, gb))) {
-                    typeLookup.Add(GenericArgumentReferenceType.For(entry.Item1), entry.Item2);
+            using (profiler.Stopwatch("CodeGen", decl.ToString())) {
+                var typeName = GetNameFor(decl);
+                if (typeName.Contains(".")) {
+                    throw new NotImplementedException("TODO: fix dots in typenames causing CIL to namespace things.");
                 }
-            }
 
-            var tangentCtorParams = productType.DataConstructorParts.Where(pp => !pp.IsIdentifier && pp.Parameter.RequiredArgumentType.ImplementationType != KindOfType.Kind).ToList();
-            var dotnetCtorParamTypes = tangentCtorParams.Select(pp => Compile(pp.Parameter.RequiredArgumentType)).ToList();
-            var ctor = classBuilder.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, dotnetCtorParamTypes.ToArray());
-            productCtorLookup.Add(productType, ctor);
-            var gen = ctor.GetILGenerator();
+                var productType = (ProductType)decl.Returns;
 
-            gen.Emit(OpCodes.Ldarg_0);
-            gen.Emit(OpCodes.Call, classBuilder.BaseType.GetConstructor(new Type[0]));
+                var classBuilder = targetModule.DefineType(typeName, System.Reflection.TypeAttributes.Class | System.Reflection.TypeAttributes.Public);
+                typeLookup.Add(decl.Returns, classBuilder);
 
-            for (int ix = 0; ix < dotnetCtorParamTypes.Count; ++ix) {
-                var field = classBuilder.DefineField(GetNameFor(tangentCtorParams[ix].Parameter), dotnetCtorParamTypes[ix], System.Reflection.FieldAttributes.Public | System.Reflection.FieldAttributes.InitOnly);
-                ctorParamLookup.Add(tangentCtorParams[ix].Parameter, field);
+                if (decl.IsGeneric) {
+                    var genericRefs = decl.Takes.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter);
+                    var genericBuilders = classBuilder.DefineGenericParameters(genericRefs.Select(pd => GetNameFor(pd)).ToArray());
+                    foreach (var entry in genericRefs.Zip(genericBuilders, (pd, gb) => Tuple.Create(pd, gb))) {
+                        typeLookup.Add(GenericArgumentReferenceType.For(entry.Item1), entry.Item2);
+                    }
+                }
+
+                var tangentCtorParams = productType.DataConstructorParts.Where(pp => !pp.IsIdentifier && pp.Parameter.RequiredArgumentType.ImplementationType != KindOfType.Kind).ToList();
+                var dotnetCtorParamTypes = tangentCtorParams.Select(pp => Compile(pp.Parameter.RequiredArgumentType)).ToList();
+                var ctor = classBuilder.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, dotnetCtorParamTypes.ToArray());
+                productCtorLookup.Add(productType, ctor);
+                var gen = ctor.GetILGenerator();
+
                 gen.Emit(OpCodes.Ldarg_0);
-                gen.Emit(OpCodes.Ldarg, ix + 1);
-                gen.Emit(OpCodes.Stfld, field);
-            }
+                gen.Emit(OpCodes.Call, classBuilder.BaseType.GetConstructor(new Type[0]));
 
-            foreach (var entry in productType.Fields) {
-                var field = classBuilder.DefineField(GetNameFor(entry.Declaration), Compile(entry.Declaration.Returns), System.Reflection.FieldAttributes.Public);
-                fieldLookup.Add(entry, field);
-                gen.Emit(OpCodes.Ldarg_0);
-                var thisAccessor = new Dictionary<ParameterDeclaration, PropertyCodes>() { { entry.Declaration.Takes.First(pp => !pp.IsIdentifier).Parameter, new PropertyCodes(g => g.Emit(OpCodes.Ldarg_0), null) } };
-                // TODO: make sure closures work here.
-                AddExpression(entry.Initializer, gen, thisAccessor, null, false);
-                gen.Emit(OpCodes.Stfld, field);
-            }
+                for (int ix = 0; ix < dotnetCtorParamTypes.Count; ++ix) {
+                    var field = classBuilder.DefineField(GetNameFor(tangentCtorParams[ix].Parameter), dotnetCtorParamTypes[ix], System.Reflection.FieldAttributes.Public | System.Reflection.FieldAttributes.InitOnly);
+                    ctorParamLookup.Add(tangentCtorParams[ix].Parameter, field);
+                    gen.Emit(OpCodes.Ldarg_0);
+                    gen.Emit(OpCodes.Ldarg, ix + 1);
+                    gen.Emit(OpCodes.Stfld, field);
+                }
 
-            gen.Emit(OpCodes.Ret);
-            return classBuilder;
+                foreach (var entry in productType.Fields) {
+                    var field = classBuilder.DefineField(GetNameFor(entry.Declaration), Compile(entry.Declaration.Returns), System.Reflection.FieldAttributes.Public);
+                    fieldLookup.Add(entry, field);
+                    gen.Emit(OpCodes.Ldarg_0);
+                    var thisAccessor = new Dictionary<ParameterDeclaration, PropertyCodes>() { { entry.Declaration.Takes.First(pp => !pp.IsIdentifier).Parameter, new PropertyCodes(g => g.Emit(OpCodes.Ldarg_0), null) } };
+                    // TODO: make sure closures work here.
+                    AddExpression(entry.Initializer, gen, thisAccessor, null, false);
+                    gen.Emit(OpCodes.Stfld, field);
+                }
+
+                gen.Emit(OpCodes.Ret);
+                return classBuilder;
+            }
         }
 
         private void AddGlobals(TypeBuilder rootType, IEnumerable<Field> fields)
@@ -260,67 +269,69 @@ namespace Tangent.CilGeneration
 
         private Type BuildVariant(TypeDeclaration decl)
         {
-            var typeName = GetNameFor(decl);
-            var variantParts = new List<TangentType>();
-            switch (decl.Returns.ImplementationType) {
-                case KindOfType.TypeClass:
-                    variantParts.AddRange(((TypeClass)decl.Returns).Implementations);
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-
-            if (!variantParts.Any()) {
-                throw new NotImplementedException("Sorry, interfaces without implementations are current unsupported.");
-            }
-
-            var classBuilder = targetModule.DefineType(typeName);
-            typeLookup.Add(decl.Returns, classBuilder);
-            variantCtorLookup.Add(decl.Returns, new Dictionary<Type, ConstructorInfo>());
-
-            if (decl.IsGeneric) {
-                var genericParamDefs = decl.Takes.Where(pp => !pp.IsIdentifier).ToList();
-                var genericBuilders = classBuilder.DefineGenericParameters(genericParamDefs.Select(pp => GetNameFor(pp.Parameter)).ToArray());
-                // TODO: constraints. Since `kind of any` is the only legal kind, skip for now.
-                foreach (var entry in genericParamDefs.Select(gpd => GenericArgumentReferenceType.For(gpd.Parameter)).Zip(genericBuilders, (a, b) => Tuple.Create(a, b))) {
-                    typeLookup.Add(entry.Item1, entry.Item2);
+            using (profiler.Stopwatch("CodeGen", decl.ToString())) {
+                var typeName = GetNameFor(decl);
+                var variantParts = new List<TangentType>();
+                switch (decl.Returns.ImplementationType) {
+                    case KindOfType.TypeClass:
+                        variantParts.AddRange(((TypeClass)decl.Returns).Implementations);
+                        break;
+                    default:
+                        throw new NotImplementedException();
                 }
+
+                if (!variantParts.Any()) {
+                    throw new NotImplementedException("Sorry, interfaces without implementations are current unsupported.");
+                }
+
+                var classBuilder = targetModule.DefineType(typeName);
+                typeLookup.Add(decl.Returns, classBuilder);
+                variantCtorLookup.Add(decl.Returns, new Dictionary<Type, ConstructorInfo>());
+
+                if (decl.IsGeneric) {
+                    var genericParamDefs = decl.Takes.Where(pp => !pp.IsIdentifier).ToList();
+                    var genericBuilders = classBuilder.DefineGenericParameters(genericParamDefs.Select(pp => GetNameFor(pp.Parameter)).ToArray());
+                    // TODO: constraints. Since `kind of any` is the only legal kind, skip for now.
+                    foreach (var entry in genericParamDefs.Select(gpd => GenericArgumentReferenceType.For(gpd.Parameter)).Zip(genericBuilders, (a, b) => Tuple.Create(a, b))) {
+                        typeLookup.Add(entry.Item1, entry.Item2);
+                    }
+                }
+
+                // And generic references should now resolve properly. I think.
+                var variantTypes = variantParts.Select(tt => Compile(tt)).OrderBy(t => t.Name).ToArray();
+                var variantContainer = typeof(Variant<,>).Module.GetTypes().FirstOrDefault(t => t.Name == "Variant`" + variantTypes.Length);
+                if (variantContainer == null) {
+                    throw new ApplicationException("Error finding runtime variant type of size " + variantTypes.Length);
+                }
+
+                var parent = variantContainer.MakeGenericType(variantTypes);
+                variantValueLookup.Add(decl.Returns, TypeBuilder.GetField(parent, variantContainer.GetField("Value")));
+                variantModeLookup.Add(decl.Returns, TypeBuilder.GetField(parent, variantContainer.GetField("Mode")));
+                classBuilder.SetParent(parent);
+                int ix = 0;
+                foreach (var variantType in variantTypes) {
+                    var ctor = classBuilder.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, new[] { variantType });
+                    variantCtorLookup[decl.Returns].Add(variantType, ctor);
+                    var gen = ctor.GetILGenerator();
+
+                    gen.Emit(OpCodes.Ldarg_0);
+                    gen.Emit(OpCodes.Ldarg_1);
+                    //if (parent.GetType().Name == "TypeBuilderInstantiation") {
+                    // see https://msdn.microsoft.com/en-us/library/system.reflection.emit.generictypeparameterbuilder(v=vs.110).aspx
+                    // Generics are weird.
+                    var genericVariantCtor = variantContainer.GetConstructor(new[] { variantContainer.GetGenericArguments()[ix] });
+                    var baseCtor = TypeBuilder.GetConstructor(parent, genericVariantCtor);
+                    gen.Emit(OpCodes.Call, baseCtor);
+                    //} else {
+                    //    gen.Emit(OpCodes.Call, parent.GetConstructor(new[] { variantType }));
+                    //}
+
+                    gen.Emit(OpCodes.Ret);
+                    ix++;
+                }
+
+                return classBuilder;
             }
-
-            // And generic references should now resolve properly. I think.
-            var variantTypes = variantParts.Select(tt => Compile(tt)).OrderBy(t => t.Name).ToArray();
-            var variantContainer = typeof(Variant<,>).Module.GetTypes().FirstOrDefault(t => t.Name == "Variant`" + variantTypes.Length);
-            if (variantContainer == null) {
-                throw new ApplicationException("Error finding runtime variant type of size " + variantTypes.Length);
-            }
-
-            var parent = variantContainer.MakeGenericType(variantTypes);
-            variantValueLookup.Add(decl.Returns, TypeBuilder.GetField(parent, variantContainer.GetField("Value")));
-            variantModeLookup.Add(decl.Returns, TypeBuilder.GetField(parent, variantContainer.GetField("Mode")));
-            classBuilder.SetParent(parent);
-            int ix = 0;
-            foreach (var variantType in variantTypes) {
-                var ctor = classBuilder.DefineConstructor(System.Reflection.MethodAttributes.Public, System.Reflection.CallingConventions.Standard, new[] { variantType });
-                variantCtorLookup[decl.Returns].Add(variantType, ctor);
-                var gen = ctor.GetILGenerator();
-
-                gen.Emit(OpCodes.Ldarg_0);
-                gen.Emit(OpCodes.Ldarg_1);
-                //if (parent.GetType().Name == "TypeBuilderInstantiation") {
-                // see https://msdn.microsoft.com/en-us/library/system.reflection.emit.generictypeparameterbuilder(v=vs.110).aspx
-                // Generics are weird.
-                var genericVariantCtor = variantContainer.GetConstructor(new[] { variantContainer.GetGenericArguments()[ix] });
-                var baseCtor = TypeBuilder.GetConstructor(parent, genericVariantCtor);
-                gen.Emit(OpCodes.Call, baseCtor);
-                //} else {
-                //    gen.Emit(OpCodes.Call, parent.GetConstructor(new[] { variantType }));
-                //}
-
-                gen.Emit(OpCodes.Ret);
-                ix++;
-            }
-
-            return classBuilder;
         }
 
         private Type InstantiateGeneric(BoundGenericType boundGeneric)
@@ -380,39 +391,42 @@ namespace Tangent.CilGeneration
 
         private void BuildImplementation(ReductionDeclaration fn, MethodBuilder builder, TypeBuilder parentScope = null)
         {
-            var specializations = program.Functions.Where(other => other.IsSpecializationOf(fn)).ToList();
-            foreach (var specialization in specializations) {
-                // Force specializations to be built so that any generic types exist in our lookup.
-                Compile(specialization);
-            }
-
-            var gen = builder.GetILGenerator();
-            Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes = BuildNormalAccesses(gen, fn);
-
-            AddDispatchCode(gen, fn, specializations, parameterCodes);
-
-            ClosureInfo closureScope = null;
-            if (fn.RequiresClosure) {
-                parameterCodes = BuildClosureStyleAccesses(gen, fn, parentScope ?? rootType, out closureScope);
-            } else {
-                foreach (var entry in BuildLocalAccesses(gen, fn)) {
-                    parameterCodes.Add(entry.Key, entry.Value);
+            var stmts = fn?.Returns?.Implementation?.Statements;
+            using (profiler.Stopwatch("CodeGen", fn.ToString(), stmts == null ? (int?)null : stmts.Count())) {
+                var specializations = program.Functions.Where(other => other.IsSpecializationOf(fn)).ToList();
+                foreach (var specialization in specializations) {
+                    // Force specializations to be built so that any generic types exist in our lookup.
+                    Compile(specialization);
                 }
-            }
 
-            var doc = fn.Returns as DirectOpCode;
-            if (doc != null) {
-                AddExpression(new FunctionInvocationExpression(fn, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(pp.Parameter, null)), Enumerable.Empty<TangentType>(), null), gen, parameterCodes, closureScope, true);
-            } else {
-                AddFunctionCode(gen, fn.Returns.Implementation, parameterCodes, closureScope);
-            }
+                var gen = builder.GetILGenerator();
+                Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes = BuildNormalAccesses(gen, fn);
 
-            if (!(fn.Returns is InterfaceFunction)) {
-                gen.Emit(OpCodes.Ret);
-            }
+                AddDispatchCode(gen, fn, specializations, parameterCodes);
 
-            if (closureScope != null) {
-                closureScope.ClosureType.CreateType();
+                ClosureInfo closureScope = null;
+                if (fn.RequiresClosure) {
+                    parameterCodes = BuildClosureStyleAccesses(gen, fn, parentScope ?? rootType, out closureScope);
+                } else {
+                    foreach (var entry in BuildLocalAccesses(gen, fn)) {
+                        parameterCodes.Add(entry.Key, entry.Value);
+                    }
+                }
+
+                var doc = fn.Returns as DirectOpCode;
+                if (doc != null) {
+                    AddExpression(new FunctionInvocationExpression(fn, fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccessExpression(pp.Parameter, null)), Enumerable.Empty<TangentType>(), null), gen, parameterCodes, closureScope, true);
+                } else {
+                    AddFunctionCode(gen, fn.Returns.Implementation, parameterCodes, closureScope);
+                }
+
+                if (!(fn.Returns is InterfaceFunction)) {
+                    gen.Emit(OpCodes.Ret);
+                }
+
+                if (closureScope != null) {
+                    closureScope.ClosureType.CreateType();
+                }
             }
         }
 
@@ -549,308 +563,311 @@ namespace Tangent.CilGeneration
                 return;
             }
 
-            var objGetType = typeof(object).GetMethod("GetType");
-            var typeEquality = typeof(Type).GetMethod("op_Equality");
-            var getTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
-            var isGenericType = typeof(Type).GetProperty("IsGenericType").GetGetMethod();
-            var getGenericTypeDefinition = typeof(Type).GetMethod("GetGenericTypeDefinition");
-            var getMethodFromHandle = typeof(MethodBase).GetMethods().Where(mi => mi.Name == "GetMethodFromHandle" && mi.GetParameters().Count() == 1).First();
-            var makeGenericMethod = typeof(MethodInfo).GetMethod("MakeGenericMethod");
-            var invoke = typeof(MethodInfo).GetMethods().Where(mi => mi.Name == "Invoke" && mi.GetParameters().Count() == 2).First();
-            var getGenericArguments = typeof(Type).GetMethod("GetGenericArguments");
-            var unboxingNeeded = gen.DeclareLocal(typeof(bool));
-            var parameterTypeLocals = new Dictionary<ParameterDeclaration, LocalBuilder>();
+            using (profiler.Stopwatch("CodeGen", fn.ToString(), specializations.Count())) {
 
-            // For now, we can't have nested specializations, so just go in order, doing the checks.
-            foreach (var specialization in specializations) {
-                Label next = gen.DefineLabel();
-                var specializationDetails = specialization.SpecializationAgainst(fn).Specializations;
-                var modes = new Dictionary<ParameterDeclaration, Tuple<Type, Type>>();
-                var specialCasts = new Dictionary<ParameterDeclaration, Type>();
-                foreach (var specializationParam in specializationDetails) {
-                    switch (specializationParam.SpecializationType) {
-                        case DispatchType.SingleValue:
-                            var single = (SingleValueType)specializationParam.SpecificFunctionParameter.Returns;
+                var objGetType = typeof(object).GetMethod("GetType");
+                var typeEquality = typeof(Type).GetMethod("op_Equality");
+                var getTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
+                var isGenericType = typeof(Type).GetProperty("IsGenericType").GetGetMethod();
+                var getGenericTypeDefinition = typeof(Type).GetMethod("GetGenericTypeDefinition");
+                var getMethodFromHandle = typeof(MethodBase).GetMethods().Where(mi => mi.Name == "GetMethodFromHandle" && mi.GetParameters().Count() == 1).First();
+                var makeGenericMethod = typeof(MethodInfo).GetMethod("MakeGenericMethod");
+                var invoke = typeof(MethodInfo).GetMethods().Where(mi => mi.Name == "Invoke" && mi.GetParameters().Count() == 2).First();
+                var getGenericArguments = typeof(Type).GetMethod("GetGenericArguments");
+                var unboxingNeeded = gen.DeclareLocal(typeof(bool));
+                var parameterTypeLocals = new Dictionary<ParameterDeclaration, LocalBuilder>();
 
-                            // If the specialization is not met, go to next specialization.
-                            parameterCodes[specializationParam.GeneralFunctionParameter].Accessor(gen);
-                            if (single.ValueType is BoolEnumAdapterType) {
-                                if (single.Value.Value == "true") {
-                                    gen.Emit(OpCodes.Brfalse, next);
+                // For now, we can't have nested specializations, so just go in order, doing the checks.
+                foreach (var specialization in specializations) {
+                    Label next = gen.DefineLabel();
+                    var specializationDetails = specialization.SpecializationAgainst(fn).Specializations;
+                    var modes = new Dictionary<ParameterDeclaration, Tuple<Type, Type>>();
+                    var specialCasts = new Dictionary<ParameterDeclaration, Type>();
+                    foreach (var specializationParam in specializationDetails) {
+                        switch (specializationParam.SpecializationType) {
+                            case DispatchType.SingleValue:
+                                var single = (SingleValueType)specializationParam.SpecificFunctionParameter.Returns;
+
+                                // If the specialization is not met, go to next specialization.
+                                parameterCodes[specializationParam.GeneralFunctionParameter].Accessor(gen);
+                                if (single.ValueType is BoolEnumAdapterType) {
+                                    if (single.Value.Value == "true") {
+                                        gen.Emit(OpCodes.Brfalse, next);
+                                    } else {
+                                        gen.Emit(OpCodes.Brtrue, next);
+                                    }
                                 } else {
-                                    gen.Emit(OpCodes.Brtrue, next);
+                                    gen.Emit(OpCodes.Ldc_I4, single.NumericEquivalent);
+                                    gen.Emit(OpCodes.Ceq);
+                                    gen.Emit(OpCodes.Brfalse, next);
+                                    // Otherwise, proceed to next param.
                                 }
-                            } else {
-                                gen.Emit(OpCodes.Ldc_I4, single.NumericEquivalent);
+                                break;
+
+                            case DispatchType.SumType:
+                                var dotNetSum = Compile(specializationParam.GeneralFunctionParameter.Returns);
+                                var dotNetTarget = Compile(specializationParam.SpecificFunctionParameter.Returns);
+                                var targetMode = GetVariantMode(dotNetSum, dotNetTarget);
+                                modes.Add(specializationParam.GeneralFunctionParameter, Tuple.Create(dotNetSum, dotNetTarget));
+                                var modeField = variantModeLookup[specializationParam.GeneralFunctionParameter.Returns];
+                                parameterCodes[specializationParam.GeneralFunctionParameter].Accessor(gen);
+                                gen.Emit(OpCodes.Ldfld, modeField);
+                                gen.Emit(OpCodes.Ldc_I4, targetMode);
                                 gen.Emit(OpCodes.Ceq);
                                 gen.Emit(OpCodes.Brfalse, next);
-                                // Otherwise, proceed to next param.
-                            }
-                            break;
+                                break;
 
-                        case DispatchType.SumType:
-                            var dotNetSum = Compile(specializationParam.GeneralFunctionParameter.Returns);
-                            var dotNetTarget = Compile(specializationParam.SpecificFunctionParameter.Returns);
-                            var targetMode = GetVariantMode(dotNetSum, dotNetTarget);
-                            modes.Add(specializationParam.GeneralFunctionParameter, Tuple.Create(dotNetSum, dotNetTarget));
-                            var modeField = variantModeLookup[specializationParam.GeneralFunctionParameter.Returns];
-                            parameterCodes[specializationParam.GeneralFunctionParameter].Accessor(gen);
-                            gen.Emit(OpCodes.Ldfld, modeField);
-                            gen.Emit(OpCodes.Ldc_I4, targetMode);
-                            gen.Emit(OpCodes.Ceq);
-                            gen.Emit(OpCodes.Brfalse, next);
-                            break;
+                            case DispatchType.GenericSpecialization:
+                                var gart = (specializationParam.GeneralFunctionParameter.RequiredArgumentType as GenericArgumentReferenceType);
+                                var inferredTypeClass = gart != null ? ((KindType)gart.GenericParameter.Returns).KindOf as TypeClass : null;
+                                FieldInfo typeClassAccessor = null;
 
-                        case DispatchType.GenericSpecialization:
-                            var gart = (specializationParam.GeneralFunctionParameter.RequiredArgumentType as GenericArgumentReferenceType);
-                            var inferredTypeClass = gart != null ? ((KindType)gart.GenericParameter.Returns).KindOf as TypeClass : null;
-                            FieldInfo typeClassAccessor = null;
-
-                            // TODO: order specializations to prevent dispatching to something that is just going to dispatch again?
-                            var specificTargetType = Compile(specializationParam.SpecificFunctionParameter.Returns);
-                            //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
-                            parameterCodes[specializationParam.GeneralFunctionParameter].Accessor(gen);
-                            //
-                            // if param.GetType() != specificType
-                            //
-                            specialCasts.Add(specializationParam.GeneralFunctionParameter, specificTargetType);
-
-                            //
-                            // RMS: This call would be better as a Constrained opcode, but that requires a ldarga (ptr load) not a ldarg (value load), but we 
-                            //       don't know our parameter index at this point. Consider refactoring for perf.
-                            //
-                            gen.Emit(OpCodes.Box, Compile(specializationParam.GeneralFunctionParameter.RequiredArgumentType));
-
-                            if (inferredTypeClass != null) {
-                                Label skipUnboxingVariant = gen.DefineLabel();
-
-                                Compile(inferredTypeClass);
-                                gen.Emit(OpCodes.Isinst, Compile(inferredTypeClass));
-                                gen.Emit(OpCodes.Stloc, unboxingNeeded);
+                                // TODO: order specializations to prevent dispatching to something that is just going to dispatch again?
+                                var specificTargetType = Compile(specializationParam.SpecificFunctionParameter.Returns);
+                                //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
                                 parameterCodes[specializationParam.GeneralFunctionParameter].Accessor(gen);
+                                //
+                                // if param.GetType() != specificType
+                                //
+                                specialCasts.Add(specializationParam.GeneralFunctionParameter, specificTargetType);
+
+                                //
+                                // RMS: This call would be better as a Constrained opcode, but that requires a ldarga (ptr load) not a ldarg (value load), but we 
+                                //       don't know our parameter index at this point. Consider refactoring for perf.
+                                //
                                 gen.Emit(OpCodes.Box, Compile(specializationParam.GeneralFunctionParameter.RequiredArgumentType));
-                                gen.Emit(OpCodes.Ldloc, unboxingNeeded);
-                                gen.Emit(OpCodes.Brfalse, skipUnboxingVariant);
-                                typeClassAccessor = variantValueLookup[inferredTypeClass];
-                                gen.Emit(OpCodes.Ldfld, typeClassAccessor);
 
-                                gen.MarkLabel(skipUnboxingVariant);
-                            }
+                                if (inferredTypeClass != null) {
+                                    Label skipUnboxingVariant = gen.DefineLabel();
 
-                            gen.Emit(OpCodes.Callvirt, objGetType);
-                            //gen.EmitWriteLine("Specialization GetType success.");
-                            gen.Emit(OpCodes.Ldtoken, specificTargetType);
-                            gen.Emit(OpCodes.Call, getTypeFromHandle);
-                            //gen.EmitWriteLine("GetTypeFromHandleSuccess");
-                            gen.Emit(OpCodes.Call, typeEquality);
-                            gen.Emit(OpCodes.Brfalse, next);
+                                    Compile(inferredTypeClass);
+                                    gen.Emit(OpCodes.Isinst, Compile(inferredTypeClass));
+                                    gen.Emit(OpCodes.Stloc, unboxingNeeded);
+                                    parameterCodes[specializationParam.GeneralFunctionParameter].Accessor(gen);
+                                    gen.Emit(OpCodes.Box, Compile(specializationParam.GeneralFunctionParameter.RequiredArgumentType));
+                                    gen.Emit(OpCodes.Ldloc, unboxingNeeded);
+                                    gen.Emit(OpCodes.Brfalse, skipUnboxingVariant);
+                                    typeClassAccessor = variantValueLookup[inferredTypeClass];
+                                    gen.Emit(OpCodes.Ldfld, typeClassAccessor);
 
-                            break;
-
-                        case DispatchType.PartialSpecialization:
-                            var specificPartialTargetType = Compile(specializationParam.SpecificFunctionParameter.RequiredArgumentType);
-                            specificPartialTargetType = specificPartialTargetType.GetGenericTypeDefinition();
-                            //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
-                            parameterCodes[specializationParam.GeneralFunctionParameter].Accessor(gen);
-
-                            //
-                            // if param.GetType().IsGenericType && param.GetType().GetGenericTypeDefinition() == specificType (partial specialization)
-                            //
-                            gen.Emit(OpCodes.Box, Compile(specializationParam.GeneralFunctionParameter.RequiredArgumentType));
-                            gen.Emit(OpCodes.Callvirt, objGetType);
-                            LocalBuilder paramTypeLocal;
-                            if (!parameterTypeLocals.ContainsKey(specializationParam.GeneralFunctionParameter)) {
-                                paramTypeLocal = gen.DeclareLocal(typeof(Type));
-                                parameterTypeLocals.Add(specializationParam.GeneralFunctionParameter, paramTypeLocal);
-                                gen.Emit(OpCodes.Stloc, paramTypeLocal);
-                            } else {
-                                paramTypeLocal = parameterTypeLocals[specializationParam.GeneralFunctionParameter];
-                            }
-
-                            gen.Emit(OpCodes.Ldloc, paramTypeLocal);
-                            gen.Emit(OpCodes.Callvirt, isGenericType);
-                            gen.Emit(OpCodes.Brfalse, next);
-
-                            gen.Emit(OpCodes.Ldloc, paramTypeLocal);
-                            gen.Emit(OpCodes.Callvirt, getGenericTypeDefinition);
-                            gen.Emit(OpCodes.Ldtoken, specificPartialTargetType);
-                            gen.Emit(OpCodes.Call, getTypeFromHandle);
-                            gen.Emit(OpCodes.Call, typeEquality);
-                            gen.Emit(OpCodes.Brfalse, next);
-
-                            break;
-                        default:
-                            throw new NotImplementedException();
-                    }
-                }
-
-                Action<ParameterDeclaration, bool> emitParameterDispatch = (parameter, unbox) => {
-                    if (modes.ContainsKey(parameter)) {
-                        var valueFld = variantValueLookup[parameter.Returns];
-                        parameterCodes[parameter].Accessor(gen);
-                        gen.Emit(OpCodes.Ldfld, valueFld);
-
-                        if (unbox) {
-                            if (modes[parameter].Item2.IsValueType) {
-                                gen.Emit(OpCodes.Unbox_Any, modes[parameter].Item2);
-                            } else {
-                                gen.Emit(OpCodes.Castclass, modes[parameter].Item2);
-                            }
-                        }
-                    } else if (specialCasts.ContainsKey(parameter)) {
-                        parameterCodes[parameter].Accessor(gen);
-                        gen.Emit(OpCodes.Box, Compile(parameter.RequiredArgumentType));
-
-                        var gart = (parameter.RequiredArgumentType as GenericArgumentReferenceType);
-                        var inferredTypeClass = gart != null ? ((KindType)gart.GenericParameter.Returns).KindOf as TypeClass : null;
-                        if (inferredTypeClass != null) {
-                            var skipValueAccess = gen.DefineLabel();
-                            gen.Emit(OpCodes.Isinst, Compile(inferredTypeClass));
-                            gen.Emit(OpCodes.Stloc, unboxingNeeded);
-                            parameterCodes[parameter].Accessor(gen);
-                            gen.Emit(OpCodes.Box, Compile(parameter.RequiredArgumentType));
-                            gen.Emit(OpCodes.Ldloc, unboxingNeeded);
-                            gen.Emit(OpCodes.Brfalse, skipValueAccess);
-                            var typeClassAccessor = variantValueLookup[inferredTypeClass];
-                            gen.Emit(OpCodes.Ldfld, typeClassAccessor);
-                            gen.MarkLabel(skipValueAccess);
-                        }
-
-                        if (unbox) {
-                            if (specialCasts[parameter].IsValueType) {
-                                gen.Emit(OpCodes.Unbox_Any, specialCasts[parameter]);
-                            } else {
-                                gen.Emit(OpCodes.Castclass, specialCasts[parameter]);
-                            }
-                        }
-                    } else {
-                        parameterCodes[parameter].Accessor(gen);
-                        if (!unbox) {
-                            gen.Emit(OpCodes.Box, Compile(parameter.RequiredArgumentType));
-                            gen.Emit(OpCodes.Castclass, typeof(object));
-                        }
-                    }
-                };
-
-                // Cool. Load parameters, call function and return.
-                if (specialization.GenericParameters.Any()) {
-                    // Arg storage
-                    var argArray = gen.DeclareLocal(typeof(object[]));
-
-                    gen.Emit(OpCodes.Ldc_I4, fn.Takes.Where(pp => !pp.IsIdentifier).Count());
-                    gen.Emit(OpCodes.Newarr, typeof(object));
-                    gen.Emit(OpCodes.Stloc, argArray);
-
-                    int ix = 0;
-                    foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
-                        gen.Emit(OpCodes.Ldloc, argArray);
-                        gen.Emit(OpCodes.Ldc_I4, ix);
-                        emitParameterDispatch(parameter.Parameter, false);
-                        gen.Emit(OpCodes.Stelem_Ref);
-                        ix++;
-                    }
-
-                    // Type params
-                    var typeArgArray = gen.DeclareLocal(typeof(Type[]));
-
-                    gen.Emit(OpCodes.Ldc_I4, specialization.GenericParameters.Count());
-                    gen.Emit(OpCodes.Newarr, typeof(Type));
-                    gen.Emit(OpCodes.Stloc, typeArgArray);
-
-                    // Function to walk types and bind inferences:
-                    Action<TangentType, Action> inferenceTypeWalker = null;
-                    inferenceTypeWalker = new Action<TangentType, Action>((tt, typeAccessor) => {
-                        switch (tt.ImplementationType) {
-                            case KindOfType.BoundGeneric:
-                                // List<T>, List<int>, something.
-                                // Get args and work with them.
-                                var genericArgArray = gen.DeclareLocal(typeof(Type[]));
-
-                                typeAccessor();
-                                gen.Emit(OpCodes.Callvirt, getGenericArguments);
-                                gen.Emit(OpCodes.Stloc, genericArgArray);
-
-                                int argumentIndex = 0;
-                                foreach (var boundGenericArgument in ((BoundGenericType)tt).TypeArguments) {
-                                    switch (boundGenericArgument.ImplementationType) {
-                                        case KindOfType.BoundGeneric:
-                                        case KindOfType.GenericReference:
-                                            // Nested type.
-                                            inferenceTypeWalker(boundGenericArgument, () => {
-                                                gen.Emit(OpCodes.Ldloc, genericArgArray);
-                                                gen.Emit(OpCodes.Ldc_I4, argumentIndex);
-                                                gen.Emit(OpCodes.Ldelem_Ref);
-                                            });
-
-                                            break;
-
-                                        default:
-                                            // Something else. Probably a concrete bound argument.
-                                            // Skip it.
-                                            break;
-                                    }
-
-                                    argumentIndex++;
+                                    gen.MarkLabel(skipUnboxingVariant);
                                 }
 
+                                gen.Emit(OpCodes.Callvirt, objGetType);
+                                //gen.EmitWriteLine("Specialization GetType success.");
+                                gen.Emit(OpCodes.Ldtoken, specificTargetType);
+                                gen.Emit(OpCodes.Call, getTypeFromHandle);
+                                //gen.EmitWriteLine("GetTypeFromHandleSuccess");
+                                gen.Emit(OpCodes.Call, typeEquality);
+                                gen.Emit(OpCodes.Brfalse, next);
+
                                 break;
 
-                            case KindOfType.GenericReference:
-                                // Awesome. What we're actually looking for add it to the type arg array.
-                                // Load type array, target index, found type arg from array then store.
-                                gen.Emit(OpCodes.Ldloc, typeArgArray);
-                                gen.Emit(OpCodes.Ldc_I4, specialization.GenericParameters.IndexOf(((GenericArgumentReferenceType)tt).GenericParameter));
+                            case DispatchType.PartialSpecialization:
+                                var specificPartialTargetType = Compile(specializationParam.SpecificFunctionParameter.RequiredArgumentType);
+                                specificPartialTargetType = specificPartialTargetType.GetGenericTypeDefinition();
+                                //gen.EmitWriteLine(string.Format("Checking specialization of {0} versus {1}", string.Join(" ", specializationParam.GeneralFunctionParameter.Takes), specificTargetType));
+                                parameterCodes[specializationParam.GeneralFunctionParameter].Accessor(gen);
 
-                                typeAccessor();
+                                //
+                                // if param.GetType().IsGenericType && param.GetType().GetGenericTypeDefinition() == specificType (partial specialization)
+                                //
+                                gen.Emit(OpCodes.Box, Compile(specializationParam.GeneralFunctionParameter.RequiredArgumentType));
+                                gen.Emit(OpCodes.Callvirt, objGetType);
+                                LocalBuilder paramTypeLocal;
+                                if (!parameterTypeLocals.ContainsKey(specializationParam.GeneralFunctionParameter)) {
+                                    paramTypeLocal = gen.DeclareLocal(typeof(Type));
+                                    parameterTypeLocals.Add(specializationParam.GeneralFunctionParameter, paramTypeLocal);
+                                    gen.Emit(OpCodes.Stloc, paramTypeLocal);
+                                } else {
+                                    paramTypeLocal = parameterTypeLocals[specializationParam.GeneralFunctionParameter];
+                                }
 
-                                gen.Emit(OpCodes.Stelem_Ref);
+                                gen.Emit(OpCodes.Ldloc, paramTypeLocal);
+                                gen.Emit(OpCodes.Callvirt, isGenericType);
+                                gen.Emit(OpCodes.Brfalse, next);
+
+                                gen.Emit(OpCodes.Ldloc, paramTypeLocal);
+                                gen.Emit(OpCodes.Callvirt, getGenericTypeDefinition);
+                                gen.Emit(OpCodes.Ldtoken, specificPartialTargetType);
+                                gen.Emit(OpCodes.Call, getTypeFromHandle);
+                                gen.Emit(OpCodes.Call, typeEquality);
+                                gen.Emit(OpCodes.Brfalse, next);
+
                                 break;
-
                             default:
-                                // Something else. Probably a concrete bound argument.
-                                // Skip it.
-                                break;
+                                throw new NotImplementedException();
                         }
-                    });
+                    }
 
-                    // Now, bind them.
-                    foreach (var partialSpecialization in specializationDetails.Where(s => s.SpecializationType == DispatchType.PartialSpecialization)) {
-                        inferenceTypeWalker(partialSpecialization.SpecificFunctionParameter.RequiredArgumentType, () => {
-                            // We already stored param.GetType() to a local. Use that.
-                            gen.Emit(OpCodes.Ldloc, parameterTypeLocals[partialSpecialization.GeneralFunctionParameter]);
+                    Action<ParameterDeclaration, bool> emitParameterDispatch = (parameter, unbox) => {
+                        if (modes.ContainsKey(parameter)) {
+                            var valueFld = variantValueLookup[parameter.Returns];
+                            parameterCodes[parameter].Accessor(gen);
+                            gen.Emit(OpCodes.Ldfld, valueFld);
+
+                            if (unbox) {
+                                if (modes[parameter].Item2.IsValueType) {
+                                    gen.Emit(OpCodes.Unbox_Any, modes[parameter].Item2);
+                                } else {
+                                    gen.Emit(OpCodes.Castclass, modes[parameter].Item2);
+                                }
+                            }
+                        } else if (specialCasts.ContainsKey(parameter)) {
+                            parameterCodes[parameter].Accessor(gen);
+                            gen.Emit(OpCodes.Box, Compile(parameter.RequiredArgumentType));
+
+                            var gart = (parameter.RequiredArgumentType as GenericArgumentReferenceType);
+                            var inferredTypeClass = gart != null ? ((KindType)gart.GenericParameter.Returns).KindOf as TypeClass : null;
+                            if (inferredTypeClass != null) {
+                                var skipValueAccess = gen.DefineLabel();
+                                gen.Emit(OpCodes.Isinst, Compile(inferredTypeClass));
+                                gen.Emit(OpCodes.Stloc, unboxingNeeded);
+                                parameterCodes[parameter].Accessor(gen);
+                                gen.Emit(OpCodes.Box, Compile(parameter.RequiredArgumentType));
+                                gen.Emit(OpCodes.Ldloc, unboxingNeeded);
+                                gen.Emit(OpCodes.Brfalse, skipValueAccess);
+                                var typeClassAccessor = variantValueLookup[inferredTypeClass];
+                                gen.Emit(OpCodes.Ldfld, typeClassAccessor);
+                                gen.MarkLabel(skipValueAccess);
+                            }
+
+                            if (unbox) {
+                                if (specialCasts[parameter].IsValueType) {
+                                    gen.Emit(OpCodes.Unbox_Any, specialCasts[parameter]);
+                                } else {
+                                    gen.Emit(OpCodes.Castclass, specialCasts[parameter]);
+                                }
+                            }
+                        } else {
+                            parameterCodes[parameter].Accessor(gen);
+                            if (!unbox) {
+                                gen.Emit(OpCodes.Box, Compile(parameter.RequiredArgumentType));
+                                gen.Emit(OpCodes.Castclass, typeof(object));
+                            }
+                        }
+                    };
+
+                    // Cool. Load parameters, call function and return.
+                    if (specialization.GenericParameters.Any()) {
+                        // Arg storage
+                        var argArray = gen.DeclareLocal(typeof(object[]));
+
+                        gen.Emit(OpCodes.Ldc_I4, fn.Takes.Where(pp => !pp.IsIdentifier).Count());
+                        gen.Emit(OpCodes.Newarr, typeof(object));
+                        gen.Emit(OpCodes.Stloc, argArray);
+
+                        int ix = 0;
+                        foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
+                            gen.Emit(OpCodes.Ldloc, argArray);
+                            gen.Emit(OpCodes.Ldc_I4, ix);
+                            emitParameterDispatch(parameter.Parameter, false);
+                            gen.Emit(OpCodes.Stelem_Ref);
+                            ix++;
+                        }
+
+                        // Type params
+                        var typeArgArray = gen.DeclareLocal(typeof(Type[]));
+
+                        gen.Emit(OpCodes.Ldc_I4, specialization.GenericParameters.Count());
+                        gen.Emit(OpCodes.Newarr, typeof(Type));
+                        gen.Emit(OpCodes.Stloc, typeArgArray);
+
+                        // Function to walk types and bind inferences:
+                        Action<TangentType, Action> inferenceTypeWalker = null;
+                        inferenceTypeWalker = new Action<TangentType, Action>((tt, typeAccessor) => {
+                            switch (tt.ImplementationType) {
+                                case KindOfType.BoundGeneric:
+                                    // List<T>, List<int>, something.
+                                    // Get args and work with them.
+                                    var genericArgArray = gen.DeclareLocal(typeof(Type[]));
+
+                                    typeAccessor();
+                                    gen.Emit(OpCodes.Callvirt, getGenericArguments);
+                                    gen.Emit(OpCodes.Stloc, genericArgArray);
+
+                                    int argumentIndex = 0;
+                                    foreach (var boundGenericArgument in ((BoundGenericType)tt).TypeArguments) {
+                                        switch (boundGenericArgument.ImplementationType) {
+                                            case KindOfType.BoundGeneric:
+                                            case KindOfType.GenericReference:
+                                                // Nested type.
+                                                inferenceTypeWalker(boundGenericArgument, () => {
+                                                    gen.Emit(OpCodes.Ldloc, genericArgArray);
+                                                    gen.Emit(OpCodes.Ldc_I4, argumentIndex);
+                                                    gen.Emit(OpCodes.Ldelem_Ref);
+                                                });
+
+                                                break;
+
+                                            default:
+                                                // Something else. Probably a concrete bound argument.
+                                                // Skip it.
+                                                break;
+                                        }
+
+                                        argumentIndex++;
+                                    }
+
+                                    break;
+
+                                case KindOfType.GenericReference:
+                                    // Awesome. What we're actually looking for add it to the type arg array.
+                                    // Load type array, target index, found type arg from array then store.
+                                    gen.Emit(OpCodes.Ldloc, typeArgArray);
+                                    gen.Emit(OpCodes.Ldc_I4, specialization.GenericParameters.IndexOf(((GenericArgumentReferenceType)tt).GenericParameter));
+
+                                    typeAccessor();
+
+                                    gen.Emit(OpCodes.Stelem_Ref);
+                                    break;
+
+                                default:
+                                    // Something else. Probably a concrete bound argument.
+                                    // Skip it.
+                                    break;
+                            }
                         });
-                    }
 
-                    // Fix fn and go.
-                    gen.Emit(OpCodes.Ldtoken, Compile(specialization));
-                    gen.Emit(OpCodes.Call, getMethodFromHandle);
-                    gen.Emit(OpCodes.Castclass, typeof(MethodInfo));
-                    gen.Emit(OpCodes.Ldloc, typeArgArray);
-                    gen.Emit(OpCodes.Callvirt, makeGenericMethod); // fn = fn<typeArgs>
+                        // Now, bind them.
+                        foreach (var partialSpecialization in specializationDetails.Where(s => s.SpecializationType == DispatchType.PartialSpecialization)) {
+                            inferenceTypeWalker(partialSpecialization.SpecificFunctionParameter.RequiredArgumentType, () => {
+                                // We already stored param.GetType() to a local. Use that.
+                                gen.Emit(OpCodes.Ldloc, parameterTypeLocals[partialSpecialization.GeneralFunctionParameter]);
+                            });
+                        }
 
-                    gen.Emit(OpCodes.Ldnull);
-                    gen.Emit(OpCodes.Ldloc, argArray);
-                    gen.Emit(OpCodes.Call, invoke);  // fn.Invoke(null, args);
-                    if (specialization.Returns.EffectiveType == TangentType.Void) {
-                        gen.Emit(OpCodes.Pop);
+                        // Fix fn and go.
+                        gen.Emit(OpCodes.Ldtoken, Compile(specialization));
+                        gen.Emit(OpCodes.Call, getMethodFromHandle);
+                        gen.Emit(OpCodes.Castclass, typeof(MethodInfo));
+                        gen.Emit(OpCodes.Ldloc, typeArgArray);
+                        gen.Emit(OpCodes.Callvirt, makeGenericMethod); // fn = fn<typeArgs>
+
+                        gen.Emit(OpCodes.Ldnull);
+                        gen.Emit(OpCodes.Ldloc, argArray);
+                        gen.Emit(OpCodes.Call, invoke);  // fn.Invoke(null, args);
+                        if (specialization.Returns.EffectiveType == TangentType.Void) {
+                            gen.Emit(OpCodes.Pop);
+                        } else {
+                            // TODO: verify that return type isn't impacted by inference.
+                            gen.Emit(OpCodes.Castclass, Compile(specialization.Returns.EffectiveType));
+                        }
                     } else {
-                        // TODO: verify that return type isn't impacted by inference.
-                        gen.Emit(OpCodes.Castclass, Compile(specialization.Returns.EffectiveType));
-                    }
-                } else {
-                    foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
-                        emitParameterDispatch(parameter.Parameter, true);
+                        foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
+                            emitParameterDispatch(parameter.Parameter, true);
+                        }
+
+                        gen.Emit(OpCodes.Tailcall);
+                        gen.EmitCall(OpCodes.Call, Compile(specialization), null);
                     }
 
-                    gen.Emit(OpCodes.Tailcall);
-                    gen.EmitCall(OpCodes.Call, Compile(specialization), null);
+                    gen.Emit(OpCodes.Ret);
+
+                    // Otherwise, place next label for next specialization (or global version).
+                    gen.Emit(OpCodes.Nop);
+                    gen.MarkLabel(next);
                 }
-
-                gen.Emit(OpCodes.Ret);
-
-                // Otherwise, place next label for next specialization (or global version).
-                gen.Emit(OpCodes.Nop);
-                gen.MarkLabel(next);
             }
         }
 
@@ -1227,104 +1244,107 @@ namespace Tangent.CilGeneration
                 throw new NotImplementedException("TODO: support nested closures.");
             }
 
-            bool needsCreating = false;
+            using (profiler.Stopwatch("CodeGen")) {
 
-            if (closureScope == null) {
-                // Then we have a lambda, but don't need any vars. Just toss it at root level for calling.
-                var closureType = (rootType).DefineNestedType("closure" + closureCounter++, TypeAttributes.Sealed | TypeAttributes.NestedPublic);
-                var cctor = closureType.DefineDefaultConstructor(MethodAttributes.Public);
-                // TODO: if we use generics, do we need those here?
-                closureScope = new ClosureInfo(closureType, new Dictionary<ParameterDeclaration, PropertyCodes>(), g => g.Emit(OpCodes.Newobj, cctor), Enumerable.Empty<ClosureGenericMapping>());
-                needsCreating = true;
-            }
+                bool needsCreating = false;
 
-            Type closureWithFnGenerics = closureScope.ClosureType;
-            if (closureScope.ClosureGenericScope.Any()) {
-                closureWithFnGenerics = closureScope.ClosureType.MakeGenericType(closureScope.ClosureGenericScope.Select(cgs => cgs.FunctionGeneric).ToArray());
-            }
+                if (closureScope == null) {
+                    // Then we have a lambda, but don't need any vars. Just toss it at root level for calling.
+                    var closureType = (rootType).DefineNestedType("closure" + closureCounter++, TypeAttributes.Sealed | TypeAttributes.NestedPublic);
+                    var cctor = closureType.DefineDefaultConstructor(MethodAttributes.Public);
+                    // TODO: if we use generics, do we need those here?
+                    closureScope = new ClosureInfo(closureType, new Dictionary<ParameterDeclaration, PropertyCodes>(), g => g.Emit(OpCodes.Newobj, cctor), Enumerable.Empty<ClosureGenericMapping>());
+                    needsCreating = true;
+                }
 
-            // Here we need to overwrite the resolution for generic parameters since they're part of the generic instance, not the function.
-            foreach (var entry in closureScope.ClosureGenericScope) {
-                typeLookup[GenericArgumentReferenceType.For(entry.TangentGeneric)] = entry.ClosureGeneric;
+                Type closureWithFnGenerics = closureScope.ClosureType;
+                if (closureScope.ClosureGenericScope.Any()) {
+                    closureWithFnGenerics = closureScope.ClosureType.MakeGenericType(closureScope.ClosureGenericScope.Select(cgs => cgs.FunctionGeneric).ToArray());
+                }
 
-                // And we need to get things like Func<T> too.
-                var keys = new List<TangentType>();
-                foreach (var kvp in typeLookup) {
-                    if (kvp.Key != GenericArgumentReferenceType.For(entry.TangentGeneric) && kvp.Key.ContainedGenericReferences().Contains(entry.TangentGeneric)) {
-                        keys.Add(kvp.Key);
+                // Here we need to overwrite the resolution for generic parameters since they're part of the generic instance, not the function.
+                foreach (var entry in closureScope.ClosureGenericScope) {
+                    typeLookup[GenericArgumentReferenceType.For(entry.TangentGeneric)] = entry.ClosureGeneric;
+
+                    // And we need to get things like Func<T> too.
+                    var keys = new List<TangentType>();
+                    foreach (var kvp in typeLookup) {
+                        if (kvp.Key != GenericArgumentReferenceType.For(entry.TangentGeneric) && kvp.Key.ContainedGenericReferences().Contains(entry.TangentGeneric)) {
+                            keys.Add(kvp.Key);
+                        }
+                    }
+
+                    foreach (var key in keys) {
+                        typeLookup[key] = Compile(key);
                     }
                 }
 
-                foreach (var key in keys) {
-                    typeLookup[key] = Compile(key);
+                var nestedCodes = new Dictionary<ParameterDeclaration, PropertyCodes>(closureScope.ClosureCodes);
+
+                // Build actual function
+                var returnType = Compile(lambda.ResolvedReturnType);
+                var parameterTypes = lambda.ResolvedParameters.Select(pd => Compile(pd.Returns)).ToArray();
+                var closureFn = closureScope.ClosureType.DefineMethod("Implementation" + closureScope.ImplementationCounter++, System.Reflection.MethodAttributes.Public, returnType, parameterTypes);
+                closureFn.SetReturnType(returnType);
+                int ix = 1;
+                foreach (var pd in lambda.ResolvedParameters) {
+                    var paramBuilder = closureFn.DefineParameter(ix++, ParameterAttributes.In, GetNameFor(pd));
+                    nestedCodes.Add(pd, new PropertyCodes(g => g.Emit(OpCodes.Ldarg, (Int16)ix - 1), null));
                 }
-            }
 
-            var nestedCodes = new Dictionary<ParameterDeclaration, PropertyCodes>(closureScope.ClosureCodes);
+                var closureGen = closureFn.GetILGenerator();
+                int localix = 0;
+                foreach (var local in lambda.Implementation.Locals) {
+                    var lb = closureGen.DeclareLocal(Compile(local.Returns));
+                    lb.SetLocalSymInfo(GetNameFor(local));
+                    var closureIx = localix;
+                    nestedCodes.Add(local, new PropertyCodes(g => g.Emit(OpCodes.Ldloc, closureIx), (g, v) => { v(); g.Emit(OpCodes.Stloc, closureIx); }));
+                    localix++;
+                }
 
-            // Build actual function
-            var returnType = Compile(lambda.ResolvedReturnType);
-            var parameterTypes = lambda.ResolvedParameters.Select(pd => Compile(pd.Returns)).ToArray();
-            var closureFn = closureScope.ClosureType.DefineMethod("Implementation" + closureScope.ImplementationCounter++, System.Reflection.MethodAttributes.Public, returnType, parameterTypes);
-            closureFn.SetReturnType(returnType);
-            int ix = 1;
-            foreach (var pd in lambda.ResolvedParameters) {
-                var paramBuilder = closureFn.DefineParameter(ix++, ParameterAttributes.In, GetNameFor(pd));
-                nestedCodes.Add(pd, new PropertyCodes(g => g.Emit(OpCodes.Ldarg, (Int16)ix - 1), null));
-            }
+                // TODO: type resolve implementation bits?
+                AddFunctionCode(closureGen, lambda.Implementation, nestedCodes, new ClosureInfo(closureScope.ClosureType, closureScope.ClosureCodes, g => g.Emit(OpCodes.Ldarg_0), closureScope.ClosureGenericScope));
+                closureGen.Emit(OpCodes.Ret);
 
-            var closureGen = closureFn.GetILGenerator();
-            int localix = 0;
-            foreach (var local in lambda.Implementation.Locals) {
-                var lb = closureGen.DeclareLocal(Compile(local.Returns));
-                lb.SetLocalSymInfo(GetNameFor(local));
-                var closureIx = localix;
-                nestedCodes.Add(local, new PropertyCodes(g => g.Emit(OpCodes.Ldloc, closureIx), (g, v) => { v(); g.Emit(OpCodes.Stloc, closureIx); }));
-                localix++;
-            }
+                // Push action creation onto stack.
+                closureScope.ClosureAccessor(gen);
+                if (closureScope.ClosureType.IsGenericTypeDefinition) {
+                    gen.Emit(OpCodes.Ldftn, TypeBuilder.GetMethod(closureWithFnGenerics, closureFn));
+                } else {
+                    gen.Emit(OpCodes.Ldftn, closureFn);
+                }
 
-            // TODO: type resolve implementation bits?
-            AddFunctionCode(closureGen, lambda.Implementation, nestedCodes, new ClosureInfo(closureScope.ClosureType, closureScope.ClosureCodes, g => g.Emit(OpCodes.Ldarg_0), closureScope.ClosureGenericScope));
-            closureGen.Emit(OpCodes.Ret);
+                var lambdaType = Compile(lambda.EffectiveType);
+                ConstructorInfo ctor = null;
 
-            // Push action creation onto stack.
-            closureScope.ClosureAccessor(gen);
-            if (closureScope.ClosureType.IsGenericTypeDefinition) {
-                gen.Emit(OpCodes.Ldftn, TypeBuilder.GetMethod(closureWithFnGenerics, closureFn));
-            } else {
-                gen.Emit(OpCodes.Ldftn, closureFn);
-            }
+                if (lambdaType.GetType().Name.StartsWith("TypeBuilder")) {
+                    var genericFuncType = GenericDelegateTypeFor(lambda.EffectiveType as DelegateType);
+                    ctor = TypeBuilder.GetConstructor(lambdaType, genericFuncType.GetConstructors().First());
+                } else {
+                    ctor = lambdaType.GetConstructors().First();
+                }
 
-            var lambdaType = Compile(lambda.EffectiveType);
-            ConstructorInfo ctor = null;
+                gen.Emit(OpCodes.Newobj, ctor);
 
-            if (lambdaType.GetType().Name.StartsWith("TypeBuilder")) {
-                var genericFuncType = GenericDelegateTypeFor(lambda.EffectiveType as DelegateType);
-                ctor = TypeBuilder.GetConstructor(lambdaType, genericFuncType.GetConstructors().First());
-            } else {
-                ctor = lambdaType.GetConstructors().First();
-            }
+                // And here we need to roll back the generic scope
+                foreach (var entry in closureScope.ClosureGenericScope) {
+                    typeLookup[GenericArgumentReferenceType.For(entry.TangentGeneric)] = entry.FunctionGeneric;
 
-            gen.Emit(OpCodes.Newobj, ctor);
+                    var keys = new List<TangentType>();
+                    foreach (var kvp in typeLookup) {
+                        if (kvp.Key != GenericArgumentReferenceType.For(entry.TangentGeneric) && kvp.Key.ContainedGenericReferences().Contains(entry.TangentGeneric)) {
+                            keys.Add(kvp.Key);
+                        }
+                    }
 
-            // And here we need to roll back the generic scope
-            foreach (var entry in closureScope.ClosureGenericScope) {
-                typeLookup[GenericArgumentReferenceType.For(entry.TangentGeneric)] = entry.FunctionGeneric;
-
-                var keys = new List<TangentType>();
-                foreach (var kvp in typeLookup) {
-                    if (kvp.Key != GenericArgumentReferenceType.For(entry.TangentGeneric) && kvp.Key.ContainedGenericReferences().Contains(entry.TangentGeneric)) {
-                        keys.Add(kvp.Key);
+                    foreach (var key in keys) {
+                        typeLookup[key] = Compile(key);
                     }
                 }
 
-                foreach (var key in keys) {
-                    typeLookup[key] = Compile(key);
+                if (needsCreating) {
+                    closureScope.ClosureType.CreateType();
                 }
-            }
-
-            if (needsCreating) {
-                closureScope.ClosureType.CreateType();
             }
         }
 

@@ -31,5 +31,14 @@ namespace Tangent.Parsing.Partial
         {
             return new PartialPhrasePart(decl);
         }
+
+        public override string ToString()
+        {
+            if (IsIdentifier) {
+                return Identifier.Identifier.Value;
+            } else {
+                return $"({Parameter})";
+            }
+        }
     }
 }

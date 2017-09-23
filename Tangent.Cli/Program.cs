@@ -48,20 +48,23 @@ Tangent.Cli.exe -f <CompilerInputFile>";
                 }
             }
 
+            var profiler = new CompilerTimings();
+            AppDomain.CurrentDomain.ProcessExit += (o, e) => File.WriteAllText(inputs.DestinationFile + ".times", profiler.ToCSV());
+
             IEnumerable<Token> tokenization = Enumerable.Empty<Token>();
 
             foreach (var sourceFile in inputs.SourceFiles) {
-                tokenization = tokenization.Concat(Tokenize.ProgramFile(File.ReadAllText(sourceFile), sourceFile));
+                tokenization = tokenization.Concat(Tokenize.ProgramFile(File.ReadAllText(sourceFile), sourceFile, profiler).ToList());
             }
 
             HashSet<string> tokenValues = new HashSet<string>(tokenization.Select(t => t.Value).Where(v => v != null));
-            var intermediateProgram = Parse.TangentProgram(tokenization, Tangent.Intermediate.Interop.TangentImport.ImportAssemblies(inputs.DllImports.Select(f => Assembly.Load(f)), s => tokenValues.Contains(s)));
+            var intermediateProgram = Parse.TangentProgram(tokenization, Tangent.Intermediate.Interop.TangentImport.ImportAssemblies(inputs.DllImports.Select(f => Assembly.Load(f)), s => tokenValues.Contains(s), profiler), profiler);
             if (!intermediateProgram.Success) {
                 Console.Error.WriteLine(intermediateProgram.Error); // TODO: make better.
                 return;
             }
 
-            NewCilCompiler.Compile(intermediateProgram.Result, inputs.DestinationFile);
+            NewCilCompiler.Compile(intermediateProgram.Result, inputs.DestinationFile, profiler);
             Debug.WriteLine("Compile Duration: " + timer.Elapsed);
         }
 

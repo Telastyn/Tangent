@@ -13,13 +13,14 @@ namespace Tangent.Parsing
 {
     public static class Parse
     {
-        public static ResultOrParseError<TangentProgram> TangentProgram(IEnumerable<Token> tokens, ImportBundle imports = null)
+        public static ResultOrParseError<TangentProgram> TangentProgram(IEnumerable<Token> tokens, ImportBundle imports = null, ICompilerTimings profiler = null)
         {
+            profiler = profiler ?? new NoopCompilerTimings();
             imports = imports ?? ImportBundle.Empty;
-            return TangentProgram(new List<Token>(tokens), imports);
+            return TangentProgram(new List<Token>(tokens), imports, profiler);
         }
 
-        private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens, ImportBundle imports)
+        private static ResultOrParseError<TangentProgram> TangentProgram(List<Token> tokens, ImportBundle imports, ICompilerTimings profiler)
         {
             if (!tokens.Any()) {
                 return new TangentProgram(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>(), Enumerable.Empty<Field>(), Enumerable.Empty<string>());
@@ -32,38 +33,40 @@ namespace Tangent.Parsing
             List<InterfaceBinding> interfaceToImplementerBindings = new List<InterfaceBinding>();
             List<VarDeclElement> parsedGlobalFields = new List<VarDeclElement>();
 
-            while (tokens.Any()) {
-                int typeTake;
-                var type = Grammar.TypeDecl.Parse(tokens, out typeTake);
-                int fnTake;
-                int ifTake;
-                int fldTake;
-                if (type.Success) {
-                    partialTypes.Add(type.Result);
-                    partialFunctions.AddRange(ExtractPartialFunctions(type.Result.Returns));
-                    tokens.RemoveRange(0, typeTake);
-                } else {
-                    var fn = Grammar.FunctionDeclaration.Parse(tokens, out fnTake);
-                    if (fn.Success) {
-                        partialFunctions.Add(fn.Result);
-                        tokens.RemoveRange(0, fnTake);
+            using (profiler.Stopwatch(nameof(Parse), null, tokens.Count, null, "GrammarParse")) {
+                while (tokens.Any()) {
+                    int typeTake;
+                    var type = Grammar.TypeDecl.Parse(tokens, out typeTake);
+                    int fnTake;
+                    int ifTake;
+                    int fldTake;
+                    if (type.Success) {
+                        partialTypes.Add(type.Result);
+                        partialFunctions.AddRange(ExtractPartialFunctions(type.Result.Returns));
+                        tokens.RemoveRange(0, typeTake);
                     } else {
-                        var binding = Grammar.StandaloneInterfaceBinding.Parse(tokens, out ifTake);
-                        if (binding.Success) {
-                            partialStandaloneInterfaceBindings.Add(binding.Result);
-                            partialFunctions.AddRange(binding.Result.Functions);
-                            tokens.RemoveRange(0, ifTake);
+                        var fn = Grammar.FunctionDeclaration.Parse(tokens, out fnTake);
+                        if (fn.Success) {
+                            partialFunctions.Add(fn.Result);
+                            tokens.RemoveRange(0, fnTake);
                         } else {
-                            //
-                            // No global state.
-                            // 
-                            //var field = Grammar.FieldDeclaration.Parse(tokens, out fldTake);
-                            //if (field.Success) {
-                            //    parsedGlobalFields.Add(field.Result);
-                            //    tokens.RemoveRange(0, fldTake);
-                            //} else {
-                            return new ResultOrParseError<TangentProgram>(typeTake >= fnTake ? type.Error : fn.Error);
-                            //}
+                            var binding = Grammar.StandaloneInterfaceBinding.Parse(tokens, out ifTake);
+                            if (binding.Success) {
+                                partialStandaloneInterfaceBindings.Add(binding.Result);
+                                partialFunctions.AddRange(binding.Result.Functions);
+                                tokens.RemoveRange(0, ifTake);
+                            } else {
+                                //
+                                // No global state.
+                                // 
+                                //var field = Grammar.FieldDeclaration.Parse(tokens, out fldTake);
+                                //if (field.Success) {
+                                //    parsedGlobalFields.Add(field.Result);
+                                //    tokens.RemoveRange(0, fldTake);
+                                //} else {
+                                return new ResultOrParseError<TangentProgram>(typeTake >= fnTake ? type.Error : fn.Error);
+                                //}
+                            }
                         }
                     }
                 }
@@ -79,7 +82,7 @@ namespace Tangent.Parsing
             };
 
             Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping;
-            var typeResult = TypeResolve.AllPartialTypeDeclarations(partialTypes, builtInTypes, out genericArgumentMapping);
+            var typeResult = TypeResolve.AllPartialTypeDeclarations(partialTypes, builtInTypes, profiler, out genericArgumentMapping);
             if (!typeResult.Success) {
                 return new ResultOrParseError<TangentProgram>(typeResult.Error);
             }
@@ -94,12 +97,12 @@ namespace Tangent.Parsing
             // Move to Phase 2 - Resolve types in parameters and function return types.
             Dictionary<TangentType, TangentType> typeConversions;
             IEnumerable<ReductionDeclaration> delegateInvokers;
-            var resolvedTypes = TypeResolve.AllTypePlaceholders(types, genericArgumentMapping, interfaceToImplementerBindings, partialStandaloneInterfaceBindings, out typeConversions, out delegateInvokers);
+            var resolvedTypes = TypeResolve.AllTypePlaceholders(types, genericArgumentMapping, interfaceToImplementerBindings, partialStandaloneInterfaceBindings, profiler, out typeConversions, out delegateInvokers);
             if (!resolvedTypes.Success) {
                 return new ResultOrParseError<TangentProgram>(resolvedTypes.Error);
             }
 
-            var resolvedFunctions = TypeResolve.AllPartialFunctionDeclarations(partialFunctions, resolvedTypes.Result, typeConversions);
+            var resolvedFunctions = TypeResolve.AllPartialFunctionDeclarations(partialFunctions, resolvedTypes.Result, typeConversions, profiler);
             if (!resolvedFunctions.Success) {
                 return new ResultOrParseError<TangentProgram>(resolvedFunctions.Error);
             }
@@ -163,24 +166,28 @@ namespace Tangent.Parsing
 
             var invocationRules = resolvedFunctions.Result.Where(fn => !fn.IsConversion).Select(fn => new FunctionInvocation(fn)).ToList();
             var conversionGraph = new ConversionGraph(resolvedFunctions.Result.Where(fn => fn.IsConversion));
+            var approximateRulesetSize = invocationRules.Count + resolvedTypes.Result.Count();
 
             foreach (var fn in resolvedFunctions.Result) {
                 TypeResolvedFunction partialFunction = fn.Returns as TypeResolvedFunction;
                 if (partialFunction != null) {
-                    if (partialFunction.Scope is TypeClass) {
-                        lookup.Add(partialFunction, new InterfaceFunction(partialFunction.Scope as TypeClass, partialFunction.EffectiveType));
-                    } else {
-                        var locals = BuildLocals(partialFunction.Implementation.Locals, resolvedTypes.Result, fn.GenericParameters, errors).ToList();
-                        var scope = new TransformationScopeNew(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
-                            .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
-                            .Concat((partialFunction.Scope as ProductType) != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, (partialFunction.Scope as ProductType).DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
-                            .Concat(invocationRules)
-                            .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common/*, Delazy.Common*/ }), conversionGraph)
-                            .CreateNestedLocalScope(locals);
+                    var stmts = fn.Returns?.Implementation?.Statements;
+                    using (profiler.Stopwatch(nameof(Parse), fn.ToString(), stmts == null ? (int?)null : stmts.Count(), approximateRulesetSize, "BuildFunction")) {
+                        if (partialFunction.Scope is TypeClass) {
+                            lookup.Add(partialFunction, new InterfaceFunction(partialFunction.Scope as TypeClass, partialFunction.EffectiveType));
+                        } else {
+                            var locals = BuildLocals(partialFunction.Implementation.Locals, resolvedTypes.Result, fn.GenericParameters, errors).ToList();
+                            var scope = new TransformationScopeNew(((IEnumerable<TransformationRule>)resolvedTypes.Result.Select(td => new TypeAccess(td)))
+                                .Concat(fn.Takes.Where(pp => !pp.IsIdentifier).Select(pp => new ParameterAccess(pp.Parameter)))
+                                .Concat((partialFunction.Scope as ProductType) != null ? ConstructorParameterAccess.For(fn.Takes.First(pp => !pp.IsIdentifier && pp.Parameter.Takes.Count == 1 && pp.Parameter.IsThisParam).Parameter, (partialFunction.Scope as ProductType).DataConstructorParts.Where(pp => !pp.IsIdentifier).Select(pp => pp.Parameter)) : Enumerable.Empty<TransformationRule>())
+                                .Concat(invocationRules)
+                                .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common/*, Delazy.Common*/ }), conversionGraph)
+                                .CreateNestedLocalScope(locals);
 
-                        Function newb = BuildBlock(scope, types, fn.GenericParameters, partialFunction.EffectiveType, partialFunction.Implementation, locals, errors);
+                            Function newb = BuildBlock(scope, types, fn.GenericParameters, partialFunction.EffectiveType, partialFunction.Implementation, locals, errors, profiler);
 
-                        lookup.Add(partialFunction, newb);
+                            lookup.Add(partialFunction, newb);
+                        }
                     }
                 }
             }
@@ -202,7 +209,7 @@ namespace Tangent.Parsing
                             .Concat(new TransformationRule[] { LazyOperator.Common, SingleValueAccessor.Common/*, Delazy.Common*/ }), conversionGraph);
                 }
 
-                var expr = castPlaceholder.UnresolvedInitializer.FlatTokens.Select(pe => ElementToExpression(scope, types, Enumerable.Empty<ParameterDeclaration>(), pe, errors)).ToList();
+                var expr = castPlaceholder.UnresolvedInitializer.FlatTokens.Select(pe => ElementToExpression(scope, types, Enumerable.Empty<ParameterDeclaration>(), pe, errors, profiler)).ToList();
                 var result = scope.InterpretTowards(field.Declaration.Returns, expr);
 
                 if (result.Count == 0) {
@@ -217,13 +224,17 @@ namespace Tangent.Parsing
             };
 
             foreach (var field in globalFields.Result) {
-                field.ResolveInitializerPlaceholders(fieldInitializerResolver(field, null));
-                // TODO: reorder fields based on initialization dependencies (or error).
+                using (profiler.Stopwatch(nameof(Parse), field.Declaration.ToString(), null, approximateRulesetSize, "BuildFieldInitializer")) {
+                    field.ResolveInitializerPlaceholders(fieldInitializerResolver(field, null));
+                    // TODO: reorder fields based on initialization dependencies (or error).
+                }
             }
 
             foreach (var productType in allProductTypes) {
                 foreach (var field in productType.Fields) {
-                    field.ResolveInitializerPlaceholders(fieldInitializerResolver(field, productType));
+                    using (profiler.Stopwatch(nameof(Parse), field.Declaration.ToString(), null, approximateRulesetSize, "BuildFieldInitializer")) {
+                        field.ResolveInitializerPlaceholders(fieldInitializerResolver(field, productType));
+                    }
                 }
 
                 // TODO: reorder fields based on initialization dependencies (or error).
@@ -279,14 +290,14 @@ namespace Tangent.Parsing
             }
         }
 
-        private static Function BuildBlock(TransformationScope scope, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> fnGenerics, TangentType effectiveType, PartialBlock partialBlock, IEnumerable<ParameterDeclaration> locals, List<ParseError> errors)
+        private static Function BuildBlock(TransformationScope scope, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> fnGenerics, TangentType effectiveType, PartialBlock partialBlock, IEnumerable<ParameterDeclaration> locals, List<ParseError> errors, ICompilerTimings profiler)
         {
-            var block = BuildBlock(scope, types, fnGenerics, effectiveType, partialBlock.Statements, locals, errors);
+            var block = BuildBlock(scope, types, fnGenerics, effectiveType, partialBlock.Statements, locals, errors, profiler);
 
             return new Function(effectiveType, block);
         }
 
-        private static Block BuildBlock(TransformationScope scope, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> fnGenerics, TangentType effectiveType, IEnumerable<PartialStatement> elements, IEnumerable<ParameterDeclaration> locals, List<ParseError> errors)
+        private static Block BuildBlock(TransformationScope scope, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> fnGenerics, TangentType effectiveType, IEnumerable<PartialStatement> elements, IEnumerable<ParameterDeclaration> locals, List<ParseError> errors, ICompilerTimings profiler)
         {
             List<Expression> statements = new List<Expression>();
             if (!elements.Any()) {
@@ -294,24 +305,26 @@ namespace Tangent.Parsing
                 return new Block(Enumerable.Empty<Expression>(), Enumerable.Empty<ParameterDeclaration>());
             }
 
-            var allElements = elements.ToList();
-            for (int ix = 0; ix < allElements.Count; ++ix) {
-                var line = allElements[ix];
-                var statementBits = line.FlatTokens.Select(t => ElementToExpression(scope, types, fnGenerics, t, errors)).ToList();
-                var statement = scope.InterpretTowards((effectiveType != null && ix == allElements.Count - 1) ? effectiveType : TangentType.Void, statementBits);
-                if (statement.Count == 0) {
-                    errors.Add(new IncomprehensibleStatementError(statementBits));
-                } else if (statement.Count > 1) {
-                    errors.Add(new AmbiguousStatementError(statementBits, statement));
-                } else {
-                    statements.Add(statement.First());
+            using (profiler.Stopwatch(nameof(Parse), null, elements.Count(), scope.ApproximateRulesetSize)) {
+                var allElements = elements.ToList();
+                for (int ix = 0; ix < allElements.Count; ++ix) {
+                    var line = allElements[ix];
+                    var statementBits = line.FlatTokens.Select(t => ElementToExpression(scope, types, fnGenerics, t, errors, profiler)).ToList();
+                    var statement = scope.InterpretTowards((effectiveType != null && ix == allElements.Count - 1) ? effectiveType : TangentType.Void, statementBits);
+                    if (statement.Count == 0) {
+                        errors.Add(new IncomprehensibleStatementError(statementBits));
+                    } else if (statement.Count > 1) {
+                        errors.Add(new AmbiguousStatementError(statementBits, statement));
+                    } else {
+                        statements.Add(statement.First());
+                    }
                 }
-            }
 
-            return new Block(statements, locals);
+                return new Block(statements, locals);
+            }
         }
 
-        private static Expression ElementToExpression(TransformationScope scope, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> fnGenerics, PartialElement element, List<ParseError> errors)
+        private static Expression ElementToExpression(TransformationScope scope, IEnumerable<TypeDeclaration> types, IEnumerable<ParameterDeclaration> fnGenerics, PartialElement element, List<ParseError> errors, ICompilerTimings profiler)
         {
             switch (element.Type) {
                 case ElementType.Identifier:
@@ -324,8 +337,8 @@ namespace Tangent.Parsing
                     }
                     var last = stmts.Last();
                     stmts.RemoveAt(stmts.Count - 1);
-                    var notLast = stmts.Any() ? BuildBlock(scope, types, fnGenerics, null, stmts, locals, errors) : new Block(Enumerable.Empty<Expression>(), Enumerable.Empty<ParameterDeclaration>());
-                    var lastExpr = last.FlatTokens.Select(e => ElementToExpression(scope, types, fnGenerics, e, errors)).ToList();
+                    var notLast = stmts.Any() ? BuildBlock(scope, types, fnGenerics, null, stmts, locals, errors, profiler) : new Block(Enumerable.Empty<Expression>(), Enumerable.Empty<ParameterDeclaration>());
+                    var lastExpr = last.FlatTokens.Select(e => ElementToExpression(scope, types, fnGenerics, e, errors, profiler)).ToList();
                     var info = lastExpr.Aggregate((LineColumnRange)null, (a, expr) => expr.SourceInfo.Combine(a));
                     info = notLast.Statements.Any() ? notLast.Statements.Aggregate(info, (a, stmt) => a.Combine(stmt.SourceInfo)) : info;
                     return new ParenExpression(notLast, lastExpr, info);
@@ -335,7 +348,7 @@ namespace Tangent.Parsing
                     var concrete = (LambdaElement)element;
                     return new PartialLambdaExpression(concrete.Takes.Select(vde => VarDeclToParameterDeclaration(scope, vde, types, errors)).ToList(), scope, (newScope, returnType) => {
                         var lambdaErrors = new List<ParseError>();
-                        var implementation = BuildBlock(newScope, types, fnGenerics, returnType, concrete.Body.Block, Enumerable.Empty<ParameterDeclaration>(), lambdaErrors);
+                        var implementation = BuildBlock(newScope, types, fnGenerics, returnType, concrete.Body.Block, Enumerable.Empty<ParameterDeclaration>(), lambdaErrors, new NoopCompilerTimings());
                         if (lambdaErrors.Where(e => !(e is AmbiguousStatementError)).Any()) {
                             return null;
                         }

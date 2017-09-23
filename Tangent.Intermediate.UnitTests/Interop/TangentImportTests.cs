@@ -36,7 +36,7 @@ namespace Tangent.Intermediate.Interop.UnitTests
         public void ImportSystem()
         {
             var timer = Stopwatch.StartNew();
-            var result = TangentImport.ImportAssembly(typeof(int).Assembly, x => true);
+            var result = TangentImport.ImportAssembly(typeof(int).Assembly, x => true, new NoopCompilerTimings());
             timer.Stop();
             Console.WriteLine("Import Complete.");
             Console.WriteLine("Imported Types ({0}):", result.Types.Count);

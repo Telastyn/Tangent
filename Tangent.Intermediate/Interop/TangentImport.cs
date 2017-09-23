@@ -39,23 +39,25 @@ namespace Tangent.Intermediate.Interop
 
         private static readonly Type GenericConstantExpressionType = typeof(ConstantExpression<>);
 
-        public static ImportBundle ImportAssemblies(IEnumerable<Assembly> assemblies, Predicate<string> isAllowedIdentifier)
+        public static ImportBundle ImportAssemblies(IEnumerable<Assembly> assemblies, Predicate<string> isAllowedIdentifier, ICompilerTimings profiler = null)
         {
+            profiler = profiler ?? new NoopCompilerTimings();
             assemblies = assemblies.Distinct();
-            return assemblies.Aggregate(new PartialImportBundle(), (r, a) => PartialImportBundle.Merge(r, ImportAssembly(a, isAllowedIdentifier)));
+            return assemblies.Aggregate(new PartialImportBundle(), (r, a) => PartialImportBundle.Merge(r, ImportAssembly(a, isAllowedIdentifier, profiler)));
         }
 
-        public static PartialImportBundle ImportAssembly(Assembly assembly, Predicate<string> isAllowedIdentifier)
+        public static PartialImportBundle ImportAssembly(Assembly assembly, Predicate<string> isAllowedIdentifier, ICompilerTimings profiler)
         {
             PartialImportBundle result = new PartialImportBundle();
             ImportArrays(result);
             HashSet<Type> alreadyProcessed = new HashSet<Type>();
+            var assemblyTypes = assembly.GetTypes();
 
-            foreach (var t in assembly.GetTypes()) {
-                if (t.IsPublic) {
-                    ImportType(t, result, alreadyProcessed, isAllowedIdentifier, false);
-
-
+            using (profiler.Stopwatch(nameof(TangentImport), assembly.FullName, assemblyTypes.Length)) {
+                foreach (var t in assemblyTypes) {
+                    if (t.IsPublic) {
+                        ImportType(t, result, alreadyProcessed, isAllowedIdentifier, false);
+                    }
                 }
             }
 

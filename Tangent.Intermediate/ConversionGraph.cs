@@ -12,8 +12,11 @@ namespace Tangent.Intermediate
         private readonly List<TangentType> GenericSources = new List<TangentType>();
         private readonly Dictionary<TangentType, List<TangentType>> PartialGenericSources = new Dictionary<TangentType, List<TangentType>>();
 
+        public int ApproximateRulesetSize { get; private set; }
+
         public ConversionGraph(IEnumerable<ReductionDeclaration> conversionOperations)
         {
+            ApproximateRulesetSize = conversionOperations.Count();
             conversionOperations = conversionOperations.Where(fn => fn.IsConversion);
             foreach (var entry in conversionOperations) {
                 var convertFromType = entry.Takes.First().Parameter.RequiredArgumentType;

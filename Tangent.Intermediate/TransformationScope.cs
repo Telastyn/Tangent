@@ -4,6 +4,7 @@ namespace Tangent.Intermediate
 {
     public interface TransformationScope
     {
+        int ApproximateRulesetSize { get; }
         ConversionGraph Conversions { get; }
         TransformationScope CreateNestedLocalScope(IEnumerable<ParameterDeclaration> locals);
         TransformationScope CreateNestedParameterScope(IEnumerable<ParameterDeclaration> parameters);
