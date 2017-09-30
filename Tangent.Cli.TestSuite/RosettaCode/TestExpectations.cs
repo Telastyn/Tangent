@@ -63,11 +63,11 @@ namespace Tangent.Cli.TestSuite.RosettaCode
             }
         }
 
-        [Ignore] // RMS: compiler timeout.
+        //[Ignore] // RMS: compiler timeout.
         [TestMethod]
         public void ExtendYourLanguage()
         {
-            var result = Test.ProgramFile(new[] { @"RosettaCode\ExtendYourLanguage.tan", @"lib\conditional-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly, typeof(TextReader).Assembly });
+            var result = Test.DebugProgramFile(new[] { @"RosettaCode\ExtendYourLanguage.tan", @"lib\conditional-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly, typeof(List<>).Assembly, typeof(Enumerable).Assembly, typeof(TextReader).Assembly });
             var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
             Assert.IsTrue(results.SequenceEqual(new string[] { "good", "good", "good", "good" }));
         }

@@ -2,10 +2,10 @@
   : a is true : bool := a;
   : b is true : bool := b;
 
-  if a is true and b is true both
-  else if a is true and not b is true first
-  else if not a is true and b is true second
-  else neither
+  if a is true and b is true {both}
+  else if a is true and {not b is true} {first}
+  else if {not a is true} and b is true {second}
+  else {neither}
 }
 
 entrypoint => void {
