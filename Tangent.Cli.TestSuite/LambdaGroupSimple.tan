@@ -5,8 +5,8 @@ int :< maybe int {}
 nothing :< maybe int {}
 
 maybe print (x : maybe int) => void {
-  :< x {
-    int => print x;
+  _ :< x {
+    int => print _;
 	nothing => print "nothing";
   }
 }
