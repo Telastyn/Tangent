@@ -34,6 +34,8 @@ namespace Tangent.Intermediate
         FieldAccessor = 24,
         FieldMutator = 25,
         ResolvedParenExpr = 26,
+        PartialLambdaGroup = 27,
+        LambdaGroup = 28,
         DirectCall = 100,
         DirectFieldAccess = 101,
         DirectFieldAssignment = 102,

@@ -484,6 +484,14 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void LambdaGroupSimple()
+        {
+            var result = Test.DebugProgramFile(new[] { "LambdaGroupSimple.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "42", "nothing" }));
+        }
+
+        [TestMethod]
         [Ignore]
         public void BasicGlobalUse()
         {

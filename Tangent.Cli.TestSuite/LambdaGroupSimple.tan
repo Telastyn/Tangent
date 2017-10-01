@@ -1,0 +1,17 @@
+﻿maybe (T) :> interface { }
+nothing :> null {}
+
+int :< maybe int {}
+nothing :< maybe int {}
+
+maybe print (x : maybe int) => void {
+  :< x {
+    int => print x;
+	nothing => print "nothing";
+  }
+}
+
+entrypoint => void {
+  maybe print 42;
+  maybe print null;
+}

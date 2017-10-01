@@ -360,6 +360,21 @@ namespace Tangent.Parsing
                         // RMS: being lazy. Should probably have an Either or a BlockExpr.
                         return new ParenExpression(implementation.Implementation, null, concrete.Body.SourceInfo);
                     }, element.SourceInfo);
+                case ElementType.LambdaGroup:
+                    var group = (LambdaGroupElement)element;
+                    var inputExpr = ElementToExpression(scope, types, fnGenerics, group.InputExpr, errors, profiler);
+                    var input = scope.InterpretTowards(TangentType.Any, new List<Expression>() { inputExpr });
+                    if (!input.Any()) {
+                        errors.Add(new IncomprehensibleStatementError(new[] { inputExpr }));
+                        return null;
+                    }
+
+                    if (input.Count > 1) {
+                        errors.Add(new AmbiguousStatementError(new[] { inputExpr }, input));
+                        return null;
+                    }
+
+                    return new PartialLambdaGroupExpression(input.First(), group.Lambdas.Select(l => (PartialLambdaExpression)ElementToExpression(scope, types, fnGenerics, l, errors, profiler)).ToList());
                 default:
                     throw new NotImplementedException();
             }

@@ -131,9 +131,27 @@ namespace Tangent.Parsing
                 Parser.Delegate(() => BlockDecl),
                 (parameters, a, block) => (PartialElement)new LambdaElement(parameters.ToList(), new BlockElement(block)));
 
+        public static readonly Parser<LambdaElement> LambdaGroupLambdaExpr =
+            Parser.Combine(
+                ParamType,
+                LiteralParser.FunctionArrow,
+                Parser.Delegate(() => Expr),
+                LiteralParser.SemiColon,
+                (t, a, b, s) => new LambdaElement(new List<VarDeclElement>() { new VarDeclElement(new PartialParameterDeclaration(new IdentifierExpression("_", null), t.ToList(), false), null, LineColumnRange.CombineAll(t.Select(x => x.SourceInfo))) }, b is BlockElement ? (BlockElement)b : new BlockElement(new PartialBlock(new[] { new PartialStatement(new[] { b }) }, Enumerable.Empty<VarDeclElement>()))));
+
+        public static readonly Parser<PartialElement> LambdaGroupExpr =
+            Parser.Combine(
+                LiteralParser.InterfaceBindingOperator,
+                Parser.Delegate(() => Expr),
+                LiteralParser.OpenCurly,
+                LambdaGroupLambdaExpr.OneOrMore,
+                LiteralParser.CloseCurly,
+                (i, v, o, l, c) => (PartialElement)new LambdaGroupElement(v, l, LineColumnRange.Combine(v.SourceInfo, l.Select(x => x.SourceInfo))));
+
         public static readonly Parser<PartialElement> Expr =
             Parser.Options("Expression",
                 LambdaExpr,
+                LambdaGroupExpr,
                 ID.Select(id => (PartialElement)new IdentifierElement(id.Identifier, id.SourceInfo)),
                 StringConstant.Select(x => (PartialElement)x),
                 IntConstant.Select(x => (PartialElement)x),

@@ -12,7 +12,8 @@ namespace Tangent.Parsing.Partial
         VarDecl,
         Block,
         Constant,
-        Lambda
+        Lambda,
+        LambdaGroup
     }
 
     public abstract class PartialElement
