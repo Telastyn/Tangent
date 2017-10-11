@@ -362,15 +362,17 @@ namespace Tangent.Parsing
                     }, element.SourceInfo);
                 case ElementType.LambdaGroup:
                     var group = (LambdaGroupElement)element;
-                    var inputExpr = ElementToExpression(scope, types, fnGenerics, group.InputExpr, errors, profiler);
-                    var input = scope.InterpretTowards(TangentType.Any, new List<Expression>() { inputExpr });
+                    var inputExpr = group.InputExpr.Select(expr => ElementToExpression(scope, types, fnGenerics, expr, errors, profiler)).ToList();
+                    if (errors.Any()) { return null; }
+
+                    var input = scope.InterpretTowards(TangentType.Any, inputExpr);
                     if (!input.Any()) {
-                        errors.Add(new IncomprehensibleStatementError(new[] { inputExpr }));
+                        errors.Add(new IncomprehensibleStatementError(inputExpr));
                         return null;
                     }
 
                     if (input.Count > 1) {
-                        errors.Add(new AmbiguousStatementError(new[] { inputExpr }, input));
+                        errors.Add(new AmbiguousStatementError(inputExpr, input));
                         return null;
                     }
 

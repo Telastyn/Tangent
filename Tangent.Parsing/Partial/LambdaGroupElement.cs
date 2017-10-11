@@ -8,10 +8,10 @@ namespace Tangent.Parsing.Partial
 {
     public class LambdaGroupElement : PartialElement
     {
-        public readonly PartialElement InputExpr;
+        public readonly IEnumerable<PartialElement> InputExpr;
         public readonly IEnumerable<LambdaElement> Lambdas;
 
-        public LambdaGroupElement(PartialElement inputExpr, IEnumerable<LambdaElement> lambdas, LineColumnRange sourceInfo):base(ElementType.LambdaGroup, sourceInfo)
+        public LambdaGroupElement(IEnumerable<PartialElement> inputExpr, IEnumerable<LambdaElement> lambdas, LineColumnRange sourceInfo):base(ElementType.LambdaGroup, sourceInfo)
         {
             InputExpr = inputExpr;
             Lambdas = lambdas;
