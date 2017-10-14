@@ -143,15 +143,12 @@ namespace Tangent.Parsing
         // x|(some x) :< expr { lambda-group-lambda-expr+ }
         public static readonly Parser<PartialElement> LambdaGroupExpr =
             Parser.Combine(
-                Parser.Options("Lambda parameter",
-                    ID.Select(id => new VarDeclElement(new PartialParameterDeclaration(id, null), null, id.SourceInfo)),
-                    Parser.Combine(LiteralParser.OpenParen, ID.OneOrMore, LiteralParser.CloseParen, (o, ids, c) => new VarDeclElement(new PartialParameterDeclaration(ids, null), null, LineColumnRange.CombineAll(ids.Select(id => id.SourceInfo))))),
                 LiteralParser.InterfaceBindingOperator,
-                Parser.Delegate(() => Parser.Difference(Expr, LiteralParser.OpenCurly).OneOrMore),
+                ID.OneOrMore,
                 LiteralParser.OpenCurly,
                 LambdaGroupLambdaExpr.OneOrMore,
                 LiteralParser.CloseCurly,
-                (pn, i, v, o, l, c) => BuildLambdaGroup(pn, v, l));
+                (op, i, o, l, c) => BuildLambdaGroup(i, l));
 
         public static readonly Parser<PartialElement> Expr =
             Parser.Options("Expression",
@@ -274,7 +271,7 @@ namespace Tangent.Parsing
             Parser.Combine(
                 Interface,
                 LiteralParser.OpenCurly,
-                (InterfaceFunctionSignature.Or(InterfaceFieldSignature, "Interface member")).OneOrMore,
+                (InterfaceFunctionSignature.Or(InterfaceFieldSignature, "Interface member")).ZeroOrMore,
                 LiteralParser.CloseCurly,
                 (i, o, sigs, c) => (TangentType)ConstructInterface(sigs.SelectMany(x => x)));
 
@@ -341,9 +338,9 @@ namespace Tangent.Parsing
         }
 
 
-        private static PartialElement BuildLambdaGroup(VarDeclElement parameterName, IEnumerable<PartialElement> inputExpr, IEnumerable<LambdaElement> lambdas)
+        private static PartialElement BuildLambdaGroup(IEnumerable<IdentifierExpression> parameterName, IEnumerable<LambdaElement> lambdas)
         {
-            return new LambdaGroupElement(inputExpr, lambdas.Select(l => new LambdaElement(l.Takes.Select(t => new VarDeclElement(new PartialParameterDeclaration(parameterName.ParameterDeclaration.Takes, t.ParameterDeclaration.Returns), null, t.SourceInfo)).ToList(), l.Body)).ToList(), LineColumnRange.Combine(parameterName.SourceInfo, lambdas.Select(l => l.SourceInfo).Concat( inputExpr.Select(e=>e.SourceInfo))));
+            return new LambdaGroupElement(lambdas.Select(l => new LambdaElement(l.Takes.Select(t => new VarDeclElement(new PartialParameterDeclaration(parameterName, t.ParameterDeclaration.Returns), null, t.SourceInfo)).ToList(), l.Body)).ToList(), LineColumnRange.CombineAll(parameterName.Select(pn => pn.SourceInfo).Concat(lambdas.Select(l => l.SourceInfo))));
         }
 
         private static IEnumerable<PartialStatement> BuildStatements(IEnumerable<Tuple<PartialStatement, VarDeclElement>> lines)

@@ -15,7 +15,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void HappyPath()
         {
-            var test = Tokenize.ProgramFile("_ :< x { int => print _; }", "test.tan");
+            var test = Tokenize.ProgramFile(":< x { int => print x; }", "test.tan");
             int takes;
             var result = Grammar.LambdaGroupExpr.Parse(test, out takes);
 
@@ -25,7 +25,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void NoImplementationsFails()
         {
-            var test = Tokenize.ProgramFile("_ :< x { }", "test.tan");
+            var test = Tokenize.ProgramFile(":< x { }", "test.tan");
             int takes;
             var result = Grammar.LambdaGroupExpr.Parse(test, out takes);
 
@@ -35,7 +35,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void MissingTrailingSemicolonFails()
         {
-            var test = Tokenize.ProgramFile("_ :< x { int => print _ }", "test.tan");
+            var test = Tokenize.ProgramFile(":< x { int => print x }", "test.tan");
             int takes;
             var result = Grammar.LambdaGroupExpr.Parse(test, out takes);
 
@@ -45,57 +45,18 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void PhraseParameterWorks()
         {
-            var test = Tokenize.ProgramFile("(some var) :< x { int => print some var; }", "test.tan");
+            var test = Tokenize.ProgramFile(":< some var { int => print some var; }", "test.tan");
             int takes;
             var result = Grammar.LambdaGroupExpr.Parse(test, out takes);
 
             Assert.IsTrue(result.Success);
         }
-
-        [TestMethod]
-        public void InputExprCanTakeLiterals()
-        {
-            var test = Tokenize.ProgramFile("_ :< 42 { int => print _; }", "test.tan");
-            int takes;
-            var result = Grammar.LambdaGroupExpr.Parse(test, out takes);
-
-            Assert.IsTrue(result.Success);
-        }
-
-        [TestMethod]
-        public void InputExprCanTakeLiterals2()
-        {
-            var test = Tokenize.ProgramFile("_ :< \"foo\" { int => print _; }", "test.tan");
-            int takes;
-            var result = Grammar.LambdaGroupExpr.Parse(test, out takes);
-
-            Assert.IsTrue(result.Success);
-        }
+        
 
         [TestMethod]
         public void MultipleLambdas()
         {
-            var test = Tokenize.ProgramFile("_ :< x { int => print _; some type => print \"unknown\"; }", "test.tan");
-            int takes;
-            var result = Grammar.LambdaGroupExpr.Parse(test, out takes);
-
-            Assert.IsTrue(result.Success);
-        }
-
-        [TestMethod]
-        public void InputExprCanTakeBlocks()
-        {
-            var test = Tokenize.ProgramFile("_ :< { x + y } { int => print _; }", "test.tan");
-            int takes;
-            var result = Grammar.LambdaGroupExpr.Parse(test, out takes);
-
-            Assert.IsTrue(result.Success);
-        }
-
-        [TestMethod]
-        public void InputExprCanTakeLambdas()
-        {
-            var test = Tokenize.ProgramFile("_ :< exec x => 42 { int => print _; }", "test.tan");
+            var test = Tokenize.ProgramFile(":< x { int => print x; some type => print \"unknown\"; }", "test.tan");
             int takes;
             var result = Grammar.LambdaGroupExpr.Parse(test, out takes);
 

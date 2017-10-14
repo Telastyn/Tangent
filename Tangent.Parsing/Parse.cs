@@ -362,21 +362,9 @@ namespace Tangent.Parsing
                     }, element.SourceInfo);
                 case ElementType.LambdaGroup:
                     var group = (LambdaGroupElement)element;
-                    var inputExpr = group.InputExpr.Select(expr => ElementToExpression(scope, types, fnGenerics, expr, errors, profiler)).ToList();
-                    if (errors.Any()) { return null; }
+                    
 
-                    var input = scope.InterpretTowards(TangentType.Any, inputExpr);
-                    if (!input.Any()) {
-                        errors.Add(new IncomprehensibleStatementError(inputExpr));
-                        return null;
-                    }
-
-                    if (input.Count > 1) {
-                        errors.Add(new AmbiguousStatementError(inputExpr, input));
-                        return null;
-                    }
-
-                    return new PartialLambdaGroupExpression(input.First(), group.Lambdas.Select(l => (PartialLambdaExpression)ElementToExpression(scope, types, fnGenerics, l, errors, profiler)).ToList());
+                    return new PartialLambdaGroupExpression(group.Lambdas.Select(l => (PartialLambdaExpression)ElementToExpression(scope, types, fnGenerics, l, errors, profiler)).ToList());
                 default:
                     throw new NotImplementedException();
             }

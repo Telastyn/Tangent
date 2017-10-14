@@ -4,9 +4,13 @@ nothing :> null {}
 int :< maybe int {}
 nothing :< maybe int {}
 
-maybe print (x : maybe int) => void {
-  _ :< x {
-    int => print _;
+(input : maybe (T)) -> (fn(T):void) => void {
+  fn input;
+}
+
+maybe print (input : maybe int) => void {
+  input -> :< x {
+    int => print x;
 	nothing => print "nothing";
   }
 }

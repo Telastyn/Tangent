@@ -8,12 +8,14 @@ namespace Tangent.Parsing.Partial
 {
     public class LambdaGroupElement : PartialElement
     {
-        public readonly IEnumerable<PartialElement> InputExpr;
         public readonly IEnumerable<LambdaElement> Lambdas;
 
-        public LambdaGroupElement(IEnumerable<PartialElement> inputExpr, IEnumerable<LambdaElement> lambdas, LineColumnRange sourceInfo):base(ElementType.LambdaGroup, sourceInfo)
+        public LambdaGroupElement(IEnumerable<LambdaElement> lambdas, LineColumnRange sourceInfo) : base(ElementType.LambdaGroup, sourceInfo)
         {
-            InputExpr = inputExpr;
+            if (lambdas == null || !lambdas.Any()) {
+                throw new InvalidOperationException("Lambda groups must have at least one lambda.");
+            }
+
             Lambdas = lambdas;
         }
     }
