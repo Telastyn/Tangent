@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Tangent.Intermediate
 {
-    public class PartialLambdaExpression : Expression
+    public class PartialLambdaExpression : Expression, FitableLambda
     {
         public readonly List<ParameterDeclaration> GenericParameters;
         public readonly List<ParameterDeclaration> Parameters;

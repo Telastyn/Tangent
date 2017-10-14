@@ -4,7 +4,7 @@ nothing :> null {}
 int :< maybe int {}
 nothing :< maybe int {}
 
-(input : maybe (T)) -> (fn(T):void) => void {
+(input : maybe (T)) -> (fn (maybe T) : void) => void {
   fn input;
 }
 

@@ -65,7 +65,7 @@ namespace Tangent.Intermediate
                             }
                         }
 
-                        if (element.NodeType == ExpressionNodeType.PartialLambda) {
+                        if (element.NodeType == ExpressionNodeType.PartialLambda || element.NodeType == ExpressionNodeType.PartialLambdaGroup) {
                             foreach (var entry in DelegateParameterBranches) {
                                 foreach (var ruleset in entry.Value.Lookup(phrase.Skip(1))) {
                                     yield return ruleset;

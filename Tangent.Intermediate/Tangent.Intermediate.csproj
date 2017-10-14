@@ -48,6 +48,7 @@
     <Compile Include="CompositeTransformationLookupTree.cs" />
     <Compile Include="ConversionGraph.cs" />
     <Compile Include="ConversionPath.cs" />
+    <Compile Include="FitableLambda.cs" />
     <Compile Include="HasGenericParameters.cs" />
     <Compile Include="Interop\ArrayBundlePlaceholder.cs" />
     <Compile Include="Interop\BoolEnumAdapterType.cs" />

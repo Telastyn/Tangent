@@ -363,7 +363,6 @@ namespace Tangent.Parsing
                 case ElementType.LambdaGroup:
                     var group = (LambdaGroupElement)element;
                     
-
                     return new PartialLambdaGroupExpression(group.Lambdas.Select(l => (PartialLambdaExpression)ElementToExpression(scope, types, fnGenerics, l, errors, profiler)).ToList());
                 default:
                     throw new NotImplementedException();

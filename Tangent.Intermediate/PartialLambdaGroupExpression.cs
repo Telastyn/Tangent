@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace Tangent.Intermediate
 {
-    public class PartialLambdaGroupExpression : Expression
+    public class PartialLambdaGroupExpression : Expression, FitableLambda
     {
         public readonly IEnumerable<PartialLambdaExpression> Lambdas;
 
-        public PartialLambdaGroupExpression(IEnumerable<PartialLambdaExpression> lambdas):base(LineColumnRange.CombineAll(lambdas.Select(x => x.SourceInfo)))
+        public PartialLambdaGroupExpression(IEnumerable<PartialLambdaExpression> lambdas) : base(LineColumnRange.CombineAll(lambdas.Select(x => x.SourceInfo)))
         {
-            if(lambdas == null || !lambdas.Any()) {
+            if (lambdas == null || !lambdas.Any()) {
                 throw new InvalidOperationException("Lambda groups must have at least one lambda.");
             }
             Lambdas = lambdas;
@@ -56,7 +56,13 @@ namespace Tangent.Intermediate
 
         public override string ToString()
         {
-            return $":< {string.Join(" ", Lambdas.First().Parameters.First().Takes.Select(pp=>pp.Identifier))} {{ {string.Join("; ", Lambdas) } }}";
+            return $":< {string.Join(" ", Lambdas.First().Parameters.First().Takes.Select(pp => pp.Identifier))} {{ {string.Join("; ", Lambdas) } }}";
+        }
+
+        public Expression TryToFitIn(TangentType target)
+        {
+            // we need to find if any of the lambdas fit in our target, or if all of the lambdas cover the implementations of an interface we're trying to fit into.
+            throw new NotImplementedException();
         }
     }
 }

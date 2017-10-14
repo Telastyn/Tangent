@@ -28,7 +28,7 @@ namespace Tangent.Intermediate
             var parameterCollector = new List<Expression>();
             var conversionCollector = new List<ConversionPath>();
             var sourceInfoCollector = new List<LineColumnRange>();
-            var lazyLambdaMatches = new List<Tuple<PartialLambdaExpression, TangentType>>();
+            var lazyLambdaMatches = new List<Tuple<FitableLambda, TangentType>>();
             var inputEnum = input.GetEnumerator();
             foreach (var element in Pattern) {
                 if (!inputEnum.MoveNext()) { return PhraseMatchResult.Failure; }
@@ -70,15 +70,15 @@ namespace Tangent.Intermediate
                                 inferenceCollector.Add(element.Parameter, inType);
                             }
                         }
-                    } else if (inputEnum.Current.NodeType == ExpressionNodeType.PartialLambda) {
+                    } else if (inputEnum.Current.NodeType == ExpressionNodeType.PartialLambda || inputEnum.Current.NodeType == ExpressionNodeType.PartialLambdaGroup) {
                         if (element.Parameter.RequiredArgumentType.ContainedGenericReferences().Any()) {
                             // Lambdas can't deal with generics. Infer via the rest of the phrase and try at the end.
-                            lazyLambdaMatches.Add(Tuple.Create((PartialLambdaExpression)inputEnum.Current, element.Parameter.RequiredArgumentType));
+                            lazyLambdaMatches.Add(Tuple.Create((FitableLambda)inputEnum.Current, element.Parameter.RequiredArgumentType));
                             parameterCollector.Add(inputEnum.Current);
                             conversionCollector.Add(null);
                             sourceInfoCollector.Add(inputEnum.Current.SourceInfo);
                         } else {
-                            var lambda = ((PartialLambdaExpression)inputEnum.Current).TryToFitIn(element.Parameter.RequiredArgumentType);
+                            var lambda = ((FitableLambda)inputEnum.Current).TryToFitIn(element.Parameter.RequiredArgumentType);
                             if (lambda == null) {
                                 return PhraseMatchResult.Failure;
                             }
@@ -152,7 +152,7 @@ namespace Tangent.Intermediate
                     return PhraseMatchResult.Failure;
                 }
 
-                var lambda = ((PartialLambdaExpression)entry.Item1).TryToFitIn(targetDelegateType);
+                var lambda = entry.Item1.TryToFitIn(targetDelegateType);
                 if (lambda == null) {
                     return PhraseMatchResult.Failure;
                 }

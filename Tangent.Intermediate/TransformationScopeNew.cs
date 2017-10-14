@@ -35,8 +35,8 @@ namespace Tangent.Intermediate
                 } else if (target == TangentType.Any.Kind && (input[0].EffectiveType is KindType || input[0].EffectiveType is TypeConstant || input[0].EffectiveType is GenericArgumentReferenceType)) {
                     // mild hack because there is no subtyping.
                     return input;
-                } else if (target.ImplementationType == KindOfType.Delegate && input[0].NodeType == ExpressionNodeType.PartialLambda) {
-                    var lambda = ((PartialLambdaExpression)input[0]).TryToFitIn(target);
+                } else if (target.ImplementationType == KindOfType.Delegate && (input[0].NodeType == ExpressionNodeType.PartialLambda || input[0].NodeType == ExpressionNodeType.PartialLambdaGroup)) {
+                    var lambda = ((FitableLambda)input[0]).TryToFitIn(target);
                     if (lambda != null) {
                         return new List<Expression>() { lambda };
                     }
