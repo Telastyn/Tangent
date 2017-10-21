@@ -1,10 +1,11 @@
-﻿maybe int :> interface { }
+﻿maybe (T) :> interface { }
 nothing :> null {}
 
 int :< maybe int {}
 nothing :< maybe int {}
 
-(input : maybe int) -> (fn (maybe int) : void) => void {
+// This is currently broken. maybe (T) is being resolved to the typeclass not a bound-generic.
+(input : maybe (T)) -> (fn (maybe T) : void) => void {
   fn input;
 }
 

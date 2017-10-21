@@ -11,13 +11,13 @@ namespace Tangent.Intermediate
         private readonly DelegateType effectiveType;
         public readonly IEnumerable<LambdaExpression> Lambdas;
 
-        public LambdaGroupExpression(TangentType inferredInputType, IEnumerable<LambdaExpression> lambdas) : base(LineColumnRange.CombineAll(lambdas.Select(l => l.SourceInfo)))
+        public LambdaGroupExpression(DelegateType effectiveType, IEnumerable<LambdaExpression> lambdas) : base(LineColumnRange.CombineAll(lambdas.Select(l => l.SourceInfo)))
         {
             if (!lambdas.Any()) {
                 throw new InvalidOperationException("Lambda Groups must have at least one lambda.");
             }
 
-            effectiveType = DelegateType.For(new[] { inferredInputType }, lambdas.First().ResolvedReturnType);
+            this.effectiveType = effectiveType;
             Lambdas = lambdas;
         }
 
@@ -69,12 +69,17 @@ namespace Tangent.Intermediate
                 return this;
             }
 
-            return new LambdaGroupExpression(effectiveType.Takes.First(), newLambdas);
+            return new LambdaGroupExpression(effectiveType, newLambdas);
         }
 
         public override bool RequiresClosureAround(HashSet<ParameterDeclaration> parameters, HashSet<Expression> workset)
         {
             return Lambdas.Any(l => l.RequiresClosureAround(parameters, workset));
+        }
+
+        public bool RequiresClosureImplementation()
+        {
+            return Lambdas.Any(l => l.RequiresClosureImplementation());
         }
     }
 }

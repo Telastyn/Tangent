@@ -61,8 +61,32 @@ namespace Tangent.Intermediate
 
         public Expression TryToFitIn(TangentType target)
         {
-            // we need to find if any of the lambdas fit in our target, or if all of the lambdas cover the implementations of an interface we're trying to fit into.
-            throw new NotImplementedException();
+            var targetDelegate = target as DelegateType;
+            if (targetDelegate == null) {
+                return null;
+            }
+
+            // For each lambda, we need to infer generics (generally, the return type, but also the parameter type for default lambdas) and make sure that the body actually works.
+            List<LambdaExpression> resolved = new List<LambdaExpression>();
+            foreach (var entry in Lambdas) {
+                var entryFit = entry.TryToFitIn(target, true);
+                if (entryFit == null) {
+                    return entryFit;
+                }
+
+                if (entryFit is AmbiguousExpression) {
+                    return entryFit;
+                }
+
+                if (entryFit is LambdaExpression) {
+                    resolved.Add(entryFit as LambdaExpression);
+                } else {
+                    throw new ApplicationException("Unknown result from lambda fit.");
+                }
+            }
+
+            return new LambdaGroupExpression(targetDelegate, resolved);
+
         }
     }
 }

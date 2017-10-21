@@ -1109,6 +1109,11 @@ namespace Tangent.CilGeneration
                     BuildClosure(gen, lambda, closureScope);
                     return;
 
+                case ExpressionNodeType.LambdaGroup:
+                    var lambdaGroup = (LambdaGroupExpression)expr;
+                    BuildClosure(gen, lambdaGroup, closureScope);
+                    return;
+
                 case ExpressionNodeType.InvalidProgramException:
                     gen.ThrowException(typeof(InvalidOperationException));
                     return;
@@ -1235,6 +1240,17 @@ namespace Tangent.CilGeneration
 
                 default:
                     throw new NotImplementedException();
+            }
+        }
+
+        private void BuildClosure(ILGenerator gen, LambdaGroupExpression lambdaGroup, ClosureInfo closureScope)
+        {
+            if (lambdaGroup.RequiresClosureImplementation()) {
+                throw new NotImplementedException("TODO: support nested closures");
+            }
+
+            using (profiler.Stopwatch("CodeGen")){
+                throw new NotImplementedException("LASTWORKED: lambda group codegen.");
             }
         }
 

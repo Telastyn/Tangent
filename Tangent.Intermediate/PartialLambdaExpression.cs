@@ -13,7 +13,7 @@ namespace Tangent.Intermediate
         public readonly List<ParameterDeclaration> Parameters;
         public readonly TransformationScope ContainingScope;
         private readonly Func<TransformationScope, TangentType, Expression> resolver;
-        private readonly ConcurrentDictionary<TangentType, Expression> cache = new ConcurrentDictionary<TangentType, Expression>();
+        private readonly ConcurrentDictionary<bool, ConcurrentDictionary<TangentType, Expression>> cache = new ConcurrentDictionary<bool, ConcurrentDictionary<TangentType, Expression>>();
         private readonly DelegateType fullInferenceType;
 
         public PartialLambdaExpression(IEnumerable<ParameterDeclaration> parameters, TransformationScope containingScope, Func<TransformationScope, TangentType, Expression> resolver, LineColumnRange sourceInfo)
@@ -36,13 +36,40 @@ namespace Tangent.Intermediate
 
         public Expression TryToFitIn(TangentType target)
         {
-            return cache.GetOrAdd(target, tt => ReallyTryToFitIn(tt));
+            return TryToFitIn(target, false);
         }
 
-        private Expression ReallyTryToFitIn(TangentType target){
+        public Expression TryToFitIn(TangentType target, bool useGroupSemantics)
+        {
+            return cache.GetOrAdd(useGroupSemantics, new ConcurrentDictionary<TangentType, Expression>()).GetOrAdd(target, tt => ReallyTryToFitIn(tt, useGroupSemantics));
+        }
+
+        private Expression ReallyTryToFitIn(TangentType target, bool useGroupSemantics)
+        {
             var inferenceCollector = new Dictionary<ParameterDeclaration, TangentType>();
-            if (!fullInferenceType.CompatibilityMatches(target, inferenceCollector)) {
-                return null;
+            if (!useGroupSemantics) {
+
+                // We inference match the whole thing.
+                if (!fullInferenceType.CompatibilityMatches(target, inferenceCollector)) {
+                    return null;
+                }
+            } else {
+                // We need to exclude partial generic parameters, since the (T) there is inferred from the real type, not the parameter the lambda is being passed to.
+                // Also, we don't care if the parameter part fits.
+                if (fullInferenceType.Takes.All(t => t.ImplementationType == KindOfType.GenericReference)) {
+
+                    // We inference match the whole thing.
+                    if (!fullInferenceType.CompatibilityMatches(target, inferenceCollector)) {
+                        return null;
+                    }
+                } else {
+
+                    // We only inference match the return.
+                    if (target.ImplementationType != KindOfType.Delegate || !fullInferenceType.Returns.CompatibilityMatches((target as DelegateType).Returns, inferenceCollector)) {
+                        return null;
+                    }
+                }
+
             }
 
             // Inference works? Great. See if the block actually works.
