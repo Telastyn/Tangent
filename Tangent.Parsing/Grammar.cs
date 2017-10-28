@@ -154,7 +154,7 @@ namespace Tangent.Parsing
                 ID.OneOrMore,
                 LiteralParser.OpenCurly,
                 LambdaGroupLambdaExpr.OneOrMore,
-                LambdaGroupDefaultExpr,
+                LambdaGroupDefaultExpr.Maybe,
                 LiteralParser.CloseCurly,
                 (op, i, o, l, d, c) => { if (d != null) { return BuildLambdaGroup(i, l.Concat(new[] { d })); } else { return BuildLambdaGroup(i, l); } });
 

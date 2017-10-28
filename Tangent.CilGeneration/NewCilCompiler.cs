@@ -1337,7 +1337,11 @@ namespace Tangent.CilGeneration
 
                     // TODO: type resolve implementation bits?
                     AddFunctionCode(closureGen, lambda.Implementation, nestedCodes[lambda], new ClosureInfo(closureScope.ClosureType, closureScope.ClosureCodes, g => g.Emit(OpCodes.Ldarg_0), closureScope.ClosureGenericScope));
-                    closureGen.Emit(OpCodes.Ret);
+                    var lastStatement = lambda.Implementation.Statements.LastOrDefault();
+
+                    if (lastStatement == null || lastStatement.NodeType != ExpressionNodeType.InvalidProgramException) {
+                        closureGen.Emit(OpCodes.Ret);
+                    }
                 }
 
                 // Push action creation onto stack. For groups, use the last lambda, which is the default by convention.

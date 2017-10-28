@@ -491,6 +491,13 @@ namespace Tangent.Cli.TestSuite
             Assert.IsTrue(results.SequenceEqual(new[] { "42", "nothing" }));
         }
 
+        [TestMethod]
+        public void LambdaGroupSimpleImpliedDefault()
+        {
+            var result = Test.DebugProgramFile(new[] { "LambdaGroupSimpleImpliedDefault.tan" });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "42", "nothing" }));
+        }
 
         [TestMethod]
         public void LambdaGroupGenericInterface()

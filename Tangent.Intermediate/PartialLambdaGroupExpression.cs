@@ -87,6 +87,11 @@ namespace Tangent.Intermediate
                 }
             }
 
+            if (Lambdas.Last().Parameters.First().Returns.ImplementationType != KindOfType.GenericReference) {
+                // No default lambda. Add one.
+                resolved.Add(new LambdaExpression(new[] { new ParameterDeclaration("_", targetDelegate.Takes.First()) }, targetDelegate.Returns, new Block(new[] { new ThrowInvalidProgramExceptionExpression() }, Enumerable.Empty<ParameterDeclaration>()), null));
+            }
+
             return new LambdaGroupExpression(targetDelegate, resolved);
 
         }
