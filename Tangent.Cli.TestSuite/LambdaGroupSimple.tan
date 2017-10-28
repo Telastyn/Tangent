@@ -11,7 +11,7 @@ nothing :< maybe int {}
 maybe print (input : maybe int) => void {
   input -> :< x {
     int => print x;
-	nothing => print "nothing";
+	=> print "nothing";
   }
 }
 

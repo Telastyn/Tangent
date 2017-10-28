@@ -15,7 +15,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void HappyPath()
         {
-            var test = Tokenize.ProgramFile(":< x { int => print x; }", "test.tan");
+            var test = Tokenize.ProgramFile(":< x { int => print x; =>;}", "test.tan");
             int takes;
             var result = Grammar.LambdaGroupExpr.Parse(test, out takes);
 
@@ -45,7 +45,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void PhraseParameterWorks()
         {
-            var test = Tokenize.ProgramFile(":< some var { int => print some var; }", "test.tan");
+            var test = Tokenize.ProgramFile(":< some var { int => print some var; =>;}", "test.tan");
             int takes;
             var result = Grammar.LambdaGroupExpr.Parse(test, out takes);
 
@@ -56,7 +56,7 @@ namespace Tangent.Parsing.UnitTests
         [TestMethod]
         public void MultipleLambdas()
         {
-            var test = Tokenize.ProgramFile(":< x { int => print x; some type => print \"unknown\"; }", "test.tan");
+            var test = Tokenize.ProgramFile(":< x { int => print x; some type => print \"unknown\"; => print \"default\"; }", "test.tan");
             int takes;
             var result = Grammar.LambdaGroupExpr.Parse(test, out takes);
 

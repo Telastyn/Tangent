@@ -402,7 +402,7 @@ namespace Tangent.CilGeneration
                 var gen = builder.GetILGenerator();
                 Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes = BuildNormalAccesses(gen, fn);
 
-                AddDispatchCode(gen, fn, specializations, parameterCodes);
+                AddDispatchCode(gen, fn, specializations, parameterCodes, g => { });
 
                 ClosureInfo closureScope = null;
                 if (fn.RequiresClosure) {
@@ -557,7 +557,7 @@ namespace Tangent.CilGeneration
             return parameterCodes;
         }
 
-        private void AddDispatchCode(ILGenerator gen, ReductionDeclaration fn, IEnumerable<ReductionDeclaration> specializations, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes)
+        private void AddDispatchCode(ILGenerator gen, ReductionDeclaration fn, IEnumerable<ReductionDeclaration> specializations, Dictionary<ParameterDeclaration, PropertyCodes> parameterCodes, Action<ILGenerator> closureScopeAccessor)
         {
             if (!specializations.Any()) {
                 return;
@@ -854,6 +854,8 @@ namespace Tangent.CilGeneration
                             gen.Emit(OpCodes.Castclass, Compile(specialization.Returns.EffectiveType));
                         }
                     } else {
+                        // If we're in a closure, then we're working with member functions. Push member on the stack.
+                        closureScopeAccessor(gen);
                         foreach (var parameter in fn.Takes.Where(pp => !pp.IsIdentifier)) {
                             emitParameterDispatch(parameter.Parameter, true);
                         }
@@ -1106,7 +1108,7 @@ namespace Tangent.CilGeneration
 
                 case ExpressionNodeType.Lambda:
                     var lambda = (LambdaExpression)expr;
-                    BuildClosure(gen, lambda, closureScope);
+                    BuildClosure(gen, new[] { lambda }, closureScope);
                     return;
 
                 case ExpressionNodeType.LambdaGroup:
@@ -1245,18 +1247,12 @@ namespace Tangent.CilGeneration
 
         private void BuildClosure(ILGenerator gen, LambdaGroupExpression lambdaGroup, ClosureInfo closureScope)
         {
-            if (lambdaGroup.RequiresClosureImplementation()) {
-                throw new NotImplementedException("TODO: support nested closures");
-            }
-
-            using (profiler.Stopwatch("CodeGen")){
-                throw new NotImplementedException("LASTWORKED: lambda group codegen.");
-            }
+            BuildClosure(gen, lambdaGroup.Lambdas, closureScope);
         }
 
-        private void BuildClosure(ILGenerator gen, LambdaExpression lambda, ClosureInfo closureScope)
+        private void BuildClosure(ILGenerator gen, IEnumerable<LambdaExpression> lambdas, ClosureInfo closureScope)
         {
-            if (lambda.RequiresClosureImplementation()) {
+            if (lambdas.Any(l => l.RequiresClosureImplementation())) {
                 throw new NotImplementedException("TODO: support nested closures.");
             }
 
@@ -1295,46 +1291,68 @@ namespace Tangent.CilGeneration
                     }
                 }
 
-                var nestedCodes = new Dictionary<ParameterDeclaration, PropertyCodes>(closureScope.ClosureCodes);
+                var nestedCodes = new Dictionary<LambdaExpression, Dictionary<ParameterDeclaration, PropertyCodes>>();
+                var fnLambdaMap = new Dictionary<LambdaExpression, ReductionDeclaration>();
+                var closureFns = new Dictionary<LambdaExpression, MethodBuilder>();
 
-                // Build actual function
-                var returnType = Compile(lambda.ResolvedReturnType);
-                var parameterTypes = lambda.ResolvedParameters.Select(pd => Compile(pd.Returns)).ToArray();
-                var closureFn = closureScope.ClosureType.DefineMethod("Implementation" + closureScope.ImplementationCounter++, System.Reflection.MethodAttributes.Public, returnType, parameterTypes);
-                closureFn.SetReturnType(returnType);
-                int ix = 1;
-                foreach (var pd in lambda.ResolvedParameters) {
-                    var paramBuilder = closureFn.DefineParameter(ix++, ParameterAttributes.In, GetNameFor(pd));
-                    nestedCodes.Add(pd, new PropertyCodes(g => g.Emit(OpCodes.Ldarg, (Int16)ix - 1), null));
+                foreach (var lambda in lambdas) {
+
+                    nestedCodes.Add(lambda, new Dictionary<ParameterDeclaration, PropertyCodes>(closureScope.ClosureCodes));
+
+                    // Build actual function
+                    var returnType = Compile(lambda.ResolvedReturnType);
+                    var parameterTypes = lambda.ResolvedParameters.Select(pd => Compile(pd.Returns)).ToArray();
+                    var closureFn = closureScope.ClosureType.DefineMethod("Implementation" + closureScope.ImplementationCounter++, System.Reflection.MethodAttributes.Public, returnType, parameterTypes);
+                    closureFn.SetReturnType(returnType);
+                    int ix = 1;
+                    foreach (var pd in lambda.ResolvedParameters) {
+                        var paramBuilder = closureFn.DefineParameter(ix++, ParameterAttributes.In, GetNameFor(pd));
+                        nestedCodes[lambda].Add(pd, new PropertyCodes(g => g.Emit(OpCodes.Ldarg, (Int16)ix - 1), null));
+                    }
+
+                    var fnPlaceholder = new ReductionDeclaration(lambda.ResolvedParameters.Select(p => new PhrasePart(p)), new Function(lambda.ResolvedReturnType, null));
+                    fnLambdaMap.Add(lambda, fnPlaceholder);
+                    functionLookup.Add(fnPlaceholder, closureFn);
+                    closureFns.Add(lambda, closureFn);
                 }
 
-                var closureGen = closureFn.GetILGenerator();
-                int localix = 0;
-                foreach (var local in lambda.Implementation.Locals) {
-                    var lb = closureGen.DeclareLocal(Compile(local.Returns));
-                    lb.SetLocalSymInfo(GetNameFor(local));
-                    var closureIx = localix;
-                    nestedCodes.Add(local, new PropertyCodes(g => g.Emit(OpCodes.Ldloc, closureIx), (g, v) => { v(); g.Emit(OpCodes.Stloc, closureIx); }));
-                    localix++;
+                foreach (var lambda in lambdas) {
+                    var closureGen = closureFns[lambda].GetILGenerator();
+                    int localix = 0;
+                    foreach (var local in lambda.Implementation.Locals) {
+                        var lb = closureGen.DeclareLocal(Compile(local.Returns));
+                        lb.SetLocalSymInfo(GetNameFor(local));
+                        var closureIx = localix;
+                        nestedCodes[lambda].Add(local, new PropertyCodes(g => g.Emit(OpCodes.Ldloc, closureIx), (g, v) => { v(); g.Emit(OpCodes.Stloc, closureIx); }));
+                        localix++;
+                    }
+
+                    // If we have a group, add dispatch.
+                    if (lambdas.Skip(1).Any()) {
+                        var specializations = fnLambdaMap.Values.Where(other => other.IsSpecializationOf(fnLambdaMap[lambda])).ToList();
+                        if (specializations.Any()) {
+                            AddDispatchCode(closureGen, fnLambdaMap[lambda], specializations, nestedCodes[lambda], g=>closureScope.ClosureAccessor(g));
+                        }
+                    }
+
+                    // TODO: type resolve implementation bits?
+                    AddFunctionCode(closureGen, lambda.Implementation, nestedCodes[lambda], new ClosureInfo(closureScope.ClosureType, closureScope.ClosureCodes, g => g.Emit(OpCodes.Ldarg_0), closureScope.ClosureGenericScope));
+                    closureGen.Emit(OpCodes.Ret);
                 }
 
-                // TODO: type resolve implementation bits?
-                AddFunctionCode(closureGen, lambda.Implementation, nestedCodes, new ClosureInfo(closureScope.ClosureType, closureScope.ClosureCodes, g => g.Emit(OpCodes.Ldarg_0), closureScope.ClosureGenericScope));
-                closureGen.Emit(OpCodes.Ret);
-
-                // Push action creation onto stack.
+                // Push action creation onto stack. For groups, use the last lambda, which is the default by convention.
                 closureScope.ClosureAccessor(gen);
                 if (closureScope.ClosureType.IsGenericTypeDefinition) {
-                    gen.Emit(OpCodes.Ldftn, TypeBuilder.GetMethod(closureWithFnGenerics, closureFn));
+                    gen.Emit(OpCodes.Ldftn, TypeBuilder.GetMethod(closureWithFnGenerics, closureFns[lambdas.Last()]));
                 } else {
-                    gen.Emit(OpCodes.Ldftn, closureFn);
+                    gen.Emit(OpCodes.Ldftn, closureFns[lambdas.Last()]);
                 }
 
-                var lambdaType = Compile(lambda.EffectiveType);
+                var lambdaType = Compile(lambdas.Last().EffectiveType);
                 ConstructorInfo ctor = null;
 
                 if (lambdaType.GetType().Name.StartsWith("TypeBuilder")) {
-                    var genericFuncType = GenericDelegateTypeFor(lambda.EffectiveType as DelegateType);
+                    var genericFuncType = GenericDelegateTypeFor(lambdas.Last().EffectiveType as DelegateType);
                     ctor = TypeBuilder.GetConstructor(lambdaType, genericFuncType.GetConstructors().First());
                 } else {
                     ctor = lambdaType.GetConstructors().First();

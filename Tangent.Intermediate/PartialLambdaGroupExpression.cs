@@ -15,6 +15,8 @@ namespace Tangent.Intermediate
             if (lambdas == null || !lambdas.Any()) {
                 throw new InvalidOperationException("Lambda groups must have at least one lambda.");
             }
+
+            // TODO: generic params?
             Lambdas = lambdas;
         }
 

@@ -136,14 +136,14 @@ namespace Tangent.Parsing
             Parser.Combine(
                 ParamType,
                 LiteralParser.FunctionArrow,
-                Parser.Delegate(() => Expr.OneOrMore),
+                Parser.Delegate(() => Expr.ZeroOrMore),
                 LiteralParser.SemiColon,
                 (t, a, b, s) => new LambdaElement(new List<VarDeclElement>() { new VarDeclElement(new PartialParameterDeclaration(new IdentifierExpression("_", null), t.ToList(), false), null, LineColumnRange.CombineAll(t.Select(x => x.SourceInfo))) }, b is BlockElement ? (BlockElement)b : new BlockElement(new PartialBlock(new[] { new PartialStatement(b) }, Enumerable.Empty<VarDeclElement>()))));
 
         public static readonly Parser<LambdaElement> LambdaGroupDefaultExpr =
             Parser.Combine(
                 LiteralParser.FunctionArrow,
-                Parser.Delegate(() => Expr.OneOrMore),
+                Parser.Delegate(() => Expr.ZeroOrMore),
                 LiteralParser.SemiColon,
                 (a, b, s) => new LambdaElement(new List<VarDeclElement>() { new VarDeclElement(new PartialParameterDeclaration(new IdentifierExpression("_", null), null, false), null, null) }, b is BlockElement ? (BlockElement)b : new BlockElement(new PartialBlock(new[] { new PartialStatement(b) }, Enumerable.Empty<VarDeclElement>()))));
 
@@ -154,7 +154,7 @@ namespace Tangent.Parsing
                 ID.OneOrMore,
                 LiteralParser.OpenCurly,
                 LambdaGroupLambdaExpr.OneOrMore,
-                LambdaGroupDefaultExpr.Maybe,
+                LambdaGroupDefaultExpr,
                 LiteralParser.CloseCurly,
                 (op, i, o, l, d, c) => { if (d != null) { return BuildLambdaGroup(i, l.Concat(new[] { d })); } else { return BuildLambdaGroup(i, l); } });
 
