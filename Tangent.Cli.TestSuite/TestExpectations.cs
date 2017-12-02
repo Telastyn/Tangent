@@ -508,6 +508,14 @@ namespace Tangent.Cli.TestSuite
         }
 
         [TestMethod]
+        public void ParserDabble()
+        {
+            var result = Test.DebugProgramFile(new[] { "ParserDabble.tan", @"lib\parser-lib.tan", @"lib\conditional-lib.tan", @"lib\string-lib.tan", @"lib\enumerable-lib.tan" }, new[] { typeof(IEnumerable<>).Assembly });
+            var results = result.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim());
+            Assert.IsTrue(results.SequenceEqual(new[] { "true" }));
+        }
+
+        [TestMethod]
         [Ignore]
         public void BasicGlobalUse()
         {

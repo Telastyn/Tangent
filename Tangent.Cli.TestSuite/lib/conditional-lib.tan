@@ -17,3 +17,15 @@ if (condition: boolean.true) (positive: ~>void) else (negative: ~>void) => void 
 
 not (value: boolean) => boolean { true; }
 not (value: boolean.true) => boolean { false; }
+
+max (a : int), (b : int) => int {
+  :result:int := 0;
+  if a<b then result = b else result = a;
+  result;
+}
+
+min (a : int), (b : int) => int {
+  :result:int := 0;
+  if a>b then result = b else result = a;
+  result;
+}

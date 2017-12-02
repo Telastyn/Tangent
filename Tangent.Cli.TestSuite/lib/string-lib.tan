@@ -21,6 +21,19 @@ join (elements : enumerable string) with (delimiter : string) => string {
 
 (a : string) + (b : string) => string { .NET System.String.Concat a b }
 
+trim (value : string) => string { value.Trim }
+
+(value : string) take (count : int) at (index : int) => string {
+  :result:string := "";
+
+  if value length > index result = value.Substring index, {min count,{value length - index}}
+  result;
+}
+
+(input : string) length => int {
+  input.Length
+}
+
 // RMS: causes timeouts in the compiler?
 //first non-whitespace in (s : string) after (ix : int) => int {
 //  : ptr : int := ix;

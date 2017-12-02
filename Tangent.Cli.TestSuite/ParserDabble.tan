@@ -1,0 +1,4 @@
+﻿entrypoint => void {
+  : result : string parser result := "foo" -> "foo";
+  print result succeeded; 
+}

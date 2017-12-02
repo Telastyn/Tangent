@@ -228,6 +228,19 @@ namespace Tangent.Parsing
                         pt.GenericParameters.AddRange(genericParameters);
                     }
 
+                    var itf = result.Returns as TypeClass;
+                    if (itf != null && !itf.GenericParameters.Any()) {
+                        var genericParameters = td.Takes.Aggregate(new List<ParameterDeclaration>(), (pds, pp) => {
+                            if (!pp.IsIdentifier) {
+                                pds.Add(pp.Parameter);
+                            }
+
+                            return pds;
+                        });
+
+                        (itf.GenericParameters as List<ParameterDeclaration>).AddRange(genericParameters);
+                    }
+
                     if (genericTypeRef != null) {
                         lazyAliasRebindings.Add(result, () => {
                             // We need to reverse resolve the generic so that the type gets the things it expects where it expects them.
@@ -243,6 +256,7 @@ namespace Tangent.Parsing
                 var newBindings = new List<InterfaceBinding>(bindings.Count);
                 foreach (var entry in bindings) {
                     var iface = entry.Item1;
+                    bool good = true;
                     if (entry.Item1 is PartialTypeReference) {
                         var reference = (PartialTypeReference)entry.Item1;
                         var resolvedType = ResolveType(reference.Identifiers, newLookup, reference.GenericArgumentPlaceholders.Select(ppd => genericArgumentMapping[ppd]));
@@ -250,11 +264,19 @@ namespace Tangent.Parsing
                             iface = resolvedType.Result;
                         } else {
                             errors = errors.Concat(resolvedType.Error);
+                            good = false;
                         }
                     }
 
                     // TODO: impl?
-                    newBindings.Add(new InterfaceBinding((TypeClass)iface, entry.Item2));
+                    if (good) {
+                        if (iface is BoundGenericType) {
+                            throw new NotImplementedException("Sorry, generic type classes not yet implemented.");
+                            // TODO: allow this binding to allow for inference
+                        }
+
+                        newBindings.Add(new InterfaceBinding((TypeClass)iface, entry.Item2));
+                    }
                 }
 
                 interfaceToImplementerBindings.AddRange(newBindings);

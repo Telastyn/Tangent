@@ -1,0 +1,48 @@
+﻿(T) parser result :> interface {
+  (this) succeeded => bool;
+}
+
+(T) parse success :> (parser instance : T parser) parsed (value : T) from (input : string) ending at (index : int) :< parser result {
+  (this).value => T {value}
+  (this).input => string {input}
+  (this).parser => T parser {parser instance}
+  (this).ending => int {index}
+
+  (this) succeeded => bool {true}
+}
+
+(T) parse failure :> (parser instance : T parser) failed in (input : string) at (index : int) because (message : string) :< parser result {
+  (this) => string {this pretty error}
+  (this).input => string {input}
+  (this).parser => T parser {parser instance}
+
+  (this) succeeded => bool {false}
+
+  (this) pretty error => string {
+    "Line: " + line number of index in input + " - " + message
+  }
+}
+
+line number of (index : int) in (input : string) => int {
+  //count number of "\n" in {take index from input}
+  0
+}
+
+(T) parser :> interface {
+  (this) -> (input : string) at (index : int) => T parser result;
+}
+
+(parser : (T) parser) -> (input : string) => T parser result {
+  parser -> input at 0
+}
+
+literal parser :> lit. (value : string) :< string parser {
+  (this) -> (input : string) at (index : int) => string parser result {
+    : result : string parser result := this failed in input at index because "unexpected value found";
+
+	if input take value length at index = value then result = this parsed value from input ending at index + value length;
+	result;
+  }
+}
+
+(value : string) => string parser { lit. value }

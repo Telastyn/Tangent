@@ -43,7 +43,7 @@ namespace Tangent.Parsing
         public static readonly Parser<PartialPhrasePart> ParamParam =
             Parser.Combine(
                 LiteralParser.OpenParen,
-                TypeExpr,
+                ID.OneOrMore,
                 LiteralParser.CloseParen,
                 (o, expr, c) => new PartialPhrasePart(new PartialParameterDeclaration(expr.ToList(), new List<Expression>() { new IdentifierExpression("any", null) })));
 
@@ -381,6 +381,12 @@ namespace Tangent.Parsing
             var reference = implementation as PartialTypeReference;
             if (reference != null) {
                 (reference.GenericArgumentPlaceholders as List<PartialParameterDeclaration>).AddRange(generics);
+                return;
+            }
+
+            var itf = implementation as PartialInterface;
+            if (itf != null) {
+                (itf.GenericArguments as List<PartialParameterDeclaration>).AddRange(generics);
                 return;
             }
 

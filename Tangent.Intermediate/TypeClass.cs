@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace Tangent.Intermediate
 {
-    public class TypeClass : TangentType
+    public class TypeClass : TangentType, HasGenericParameters
     {
+        public IEnumerable<ParameterDeclaration> GenericParameters { get; private set; }
         public readonly IEnumerable<ReductionDeclaration> RequiredFunctions;
         public readonly ParameterDeclaration ThisBindingInRequiredFunctions;
         public readonly List<TangentType> Implementations = new List<TangentType>();
@@ -17,6 +18,7 @@ namespace Tangent.Intermediate
         {
             RequiredFunctions = new List<ReductionDeclaration>(components);
             ThisBindingInRequiredFunctions = new ParameterDeclaration("this", this.Kind);
+            GenericParameters = new List<ParameterDeclaration>();
         }
 
         public bool IsSatisfiedBy(TangentType target, Func<ParameterDeclaration, TangentType> genericBindings, IEnumerable<ReductionDeclaration> functionPool)
