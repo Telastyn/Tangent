@@ -279,7 +279,7 @@ namespace Tangent.Parsing
             Parser.Combine(
                 Interface,
                 LiteralParser.OpenCurly,
-                (InterfaceFunctionSignature.Or(InterfaceFieldSignature, "Interface member")).ZeroOrMore,
+                (InterfaceFunctionSignature.Or(InterfaceFieldSignature, "Interface member")).OneOrMore,
                 LiteralParser.CloseCurly,
                 (i, o, sigs, c) => (TangentType)ConstructInterface(sigs.SelectMany(x => x)));
 

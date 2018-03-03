@@ -108,7 +108,7 @@ namespace Tangent.Parsing
             return results;
         }
 
-        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping, List<InterfaceBinding> interfaceToImplementerBindings, List<PartialInterfaceBinding> standaloneInterfaceBindings, ICompilerTimings profiler, out Dictionary<TangentType, TangentType> placeholderConversions, out IEnumerable<ReductionDeclaration> additionalRules)
+        public static ResultOrParseError<IEnumerable<TypeDeclaration>> AllTypePlaceholders(IEnumerable<TypeDeclaration> typeDecls, Dictionary<PartialParameterDeclaration, ParameterDeclaration> genericArgumentMapping, List<ReductionDeclaration> interfaceToImplementerBindings, List<PartialInterfaceBinding> standaloneInterfaceBindings, ICompilerTimings profiler, out Dictionary<TangentType, TangentType> placeholderConversions, out IEnumerable<ReductionDeclaration> additionalRules)
         {
             AggregateParseError errors = new AggregateParseError(Enumerable.Empty<ParseError>());
             Dictionary<TangentType, TangentType> inNeedOfPopulation = new Dictionary<TangentType, TangentType>();
@@ -116,7 +116,8 @@ namespace Tangent.Parsing
             List<ReductionDeclaration> delegateInvokers = new List<ReductionDeclaration>();
 
             Func<TangentType, TangentType> selector = t => t;
-            selector = t => {
+            selector = t =>
+            {
                 if (t is PartialProductType) {
                     var newb = new ProductType(Enumerable.Empty<PhrasePart>(), Enumerable.Empty<ParameterDeclaration>(), Enumerable.Empty<Field>());
                     bindings.AddRange((t as PartialProductType).InterfaceReferences.Select(iface => new Tuple<TangentType, TangentType>(iface, newb)));
@@ -134,7 +135,7 @@ namespace Tangent.Parsing
                     return target;
                 } else if (t is PartialInterface) {
                     var tiff = t as PartialInterface;
-                    var newb = new TypeClass(Enumerable.Empty<ReductionDeclaration>());
+                    var newb = new TypeClass(Enumerable.Empty<ReductionDeclaration>(), Enumerable.Empty<ParameterDeclaration>());
                     inNeedOfPopulation.Add((PartialInterface)t, newb);
                     return newb;
                 } else {
@@ -205,19 +206,22 @@ namespace Tangent.Parsing
 
                 Dictionary<TypeDeclaration, Func<TypeDeclaration>> lazyAliasRebindings = new Dictionary<TypeDeclaration, Func<TypeDeclaration>>();
                 Func<PhrasePart, Dictionary<ParameterDeclaration, ParameterDeclaration>, PhrasePart> replaceDecls = null;
-                replaceDecls = (pp, mapping) => {
+                replaceDecls = (pp, mapping) =>
+                {
                     if (pp.IsIdentifier) { return pp; }
                     if (mapping.ContainsKey(pp.Parameter)) { return mapping[pp.Parameter]; }
                     return new PhrasePart(new ParameterDeclaration(pp.Parameter.Takes.Select(pp2 => replaceDecls(pp2, mapping)), pp.Parameter.Returns));
                 };
 
-                newLookup = newLookup.Select(td => {
+                newLookup = newLookup.Select(td =>
+                {
                     var ptr = td.Returns as PartialTypeReference;
                     var genericTypeRef = ptr?.ResolvedType as BoundGenericType;
                     var result = new TypeDeclaration(td.Takes, selector(td.Returns));
                     var pt = result.Returns as ProductType;
                     if (pt != null && !pt.GenericParameters.Any()) {
-                        var genericParameters = td.Takes.Aggregate(new List<ParameterDeclaration>(), (pds, pp) => {
+                        var genericParameters = td.Takes.Aggregate(new List<ParameterDeclaration>(), (pds, pp) =>
+                        {
                             if (!pp.IsIdentifier) {
                                 pds.Add(pp.Parameter);
                             }
@@ -230,7 +234,8 @@ namespace Tangent.Parsing
 
                     var itf = result.Returns as TypeClass;
                     if (itf != null && !itf.GenericParameters.Any()) {
-                        var genericParameters = td.Takes.Aggregate(new List<ParameterDeclaration>(), (pds, pp) => {
+                        var genericParameters = td.Takes.Aggregate(new List<ParameterDeclaration>(), (pds, pp) =>
+                        {
                             if (!pp.IsIdentifier) {
                                 pds.Add(pp.Parameter);
                             }
@@ -242,7 +247,8 @@ namespace Tangent.Parsing
                     }
 
                     if (genericTypeRef != null) {
-                        lazyAliasRebindings.Add(result, () => {
+                        lazyAliasRebindings.Add(result, () =>
+                        {
                             // We need to reverse resolve the generic so that the type gets the things it expects where it expects them.
                             var lazyTypeRef = ((td.Returns as PartialTypeReference).ResolvedType as BoundGenericType);
                             var mapping = (lazyTypeRef.GenericType as HasGenericParameters).GenericParameters.Zip(lazyTypeRef.TypeArguments, (param, arg) => new { Parameter = param, Argument = arg }).Where(pa => pa.Argument is GenericArgumentReferenceType).ToDictionary(pa => (pa.Argument as GenericArgumentReferenceType).GenericParameter, pa => pa.Parameter);
@@ -253,12 +259,13 @@ namespace Tangent.Parsing
                     return result;
                 }).ToList();
 
-                var newBindings = new List<InterfaceBinding>(bindings.Count);
+                var newBindings = new List<ReductionDeclaration>(bindings.Count);
                 foreach (var entry in bindings) {
                     var iface = entry.Item1;
+                    var impl = entry.Item2;
                     bool good = true;
-                    if (entry.Item1 is PartialTypeReference) {
-                        var reference = (PartialTypeReference)entry.Item1;
+                    if (iface is PartialTypeReference) {
+                        var reference = (PartialTypeReference)iface;
                         var resolvedType = ResolveType(reference.Identifiers, newLookup, reference.GenericArgumentPlaceholders.Select(ppd => genericArgumentMapping[ppd]));
                         if (resolvedType.Success) {
                             iface = resolvedType.Result;
@@ -270,12 +277,17 @@ namespace Tangent.Parsing
 
                     // TODO: impl?
                     if (good) {
-                        if (iface is BoundGenericType) {
-                            throw new NotImplementedException("Sorry, generic type classes not yet implemented.");
-                            // TODO: allow this binding to allow for inference
-                        }
+                        var generics = new HashSet<ParameterDeclaration>(iface.ContainedGenericReferences().Concat(impl.ContainedGenericReferences()));
 
-                        newBindings.Add(new InterfaceBinding((TypeClass)iface, entry.Item2));
+                        if (generics.Any()) {
+                            // we need to replace generics in the function.
+                            var fnGenericMap = generics.ToDictionary(pd => pd, pd => GenericArgumentReferenceType.For(new ParameterDeclaration(pd.Takes, pd.Returns)));
+                            var geniface = iface.ResolveGenericReferences(pd => fnGenericMap[pd]);
+                            var genimpl = impl.ResolveGenericReferences(pd => fnGenericMap[pd]);
+                            newBindings.Add(new ReductionDeclaration(new[] { new PhrasePart(new ParameterDeclaration("_", genimpl)) }, new InterfaceUpcast(geniface), fnGenericMap.Values.Select(rt => rt.GenericParameter)));
+                        } else {
+                            newBindings.Add(new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", impl)), new InterfaceUpcast(iface)));
+                        }
                     }
                 }
 
@@ -509,7 +521,8 @@ namespace Tangent.Parsing
                     var inference = typeExprs[ix] as PartialTypeInferenceExpression;
                     if (inference != null) {
                         // First, check if it's a reference to the type generic.
-                        var match = ctorGenericArguments.FirstOrDefault(pd => {
+                        var match = ctorGenericArguments.FirstOrDefault(pd =>
+                        {
                             var genericName = pd.Takes.Select(pp => pp.Identifier).ToList();
                             return inference.InferenceName.Count() == genericName.Count && inference.InferenceName.SequenceEqual(genericName);
                         });
@@ -701,7 +714,8 @@ namespace Tangent.Parsing
         private static PartialPhrasePart FixInferences(PartialPhrasePart part, Dictionary<PartialTypeInferenceExpression, GenericArgumentReferenceType> inferredTypes)
         {
             if (part.IsIdentifier) { return part; }
-            Func<Expression, Expression> fixer = expr => {
+            Func<Expression, Expression> fixer = expr =>
+            {
                 var partial = expr as PartialTypeInferenceExpression;
                 if (partial == null) {
                     return expr;

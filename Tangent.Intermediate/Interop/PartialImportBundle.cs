@@ -11,8 +11,7 @@ namespace Tangent.Intermediate.Interop
     {
         public Dictionary<Type, TypeDeclaration> Types = new Dictionary<Type, TypeDeclaration>();
         public Dictionary<MethodInfo, ReductionDeclaration> CommonFunctions = new Dictionary<MethodInfo, ReductionDeclaration>();
-        public Dictionary<Type, Dictionary<Type, InterfaceBinding>> InterfaceBindings = new Dictionary<Type, Dictionary<Type, InterfaceBinding>>();
-        public Dictionary<FieldInfo, ReductionDeclaration> FieldAccessors = new Dictionary<FieldInfo, ReductionDeclaration>();
+                public Dictionary<FieldInfo, ReductionDeclaration> FieldAccessors = new Dictionary<FieldInfo, ReductionDeclaration>();
         public Dictionary<FieldInfo, ReductionDeclaration> FieldMutators = new Dictionary<FieldInfo, ReductionDeclaration>();
         public Dictionary<ConstructorInfo, ReductionDeclaration> Constructors = new Dictionary<ConstructorInfo, ReductionDeclaration>();
         public Dictionary<Type, ReductionDeclaration> StructInits = new Dictionary<Type, ReductionDeclaration>();
@@ -20,7 +19,7 @@ namespace Tangent.Intermediate.Interop
 
         public static implicit operator ImportBundle(PartialImportBundle partial)
         {
-            return new ImportBundle(partial.Types.Values, partial.CommonFunctions.Values.Concat(partial.FieldAccessors.Values).Concat(partial.FieldMutators.Values).Concat(partial.Constructors.Values).Concat(partial.StructInits.Values).Concat(partial.SubtypingConversions.Values.SelectMany(x=>x)), partial.InterfaceBindings.Values.SelectMany(x => x.Values));
+            return new ImportBundle(partial.Types.Values, partial.CommonFunctions.Values.Concat(partial.FieldAccessors.Values).Concat(partial.FieldMutators.Values).Concat(partial.Constructors.Values).Concat(partial.StructInits.Values).Concat(partial.SubtypingConversions.Values.SelectMany(x=>x)));
         }
 
         public static PartialImportBundle Merge(PartialImportBundle a, PartialImportBundle b)
@@ -48,13 +47,6 @@ namespace Tangent.Intermediate.Interop
 
             foreach(var entry in a.StructInits) {
                 result.StructInits.Add(entry.Key, entry.Value);
-            }
-
-            foreach (var entry in a.InterfaceBindings) {
-                result.InterfaceBindings.Add(entry.Key, new Dictionary<Type, InterfaceBinding>());
-                foreach (var sub in entry.Value) {
-                    result.InterfaceBindings[entry.Key].Add(sub.Key, sub.Value);
-                }
             }
 
             foreach(var entry in a.SubtypingConversions) {
@@ -107,20 +99,6 @@ namespace Tangent.Intermediate.Interop
                     result.StructInits[entry.Key] = entry.Value;
                 } else {
                     result.StructInits.Add(entry.Key, entry.Value);
-                }
-            }
-
-            foreach (var entry in b.InterfaceBindings) {
-                if (!result.InterfaceBindings.ContainsKey(entry.Key)) {
-                    result.InterfaceBindings.Add(entry.Key, new Dictionary<Type, InterfaceBinding>());
-                }
-
-                foreach (var sub in entry.Value) {
-                    if (result.InterfaceBindings[entry.Key].ContainsKey(sub.Key)) {
-                        result.InterfaceBindings[entry.Key][sub.Key] = sub.Value;
-                    } else {
-                        result.InterfaceBindings[entry.Key].Add(sub.Key, sub.Value);
-                    }
                 }
             }
 

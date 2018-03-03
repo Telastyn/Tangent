@@ -9,16 +9,18 @@ namespace Tangent.Intermediate.UnitTests
     [TestClass]
     public class ReductionDeclarationTests
     {
+        private static readonly Func<TangentType, TangentType, bool> noInterfaces = (impl, iface) => false;
+
         [TestMethod]
         public void SameFunctionFalse()
         {
-            Assert.IsFalse(BuiltinFunctions.PrintInt.IsSpecializationOf(BuiltinFunctions.PrintInt));
+            Assert.IsFalse(BuiltinFunctions.PrintInt.IsSpecializationOf(BuiltinFunctions.PrintInt, noInterfaces));
         }
 
         [TestMethod]
         public void DisjointFunctionFalse()
         {
-            Assert.IsFalse(BuiltinFunctions.PrintInt.IsSpecializationOf(BuiltinFunctions.EqBool));
+            Assert.IsFalse(BuiltinFunctions.PrintInt.IsSpecializationOf(BuiltinFunctions.EqBool, noInterfaces));
         }
 
         [TestMethod]
@@ -27,7 +29,7 @@ namespace Tangent.Intermediate.UnitTests
             var fn1 = new ReductionDeclaration("foo", new Function(TangentType.Int, null));
             var fn2 = new ReductionDeclaration("foo", new Function(TangentType.Void, null));
 
-            Assert.IsFalse(fn1.IsSpecializationOf(fn2));
+            Assert.IsFalse(fn1.IsSpecializationOf(fn2, noInterfaces));
         }
 
         [TestMethod]
@@ -37,7 +39,7 @@ namespace Tangent.Intermediate.UnitTests
             var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", testType), new Function(TangentType.Void, null));
             var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", testType.SingleValueTypeFor("foo")), new Function(TangentType.Void, null));
 
-            Assert.IsTrue(fn2.IsSpecializationOf(fn1));
+            Assert.IsTrue(fn2.IsSpecializationOf(fn1, noInterfaces));
         }
 
         [TestMethod]
@@ -47,7 +49,7 @@ namespace Tangent.Intermediate.UnitTests
             var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", testType), new Function(TangentType.Void, null));
             var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", testType.SingleValueTypeFor("foo")), new Function(TangentType.Void, null));
 
-            Assert.IsFalse(fn1.IsSpecializationOf(fn2));
+            Assert.IsFalse(fn1.IsSpecializationOf(fn2, noInterfaces));
         }
 
         [TestMethod]
@@ -57,7 +59,7 @@ namespace Tangent.Intermediate.UnitTests
             var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", testType), new Function(TangentType.Void, null));
             var fn2 = new ReductionDeclaration(new ParameterDeclaration("y", testType.SingleValueTypeFor("foo")), new Function(TangentType.Void, null));
 
-            Assert.IsTrue(fn2.IsSpecializationOf(fn1));
+            Assert.IsTrue(fn2.IsSpecializationOf(fn1, noInterfaces));
         }
 
         [TestMethod]
@@ -68,8 +70,8 @@ namespace Tangent.Intermediate.UnitTests
             var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", TangentType.Int), new Function(TangentType.Void, null));
             var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", inference), new Function(TangentType.Void, null));
 
-            Assert.IsTrue(fn1.IsSpecializationOf(fn2));
-            Assert.IsFalse(fn2.IsSpecializationOf(fn1));
+            Assert.IsTrue(fn1.IsSpecializationOf(fn2, noInterfaces));
+            Assert.IsFalse(fn2.IsSpecializationOf(fn1, noInterfaces));
         }
 
 
@@ -83,8 +85,8 @@ namespace Tangent.Intermediate.UnitTests
             var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericType.For((ProductType)listT.Returns, new[] { TangentType.Int })), new Function(TangentType.Void, null));
             var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericType.For((ProductType)listT.Returns, new[] { inference })), new Function(TangentType.Void, null));
 
-            Assert.IsTrue(fn1.IsSpecializationOf(fn2));
-            Assert.IsFalse(fn2.IsSpecializationOf(fn1));
+            Assert.IsTrue(fn1.IsSpecializationOf(fn2, noInterfaces));
+            Assert.IsFalse(fn2.IsSpecializationOf(fn1, noInterfaces));
         }
 
         [TestMethod]
@@ -100,8 +102,8 @@ namespace Tangent.Intermediate.UnitTests
             var fn1 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericType.For((ProductType)dictKV.Returns, new[] { TangentType.Int, inference3 })), new Function(TangentType.Void, null));
             var fn2 = new ReductionDeclaration(new ParameterDeclaration("x", BoundGenericType.For((ProductType)dictKV.Returns, new[] { inference1, inference2 })), new Function(TangentType.Void, null));
 
-            Assert.IsTrue(fn1.IsSpecializationOf(fn2));
-            Assert.IsFalse(fn2.IsSpecializationOf(fn1));
+            Assert.IsTrue(fn1.IsSpecializationOf(fn2, noInterfaces));
+            Assert.IsFalse(fn2.IsSpecializationOf(fn1, noInterfaces));
         }
     }
 }

@@ -58,21 +58,7 @@ namespace Tangent.Intermediate
 
             var kind = ((KindType)GenericParameter.Returns).KindOf;
             if (kind != TangentType.Any) {
-                var typeClass = kind as TypeClass;
-                if (typeClass == null) {
-                    throw new NotImplementedException("Expected typeclass as generic constraint.");
-                }
-
-                if (typeClass != other) {
-                    var otherGart = other as GenericArgumentReferenceType;
-                    if (otherGart != null) {
-                        if (otherGart.GenericParameter.Returns != this.GenericParameter.Returns) {
-                            return false;
-                        }
-                    } else if (!typeClass.Implementations.Contains(other)) {
-                        return false;
-                    }
-                }
+                throw new NotImplementedException("Generic constraints are currently unsupported during development of generic interfaces.");
             }
 
             necessaryTypeInferences.Add(GenericParameter, other);

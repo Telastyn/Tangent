@@ -74,14 +74,14 @@ namespace Tangent.Intermediate
             return true;
         }
 
-        public bool IsSpecializationOf(ReductionDeclaration rhs)
+        public bool IsSpecializationOf(ReductionDeclaration rhs, Func<TangentType, TangentType, bool> canImplementInterface)
         {
-            return SpecializationAgainst(rhs) != null;
+            return SpecializationAgainst(rhs, canImplementInterface) != null;
         }
 
-        public SpecializationDefinition SpecializationAgainst(ReductionDeclaration rhs)
+        public SpecializationDefinition SpecializationAgainst(ReductionDeclaration rhs, Func<TangentType, TangentType, bool> canImplementInterface)
         {
-            var result = SpecializationsFor(rhs).ToList();
+            var result = SpecializationsFor(rhs, canImplementInterface).ToList();
             if (result.Any(r => r == null)) { return null; }
             if (!result.Any()) {
                 throw new ApplicationException("Some error has happened in specialization logic. Fix and test.");
@@ -90,7 +90,7 @@ namespace Tangent.Intermediate
             return new SpecializationDefinition(result);
         }
 
-        private IEnumerable<SpecializationEntry> SpecializationsFor(ReductionDeclaration rhs)
+        private IEnumerable<SpecializationEntry> SpecializationsFor(ReductionDeclaration rhs, Func<TangentType, TangentType, bool> canImplementInterface)
         {
             if (this == rhs) { yield return null; yield break; }
             if (this.Returns.EffectiveType != rhs.Returns.EffectiveType) { yield return null; yield break; }
@@ -128,7 +128,7 @@ namespace Tangent.Intermediate
                             break;
                         }
 
-                        if (((TypeClass)rhsEnum.Current.Parameter.RequiredArgumentType).Implementations.Contains(thisEnum.Current.Parameter.RequiredArgumentType)) {
+                        if (canImplementInterface(thisEnum.Current.Parameter.RequiredArgumentType, rhsEnum.Current.Parameter.RequiredArgumentType)) {
                             yield return new SpecializationEntry(rhsEnum.Current.Parameter, thisEnum.Current.Parameter);
                         } else {
                             yield return null;

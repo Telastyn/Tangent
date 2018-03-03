@@ -73,12 +73,6 @@ namespace Tangent.Intermediate.Interop.UnitTests
             }
 
             Console.WriteLine();
-            Console.WriteLine("Imported Interface Bindings ({0}):", result.InterfaceBindings.Count);
-            foreach (var entry in result.InterfaceBindings) {
-                Console.WriteLine("  {0}", entry.Value);
-            }
-
-            Console.WriteLine();
             Console.WriteLine("Elapsed Time: {0}", timer.Elapsed);
         }
 
@@ -98,12 +92,6 @@ namespace Tangent.Intermediate.Interop.UnitTests
             Console.WriteLine();
             Console.WriteLine("Imported Functions ({0}):", result.Functions.Count());
             foreach (var entry in result.Functions) {
-                Console.WriteLine("  {0}", entry);
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("Imported Interface Bindings ({0}):", result.InterfaceBindings.Count());
-            foreach (var entry in result.InterfaceBindings) {
                 Console.WriteLine("  {0}", entry);
             }
 

@@ -10,15 +10,13 @@ namespace Tangent.Intermediate.Interop
     {
         public readonly IEnumerable<TypeDeclaration> TypeDeclarations;
         public readonly IEnumerable<ReductionDeclaration> Functions;
-        public readonly IEnumerable<InterfaceBinding> InterfaceBindings;
 
-        public static readonly ImportBundle Empty = new ImportBundle(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>(), Enumerable.Empty<InterfaceBinding>());
+        public static readonly ImportBundle Empty = new ImportBundle(Enumerable.Empty<TypeDeclaration>(), Enumerable.Empty<ReductionDeclaration>());
 
-        public ImportBundle(IEnumerable<TypeDeclaration> types, IEnumerable<ReductionDeclaration> functions, IEnumerable<InterfaceBinding> interfaceBindings)
+        public ImportBundle(IEnumerable<TypeDeclaration> types, IEnumerable<ReductionDeclaration> functions)
         {
             TypeDeclarations = new List<TypeDeclaration>(types);
             Functions = new List<ReductionDeclaration>(functions);
-            InterfaceBindings = new List<InterfaceBinding>(interfaceBindings);
         }
     }
 }

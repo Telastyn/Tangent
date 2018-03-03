@@ -11,14 +11,13 @@ namespace Tangent.Intermediate
         public IEnumerable<ParameterDeclaration> GenericParameters { get; private set; }
         public readonly IEnumerable<ReductionDeclaration> RequiredFunctions;
         public readonly ParameterDeclaration ThisBindingInRequiredFunctions;
-        public readonly List<TangentType> Implementations = new List<TangentType>();
 
-        public TypeClass(IEnumerable<ReductionDeclaration> components)
+        public TypeClass(IEnumerable<ReductionDeclaration> components, IEnumerable<ParameterDeclaration> generics)
             : base(KindOfType.TypeClass)
         {
             RequiredFunctions = new List<ReductionDeclaration>(components);
             ThisBindingInRequiredFunctions = new ParameterDeclaration("this", this.Kind);
-            GenericParameters = new List<ParameterDeclaration>();
+            GenericParameters = new List<ParameterDeclaration>(generics);
         }
 
         public bool IsSatisfiedBy(TangentType target, Func<ParameterDeclaration, TangentType> genericBindings, IEnumerable<ReductionDeclaration> functionPool)

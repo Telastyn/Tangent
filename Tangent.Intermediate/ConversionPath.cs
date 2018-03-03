@@ -18,7 +18,7 @@ namespace Tangent.Intermediate
                 throw new InvalidOperationException();
             }
 
-            if (fn.Returns.EffectiveType.ImplementationType == KindOfType.TypeClass && ((TypeClass)fn.Returns.EffectiveType).Implementations.Contains(fn.Takes.First().Parameter.RequiredArgumentType)) {
+            if (fn.Returns is InterfaceUpcast) {
                 // An interface implementation.
                 Cost = 0;
             } else {

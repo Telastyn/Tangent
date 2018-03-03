@@ -27,6 +27,8 @@ namespace Tangent.CilGeneration
         private readonly Dictionary<TangentType, Dictionary<Type, ConstructorInfo>> variantCtorLookup = new Dictionary<TangentType, Dictionary<Type, ConstructorInfo>>();
         private readonly Dictionary<TangentType, FieldInfo> variantValueLookup = new Dictionary<TangentType, FieldInfo>();
         private readonly Dictionary<TangentType, FieldInfo> variantModeLookup = new Dictionary<TangentType, FieldInfo>();
+        private readonly Func<TangentType, TangentType, bool> canImplementInterface;
+        private readonly Dictionary<TangentType, List<TangentType>> interfaceMap;
 
         private readonly ICompilerTimings profiler;
         private Dictionary<string, ISymbolDocumentWriter> debuggingSymbolLookup;
@@ -45,6 +47,20 @@ namespace Tangent.CilGeneration
             // TODO: is this still necessary?
             this.compilationDomain.TypeResolve += OnTypeResolution;
             this.profiler = profiler;
+
+            // TODO: make this better.
+            interfaceMap = new Dictionary<TangentType, List<TangentType>>();
+            foreach(var entry in program.Functions.Where(fn => fn.Returns is InterfaceUpcast)) {
+                if (!entry.GenericParameters.Any()) {
+                    if (!interfaceMap.ContainsKey(entry.Returns.EffectiveType)) {
+                        interfaceMap.Add(entry.Returns.EffectiveType, new List<TangentType>());
+                    }
+
+                    interfaceMap[entry.Returns.EffectiveType].Add(entry.Takes.First().Parameter.Returns);
+                } // TODO: add generics to interface map in some sane way.
+            }
+
+            canImplementInterface = (impl, iface) => interfaceMap.ContainsKey(iface) && interfaceMap[iface].Contains(impl);
         }
 
         public static void Compile(TangentProgram program, string targetPath, ICompilerTimings profiler)
@@ -274,7 +290,11 @@ namespace Tangent.CilGeneration
                 var variantParts = new List<TangentType>();
                 switch (decl.Returns.ImplementationType) {
                     case KindOfType.TypeClass:
-                        variantParts.AddRange(((TypeClass)decl.Returns).Implementations);
+                        if (decl.Returns.ContainedGenericReferences().Any()) {
+                            throw new NotImplementedException("Sorry, code generation for generic interfaces is not yet supported.");
+                        }
+
+                        variantParts.AddRange(interfaceMap[decl.Returns]);
                         break;
                     default:
                         throw new NotImplementedException();
@@ -393,7 +413,7 @@ namespace Tangent.CilGeneration
         {
             var stmts = fn?.Returns?.Implementation?.Statements;
             using (profiler.Stopwatch("CodeGen", fn.ToString(), stmts == null ? (int?)null : stmts.Count())) {
-                var specializations = program.Functions.Where(other => other.IsSpecializationOf(fn)).ToList();
+                var specializations = program.Functions.Where(other => other.IsSpecializationOf(fn, canImplementInterface)).ToList();
                 foreach (var specialization in specializations) {
                     // Force specializations to be built so that any generic types exist in our lookup.
                     Compile(specialization);
@@ -580,7 +600,7 @@ namespace Tangent.CilGeneration
                 // For now, we can't have nested specializations, so just go in order, doing the checks.
                 foreach (var specialization in specializations) {
                     Label next = gen.DefineLabel();
-                    var specializationDetails = specialization.SpecializationAgainst(fn).Specializations;
+                    var specializationDetails = specialization.SpecializationAgainst(fn, canImplementInterface).Specializations;
                     var modes = new Dictionary<ParameterDeclaration, Tuple<Type, Type>>();
                     var specialCasts = new Dictionary<ParameterDeclaration, Type>();
                     foreach (var specializationParam in specializationDetails) {
@@ -1329,7 +1349,7 @@ namespace Tangent.CilGeneration
 
                     // If we have a group, add dispatch.
                     if (lambdas.Skip(1).Any()) {
-                        var specializations = fnLambdaMap.Values.Where(other => other.IsSpecializationOf(fnLambdaMap[lambda])).ToList();
+                        var specializations = fnLambdaMap.Values.Where(other => other.IsSpecializationOf(fnLambdaMap[lambda], canImplementInterface)).ToList();
                         if (specializations.Any()) {
                             AddDispatchCode(closureGen, fnLambdaMap[lambda], specializations, nestedCodes[lambda], g=>closureScope.ClosureAccessor(g));
                         }

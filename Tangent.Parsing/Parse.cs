@@ -30,7 +30,7 @@ namespace Tangent.Parsing
             List<PartialTypeDeclaration> partialTypes = new List<PartialTypeDeclaration>();
             List<PartialReductionDeclaration> partialFunctions = new List<PartialReductionDeclaration>();
             List<PartialInterfaceBinding> partialStandaloneInterfaceBindings = new List<PartialInterfaceBinding>();
-            List<InterfaceBinding> interfaceToImplementerBindings = new List<InterfaceBinding>();
+            List<ReductionDeclaration> interfaceToImplementerBindings = new List<ReductionDeclaration>();
             List<VarDeclElement> parsedGlobalFields = new List<VarDeclElement>();
 
             using (profiler.Stopwatch(nameof(Parse), null, tokens.Count, null, "GrammarParse")) {
@@ -118,7 +118,7 @@ namespace Tangent.Parsing
 
             var ctorCalls = allProductTypes.Select(pt => GenerateConstructorFunctionFor(pt)).ToList();
 
-            ctorCalls = ctorCalls.Concat(interfaceToImplementerBindings.Select(itoi => new ReductionDeclaration(new PhrasePart(new ParameterDeclaration("_", itoi.Implementation)), new InterfaceUpcast(itoi.Interface)))).ToList();
+            ctorCalls = ctorCalls.Concat(interfaceToImplementerBindings).ToList();
 
             var enumAccesses = resolvedTypes.Result.Where(tt => tt.Returns.ImplementationType == KindOfType.Enum).Select(tt => tt.Returns).Cast<EnumType>().Distinct().SelectMany(tt => tt.Values.Select(v => new ReductionDeclaration(v, new Function(tt, new Block(new[] { new EnumValueAccessExpression(tt.SingleValueTypeFor(v), null) }, Enumerable.Empty<ParameterDeclaration>()))))).ToList();
             var fieldFunctions = new List<ReductionDeclaration>();
